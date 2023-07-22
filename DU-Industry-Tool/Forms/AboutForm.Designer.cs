@@ -52,7 +52,7 @@ namespace DU_Industry_Tool
             this.panelLeft.Location = new System.Drawing.Point(0, 0);
             this.panelLeft.Name = "panelLeft";
             this.panelLeft.PanelBackStyle = Krypton.Toolkit.PaletteBackStyle.FormMain;
-            this.panelLeft.Size = new System.Drawing.Size(90, 415);
+            this.panelLeft.Size = new System.Drawing.Size(90, 441);
             this.panelLeft.TabIndex = 0;
             // 
             // pictureBox1
@@ -63,7 +63,7 @@ namespace DU_Industry_Tool
             this.pictureBox1.Margin = new System.Windows.Forms.Padding(0);
             this.pictureBox1.Name = "pictureBox1";
             this.pictureBox1.Padding = new System.Windows.Forms.Padding(13);
-            this.pictureBox1.Size = new System.Drawing.Size(90, 415);
+            this.pictureBox1.Size = new System.Drawing.Size(90, 441);
             this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
             this.pictureBox1.TabIndex = 0;
             this.pictureBox1.TabStop = false;
@@ -71,36 +71,36 @@ namespace DU_Industry_Tool
             // TobiReleasesLink
             // 
             this.TobiReleasesLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.TobiReleasesLink.Location = new System.Drawing.Point(99, 317);
+            this.TobiReleasesLink.Location = new System.Drawing.Point(99, 340);
             this.TobiReleasesLink.Name = "TobiReleasesLink";
-            this.TobiReleasesLink.Size = new System.Drawing.Size(388, 24);
+            this.TobiReleasesLink.Size = new System.Drawing.Size(439, 27);
             this.TobiReleasesLink.TabIndex = 2;
             this.TobiReleasesLink.Values.Text = "https://github.com/tobitege/DU-Industry-Tool/releases";
             // 
             // kryptonLabel1
             // 
             this.kryptonLabel1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.kryptonLabel1.Location = new System.Drawing.Point(99, 297);
+            this.kryptonLabel1.Location = new System.Drawing.Point(99, 320);
             this.kryptonLabel1.Name = "kryptonLabel1";
-            this.kryptonLabel1.Size = new System.Drawing.Size(285, 24);
+            this.kryptonLabel1.Size = new System.Drawing.Size(322, 27);
             this.kryptonLabel1.TabIndex = 3;
-            this.kryptonLabel1.Values.Text = "Tobi\'s binary releases v0.500+ (Github)s:";
+            this.kryptonLabel1.Values.Text = "Tobi\'s main sources+binary releases (Github):";
             // 
             // kryptonLabel2
             // 
             this.kryptonLabel2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.kryptonLabel2.Location = new System.Drawing.Point(99, 173);
+            this.kryptonLabel2.Location = new System.Drawing.Point(99, 196);
             this.kryptonLabel2.Name = "kryptonLabel2";
-            this.kryptonLabel2.Size = new System.Drawing.Size(306, 24);
+            this.kryptonLabel2.Size = new System.Drawing.Size(346, 27);
             this.kryptonLabel2.TabIndex = 4;
             this.kryptonLabel2.Values.Text = "Visit the DU Open Source Initiative Discord:";
             // 
             // discordLink
             // 
             this.discordLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.discordLink.Location = new System.Drawing.Point(99, 199);
+            this.discordLink.Location = new System.Drawing.Point(99, 222);
             this.discordLink.Name = "discordLink";
-            this.discordLink.Size = new System.Drawing.Size(211, 24);
+            this.discordLink.Size = new System.Drawing.Size(239, 27);
             this.discordLink.TabIndex = 5;
             this.discordLink.Values.Text = "https://discord.gg/7psYcmAb";
             // 
@@ -109,7 +109,7 @@ namespace DU_Industry_Tool
             this.OkButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.OkButton.AutoSize = true;
             this.OkButton.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.OkButton.Location = new System.Drawing.Point(276, 371);
+            this.OkButton.Location = new System.Drawing.Point(341, 397);
             this.OkButton.Name = "OkButton";
             this.OkButton.Size = new System.Drawing.Size(95, 32);
             this.OkButton.TabIndex = 0;
@@ -120,26 +120,26 @@ namespace DU_Industry_Tool
             this.labelMain.LabelStyle = Krypton.Toolkit.LabelStyle.TitleControl;
             this.labelMain.Location = new System.Drawing.Point(96, 12);
             this.labelMain.Name = "labelMain";
-            this.labelMain.Size = new System.Drawing.Size(545, 155);
+            this.labelMain.Size = new System.Drawing.Size(586, 166);
             this.labelMain.TabIndex = 7;
             this.labelMain.Values.Text = "DU Industry Tool vXXX\r\nA tool to find cost for elements in Dual Universe.\r\n\r\nCrea" +
-    "ted by Dimencia (2020-2021)\r\nMaintainer: tobitege (2022)";
+    "ted by Dimencia (2020-2021)\r\nMaintainer: tobitege (2022-)";
             // 
             // kryptonLabel4
             // 
             this.kryptonLabel4.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.kryptonLabel4.Location = new System.Drawing.Point(99, 245);
+            this.kryptonLabel4.Location = new System.Drawing.Point(99, 268);
             this.kryptonLabel4.Name = "kryptonLabel4";
-            this.kryptonLabel4.Size = new System.Drawing.Size(272, 24);
+            this.kryptonLabel4.Size = new System.Drawing.Size(307, 27);
             this.kryptonLabel4.TabIndex = 8;
-            this.kryptonLabel4.Values.Text = "Dimencia\'s master repository (Github):";
+            this.kryptonLabel4.Values.Text = "Dimencia\'s old repository (Github):";
             // 
             // DimenciaGithubLink
             // 
             this.DimenciaGithubLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.DimenciaGithubLink.Location = new System.Drawing.Point(99, 267);
+            this.DimenciaGithubLink.Location = new System.Drawing.Point(99, 290);
             this.DimenciaGithubLink.Name = "DimenciaGithubLink";
-            this.DimenciaGithubLink.Size = new System.Drawing.Size(334, 24);
+            this.DimenciaGithubLink.Size = new System.Drawing.Size(377, 27);
             this.DimenciaGithubLink.TabIndex = 9;
             this.DimenciaGithubLink.Values.Text = "https://github.com/Dimencia/DU-Industry-Tool";
             // 
@@ -147,7 +147,7 @@ namespace DU_Industry_Tool
             // 
             this.AcceptButton = this.OkButton;
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
-            this.ClientSize = new System.Drawing.Size(637, 415);
+            this.ClientSize = new System.Drawing.Size(672, 441);
             this.Controls.Add(this.DimenciaGithubLink);
             this.Controls.Add(this.kryptonLabel4);
             this.Controls.Add(this.labelMain);
@@ -158,7 +158,7 @@ namespace DU_Industry_Tool
             this.Controls.Add(this.TobiReleasesLink);
             this.Controls.Add(this.panelLeft);
             this.DoubleBuffered = true;
-            this.Font = new System.Drawing.Font("Verdana", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.Font = new System.Drawing.Font("Verdana", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "AboutForm";

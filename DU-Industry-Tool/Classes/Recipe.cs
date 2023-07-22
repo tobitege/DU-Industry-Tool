@@ -126,6 +126,10 @@ namespace DU_Industry_Tool
             Name = entry.Products[0].DisplayNameWithSize;
             Key = ConvertName(Name);
             NqId = entry.Products[0].Id;
+            if (entry.Producers?.Any() == true) // v1.4
+            {
+                Industry = entry.Producers[0].DisplayNameWithSize;
+            }
             foreach (var entryProduct in entry.Ingredients)
             {
                 var newProd = new ProductDetail
@@ -341,6 +345,8 @@ namespace DU_Industry_Tool
         public string DisplayNameWithSize { get; set; }
         [DataMember(Name = "locDisplayNameWithSize")]
         public string LocDisplayNameWithSize { get; set; }
+        [DataMember(Name = "locDisplayNameWithSizeDE")]
+        public string LocDisplayNameWithSizeDE { get; set; }
     }
 
     public class DuLuaItem
@@ -351,6 +357,10 @@ namespace DU_Industry_Tool
         public byte Tier { get; set; }
         [DataMember(Name="displayNameWithSize")]
         public string DisplayNameWithSize { get; set; }
+        [DataMember(Name = "locDisplayNameWithSize")]
+        public string LocDisplayNameWithSize { get; set; }
+        [DataMember(Name = "locDisplayNameWithSizeDE")]
+        public string LocDisplayNameWithSizeDE { get; set; }
         [DataMember(Name="unitMass")]
         public decimal UnitMass { get; set; }
         [DataMember(Name="unitVolume")]
@@ -363,6 +373,14 @@ namespace DU_Industry_Tool
         public string Description { get; set; }
         [DataMember(Name="schematics")]
         public List<DuLuaSchematic> Schematics { get; set; }
+        [DataMember(Name = "products")]
+        public List<DuLuaSubItem> Products { get; set; }
+        [DataMember(Name = "producers")]
+        public List<DuLuaProducer> Producers { get; set; }
+        [DataMember(Name = "classId")]
+        public string ClassId { get; set; }
+        [DataMember(Name = "displayClassId")]
+        public string DisplayClassId { get; set; }
     }
 
     public class DuLuaRecipe
@@ -379,6 +397,20 @@ namespace DU_Industry_Tool
         public List<DuLuaSubItem> Ingredients { get; set; }
         [DataMember(Name="products")]
         public List<DuLuaSubItem> Products { get; set; }
+        [DataMember(Name= "producers")]
+        public List<DuLuaProducer> Producers { get; set; }
+    }
+
+    public class DuLuaProducer
+    {
+        [DataMember(Name="id")]
+        public ulong Id { get; set; }
+        [DataMember(Name="displayNameWithSize")]
+        public string DisplayNameWithSize { get; set; }
+        [DataMember(Name= "locDisplayNameWithSize")]
+        public string LocDisplayNameWithSize { get; set; }
+        [DataMember(Name= "locDisplayNameWithSizeDE")]
+        public string LocDisplayNameWithSizeDE { get; set; }
     }
 
     public class DuLuaSubItem
@@ -389,6 +421,10 @@ namespace DU_Industry_Tool
         public ulong Id { get; set; }
         [DataMember(Name="displayNameWithSize")]
         public string DisplayNameWithSize { get; set; }
+        [DataMember(Name = "locDisplayNameWithSize")]
+        public string LocDisplayNameWithSize { get; set; }
+        [DataMember(Name = "locDisplayNameWithSizeDE")]
+        public string LocDisplayNameWithSizeDE { get; set; }
     }
 
     public class FactGenRecipe

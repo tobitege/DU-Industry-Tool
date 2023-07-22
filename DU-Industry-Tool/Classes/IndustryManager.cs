@@ -38,36 +38,41 @@ namespace DU_Industry_Tool
             var dmp = false;
             var dmpRcp = false;
 
-            if (false && File.Exists("items_api_dump.json"))
+            if (dmp && File.Exists("items_api_dump.json"))
             {
                 try
                 {
                     var tmpItems = JsonConvert.DeserializeObject<List<DuLuaItem>>(File.ReadAllText("items_api_dump.json"));
-                    //dmp = true;
                     Utils.LuaItems = new SortedDictionary<string, DuLuaItem>();
+                    Utils.LuaSchematics = new SortedDictionary<string, DuLuaItem>();
                     foreach (var item in tmpItems)
                     {
-                        if (item.DisplayNameWithSize == "Canyon soil") continue;
-                        if (item.DisplayNameWithSize == "Clay") continue;
-                        if (item.DisplayNameWithSize == "Cobblestone") continue;
-                        if (item.DisplayNameWithSize == "Concrete") continue;
-                        if (item.DisplayNameWithSize == "Crater soil") continue;
-                        if (item.DisplayNameWithSize == "Debris") continue;
-                        if (item.DisplayNameWithSize == "Desert sand") continue;
-                        if (item.DisplayNameWithSize == "Forest soil") continue;
-                        if (item.DisplayNameWithSize == "Gravel") continue;
-                        if (item.DisplayNameWithSize == "Ice") continue;
-                        if (item.DisplayNameWithSize == "Lava Stone") continue;
-                        if (item.DisplayNameWithSize == "Moon soil") continue;
-                        if (item.DisplayNameWithSize == "Mud") continue;
-                        if (item.DisplayNameWithSize == "Pebbles") continue;
-                        if (item.DisplayNameWithSize == "Rock") continue;
-                        if (item.DisplayNameWithSize == "Sand") continue;
-                        if (item.DisplayNameWithSize == "Snow") continue;
-                        if (item.DisplayNameWithSize == "Smooth Voxel tool") continue;
-                        if (item.DisplayNameWithSize == "Soil") continue;
-                        if (item.DisplayNameWithSize == "Stone") continue;
-                        if (item.DisplayNameWithSize == "Tundra") continue;
+                        // 2023-07-22: filter out ~416 entries
+                        // filter out schematics:
+                        if (item.ClassId == item.DisplayClassId && item.DisplayNameWithSize.EndsWith(" Schematic Copy"))
+                        {
+                            Debug.WriteLine("Skip: " + item.DisplayNameWithSize);
+                            Utils.LuaSchematics.Add(item.DisplayNameWithSize, item);
+                            continue;
+                        }
+
+                        // this catches pretty much all categories and non-usable entries:
+                        if (item.UnitMass == 0 || item.UnitVolume == 0)
+                        {
+                            Debug.WriteLine("Skip: " + item.DisplayNameWithSize);
+                            continue;
+                        }
+                        if (item.ClassId == item.DisplayClassId && item.UnitMass == 0 && item.UnitVolume == 0)  // category
+                        {
+                            Debug.WriteLine("Skip: " + item.DisplayNameWithSize);
+                            continue;
+                        }
+                        if (item.ClassId == "1727255352" || item.DisplayClassId == "1727255352") continue; // soils
+                        if (item.ClassId == "3294944260" || item.DisplayClassId == "3294944260") continue; // build tools
+                        if (item.ClassId == "1236945684" || item.DisplayClassId == "1236945684") continue; // explore tools
+                        if (item.ClassId == "2332967944" || item.DisplayClassId == "2332967944") continue; // schematics
+                        if (item.ClassId == "1315100172" || item.DisplayClassId == "1315100172") continue; // honeycomb materials category (has mass+volume, doh!)
+                        if (item.ClassId == "809433891" || item.DisplayClassId == "809433891") continue; // minable materials categories
                         if (Utils.LuaItems.ContainsKey(item.DisplayNameWithSize))
                         {
                             Debug.WriteLine("DUPLICATE: " + item.DisplayNameWithSize);
@@ -81,13 +86,16 @@ namespace DU_Industry_Tool
                     Console.WriteLine(e.Message);
                 }
             }
+            else
+            {
+                dmp = false;
+            }
 
-            if (false && File.Exists("recipes_api_dump.json"))
+            if (dmpRcp && File.Exists("recipes_api_dump.json"))
             {
                 try
                 {
                     var tmpItems = JsonConvert.DeserializeObject<List<DuLuaRecipe>>(File.ReadAllText("recipes_api_dump.json"));
-                    //dmpRcp = true;
                     Utils.LuaRecipes = new SortedDictionary<string, DuLuaRecipe>();
                     foreach (var item in tmpItems.Where(x => x.Products?.Count > 0 && !string.IsNullOrEmpty(x.Products[0].DisplayNameWithSize)))
                     {
@@ -104,6 +112,10 @@ namespace DU_Industry_Tool
                 {
                     Console.WriteLine(e.Message);
                 }
+            }
+            else
+            {
+                dmpRcp = false;
             }
 
             // Populate Keys, fix products and assign schematics
@@ -737,7 +749,13 @@ namespace DU_Industry_Tool
                         if (ulong.TryParse(kvp.Value.Id, out var uTmp))
                         {
                             rec.Value.NqId = uTmp;
-                            rec.Value.Id = uTmp;
+                            var luaRcp = Utils.LuaRecipes.FirstOrDefault(x =>
+                                x.Value.Products != null &&
+                                x.Value.Products[0].Id == uTmp);
+                            if (luaRcp.Value != null && ulong.TryParse(luaRcp.Value.Id, out uTmp))
+                            {
+                                rec.Value.Id = uTmp;
+                            }
                         }
                         continue;
                     }
@@ -868,10 +886,10 @@ namespace DU_Industry_Tool
                             {
                                 Debug.WriteLine("***** Ingredient: " + prodname);
                             }
-                            if ( (newRecipe.Name.IndexOf(" Antenna ", StringComparison.InvariantCulture) > -1) ||
+                            if (
+                                 (newRecipe.Name.IndexOf(" Antenna ", StringComparison.InvariantCulture) > -1) ||
                                  (newRecipe.Name.IndexOf(" Control System ", StringComparison.InvariantCulture) > -1) ||
                                  (newRecipe.Name.IndexOf(" Core System ", StringComparison.InvariantCulture) > -1) ||
-                                 (newRecipe.Name.IndexOf(" Firing System ", StringComparison.InvariantCulture) > -1) ||
                                  (newRecipe.Name.IndexOf(" Light ", StringComparison.InvariantCulture) > -1) ||
                                  (newRecipe.Name.IndexOf(" Mechanical Sensor ", StringComparison.InvariantCulture) > -1) ||
                                  (newRecipe.Name.IndexOf(" Motherboard ", StringComparison.InvariantCulture) > -1) ||
@@ -883,12 +901,22 @@ namespace DU_Industry_Tool
                             {
                                 newRecipe.GroupId = funcPartsId;
                                 newRecipe.ParentGroupName = "Functional Parts";
-                                newRecipe.Industry = "Electronics Industry M";
+                                //newRecipe.Industry = "Electronics Industry M";
+                            }
+                            else
+                            if ( 
+                                 (newRecipe.Name.IndexOf(" Firing System ", StringComparison.InvariantCulture) > -1) ||
+                                 false
+                                )
+                            {
+                                newRecipe.GroupId = funcPartsId;
+                                newRecipe.ParentGroupName = "Functional Parts";
+                                //newRecipe.Industry = "Metalwork Industry M";
                             }
                             else
                             if (newRecipe.Name.IndexOf(" Casing ", StringComparison.InvariantCulture) > -1)
                             {
-                                newRecipe.Industry = "Basic 3D Printer M";
+                                //newRecipe.Industry = "Basic 3D Printer M";
                             }
                             else
                             if (
@@ -898,7 +926,7 @@ namespace DU_Industry_Tool
                             {
                                 newRecipe.GroupId = new Guid("08d8a31f-4f99-4d0e-8eef-88178c97ce38");
                                 newRecipe.ParentGroupName = "Decorative Element";
-                                newRecipe.Industry = "Basic Assembly Line xs";
+                                //newRecipe.Industry = "Basic Assembly Line xs";
                             }
                             else
                             if (newRecipe.Name.IndexOf("Modern ", StringComparison.InvariantCultureIgnoreCase) != -1)
@@ -906,7 +934,7 @@ namespace DU_Industry_Tool
                                 var isTransp = (newRecipe.Key.IndexOf("Modern Transp",
                                     StringComparison.InvariantCultureIgnoreCase) != -1);
                                 var keyname = "modern" + (isTransp ? "transparent" : "") + "screen_2_";
-                                newRecipe.Industry = "Basic Assembly Line";
+                                //newRecipe.Industry = "Basic Assembly Line";
                                 if (newRecipe.Key.EndsWith(" xxxl", StringComparison.InvariantCultureIgnoreCase))
                                 {
                                     newRecipe.Industry += " XL";
@@ -978,9 +1006,9 @@ namespace DU_Industry_Tool
                                  false
                                  )
                             {
-                                newRecipe.Industry = "Metalworks";
                                 newRecipe.GroupId = new Guid("08d8a31f-5127-4f25-8138-779a7f0e5c8d");
                                 newRecipe.ParentGroupName = "Functional parts";
+                                //newRecipe.Industry = "Metalworks";
                             }
                             else
                             if ( 
@@ -992,9 +1020,9 @@ namespace DU_Industry_Tool
                             {
                                 newRecipe.SchemaType = "T1HP";
                                 newRecipe.SchemaPrice = 50;
-                                newRecipe.Industry = "Basic Honeycomb Refinery M";
                                 newRecipe.GroupId = new Guid("08d8a31f-508e-41db-8c89-308e391f5508");
                                 newRecipe.ParentGroupName = "Product Honeycomb Materials";
+                                //newRecipe.Industry = "Basic Honeycomb Refinery M";
                             }
                             else
                             if ( 
@@ -1004,9 +1032,9 @@ namespace DU_Industry_Tool
                             {
                                 newRecipe.SchemaType = "T1HP";
                                 newRecipe.SchemaPrice = 50;
-                                newRecipe.Industry = "Basic Glass Furnace M";
                                 newRecipe.GroupId = new Guid("08d8a31f-5086-41b0-8388-5a5244cc6060");
                                 newRecipe.ParentGroupName = "Product Honeycomb Materials";
+                                //newRecipe.Industry = "Basic Glass Furnace M";
                             }
 
                             if (string.IsNullOrEmpty(newRecipe.ParentGroupName))
@@ -1080,6 +1108,7 @@ namespace DU_Industry_Tool
             // 2nd check: any ingredient has circular reference to Key?
             //var removalEntries = DUData.Recipes.Where(x => x.Value.Ingredients?.Any(y => y.Type == x.Key) == true).ToList();
 
+            // ONLY uncomment if "RecipeGroups.json" should be overwritten everytime!
             //DUData.SaveRecipes();
 
             DUData.RecipeNames.AddRange(DUData.Recipes

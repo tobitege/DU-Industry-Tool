@@ -557,12 +557,22 @@
             "250",
             "500",
             "1000",
+            "2000",
             "5000",
-            "10000"});
+            "10000",
+            "20000",
+            "50000",
+            "100000",
+            "200000",
+            "500000",
+            "1000000",
+            "2000000",
+            "5000000",
+            "10000000" });
             this.QuantityBox.Location = new System.Drawing.Point(312, 6);
             this.QuantityBox.Margin = new System.Windows.Forms.Padding(4, 6, 0, 0);
-            this.QuantityBox.MaxDropDownItems = 12;
-            this.QuantityBox.MaxLength = 6;
+            this.QuantityBox.MaxDropDownItems = 15;
+            this.QuantityBox.MaxLength = 8;
             this.QuantityBox.Name = "QuantityBox";
             this.QuantityBox.Size = new System.Drawing.Size(67, 24);
             this.QuantityBox.TabIndex = 2;
