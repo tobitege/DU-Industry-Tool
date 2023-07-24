@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.4.1
+- Fixed: all industry for recipes should now be correct (on which something is produced)
+- Several more updates to production times
+
 ## v1.4.0
 - Added more default values to quantity search combobox
 - Updated recipes based on du-lua.dev recipes data of DU v1.4

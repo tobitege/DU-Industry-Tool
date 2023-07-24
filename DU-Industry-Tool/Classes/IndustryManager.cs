@@ -266,6 +266,13 @@ namespace DU_Industry_Tool
                         }
                         kvp.Value.Time = dmpItem.Value.Time;
 
+                        var tmp = dmpItem.Value.Producers?.FirstOrDefault()?.DisplayNameWithSize;
+                        if (!string.IsNullOrEmpty(tmp) && kvp.Value.Industry != tmp)
+                        {
+                            Debug.WriteLine($"{kvp.Value.Name} Industry {kvp.Value.Industry} to {tmp}");
+                            kvp.Value.Industry = tmp;
+                        }
+
                         if (kvp.Value.Nanocraftable != dmpItem.Value.Nanocraftable)
                         {
                             Debug.WriteLine($"{kvp.Value.Name} Nanocraftable {kvp.Value.Nanocraftable} to {dmpItem.Value.Nanocraftable}");
@@ -1050,7 +1057,7 @@ namespace DU_Industry_Tool
                             {
                                 Debug.WriteLine(newRecipe.Name + " -> industry = " + newRecipe.Industry);
                             }
-                            DUData.Recipes.Add(newRecipe.Key, newRecipe);
+                            //DUData.Recipes.Add(newRecipe.Key, newRecipe);
                             Debug.WriteLine("ADDED " + prodname);
                         }
                         else
@@ -1109,7 +1116,7 @@ namespace DU_Industry_Tool
             //var removalEntries = DUData.Recipes.Where(x => x.Value.Ingredients?.Any(y => y.Type == x.Key) == true).ToList();
 
             // ONLY uncomment if "RecipeGroups.json" should be overwritten everytime!
-            //DUData.SaveRecipes();
+            DUData.SaveRecipes();
 
             DUData.RecipeNames.AddRange(DUData.Recipes
                 .Where(x => !string.IsNullOrEmpty(x.Value.Industry) &&
