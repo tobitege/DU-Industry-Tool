@@ -19,20 +19,6 @@ namespace DU_Industry_Tool
         private float fontSize;
 
         private Random _rand;
-        private readonly string[] _funHints = new[]
-        {
-            "Loading data...",
-            "Grab a beer, brb...",
-            "Patience, youngling!",
-            "Git'in it done...",
-            "Out for lunch...",
-            "Checking mails...",
-            "Hold my beer...",
-            "Grabbing coffee...",
-            "Out shopping...",
-            "Mowing the lawn...",
-            "Come back later!",
-        };
 
         public bool IsProductionList { get; set; }
         public EventHandler RecalcProductionListClick { get; set; }
@@ -56,7 +42,7 @@ namespace DU_Industry_Tool
             // This can be called repeatedly for recalculation,
             // thus all the resetting of controls!
             _rand = new Random(DateTime.Now.Millisecond);
-            LblHint.Text = _funHints[_rand.Next(_funHints.Length)];
+            LblHint.Text = Utils.FunHints[_rand.Next(Utils.FunHints.Length)];
             LblHint.Show();
             treeListView.Visible = false;
             GridTalents.Visible = false;
@@ -64,10 +50,12 @@ namespace DU_Industry_Tool
             BtnSaveState.Visible = false;
             BtnToggleNodes.Visible = false;
             BtnRecalc.Visible = false;
-            lblCostFor1.Hide();
+            lblCostForBatch.Hide();
             lblCostValue.Hide();
             lblBasicCost.Hide();
             lblBasicCostValue.Hide();
+            lblCostSingle.Hide();
+            lblCostSingleValue.Hide();
             lblNano.Hide();
             pictureNano.Hide();
             lblUnitData.Hide();
@@ -204,13 +192,19 @@ namespace DU_Industry_Tool
 
             LblHint.Hide();
 
-            // Always show basic cost values
-            lblCostFor1.Show();
+            lblCostForBatch.Show();
             lblCostValue.Text = (calc.OreCost + calc.SchematicsCost).ToString("N2") +
                                 $" q (x{calc.Quantity:N2}"+
                                 (calc.IsBatchmode ? " / L" : "") + ")";
             lblBasicCost.Show();
             lblBasicCostValue.Text = $" {calc.OreCost:N2} q" + (calc.IsBatchmode ? " / L" : "");
+
+            if (calc.Quantity > 1)
+            {
+                lblCostSingle.Show();
+                lblCostSingleValue.Show();
+                lblCostSingleValue.Text = ((calc.OreCost + calc.SchematicsCost) / calc.Quantity).ToString("N2") + " q ";
+            }
 
             // Prepare talents grid and only show Recalculate button if any exist
             GridTalents.Rows.Clear();
@@ -221,10 +215,11 @@ namespace DU_Industry_Tool
                              .Where(talent => talent != null))
                 {
                     GridTalents.Rows.Add(CreateTalentsRow(talent));
+                    GridTalents.Rows[GridTalents.Rows.Count - 1].Height = 26;
                 }
-                GridTalents.Columns[1].Width = 50;
                 GridTalents.CellEndEdit += GridTalentsOnCellEndEdit;
             }
+
             GridTalents.Visible = GridTalents.RowCount > 0;
             BtnRecalc.Visible = GridTalents.Visible;
 
@@ -392,8 +387,7 @@ namespace DU_Industry_Tool
 
         private static DataGridViewRow CreateTalentsRow(Talent talent)
         {
-            var row = new DataGridViewRow();
-            row.Height = 32;
+            var row = new DataGridViewRow { Height = 32 };
             row.Cells.Add(new DataGridViewTextBoxCell());
             row.Cells.Add(new KryptonDataGridViewNumericUpDownCell());
             row.Cells[0].ValueType = typeof(string);

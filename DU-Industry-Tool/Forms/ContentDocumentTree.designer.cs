@@ -76,11 +76,13 @@ namespace DU_Industry_Tool
             this.lblPerIndustryValue = new DU_Industry_Tool.KLinkLabel();
             this.lblBasicCostValue = new DU_Industry_Tool.KLabel();
             this.lblCostValue = new DU_Industry_Tool.KLabel();
+            this.lblCostSingle = new DU_Industry_Tool.KLabel();
+            this.lblCostSingleValue = new DU_Industry_Tool.KLabel();
             this.lblIndustry = new DU_Industry_Tool.KLabel();
             this.lblNano = new DU_Industry_Tool.KLabel();
             this.lblPerIndustry = new DU_Industry_Tool.KLabel();
             this.lblBasicCost = new DU_Industry_Tool.KLabel();
-            this.lblCostFor1 = new DU_Industry_Tool.KLabel();
+            this.lblCostForBatch = new DU_Industry_Tool.KLabel();
             this.lblUnitData = new DU_Industry_Tool.KLabel();
             ((System.ComponentModel.ISupportInitialize)(this.kryptonPanel)).BeginInit();
             this.kryptonPanel.SuspendLayout();
@@ -343,12 +345,14 @@ namespace DU_Industry_Tool
             this.kryptonHeaderGroup1.Panel.Controls.Add(this.lblPerIndustryValue);
             this.kryptonHeaderGroup1.Panel.Controls.Add(this.lblBasicCostValue);
             this.kryptonHeaderGroup1.Panel.Controls.Add(this.lblCostValue);
+            this.kryptonHeaderGroup1.Panel.Controls.Add(this.lblCostSingle);
+            this.kryptonHeaderGroup1.Panel.Controls.Add(this.lblCostSingleValue);
             this.kryptonHeaderGroup1.Panel.Controls.Add(this.lblIndustry);
             this.kryptonHeaderGroup1.Panel.Controls.Add(this.pictureNano);
             this.kryptonHeaderGroup1.Panel.Controls.Add(this.lblNano);
             this.kryptonHeaderGroup1.Panel.Controls.Add(this.lblPerIndustry);
             this.kryptonHeaderGroup1.Panel.Controls.Add(this.lblBasicCost);
-            this.kryptonHeaderGroup1.Panel.Controls.Add(this.lblCostFor1);
+            this.kryptonHeaderGroup1.Panel.Controls.Add(this.lblCostForBatch);
             this.kryptonHeaderGroup1.Panel.Controls.Add(this.lblUnitData);
             this.kryptonHeaderGroup1.Panel.Controls.Add(this.GridTalents);
             this.kryptonHeaderGroup1.Size = new System.Drawing.Size(1103, 330);
@@ -443,22 +447,23 @@ namespace DU_Industry_Tool
             this.GridTalents.AllowUserToAddRows = false;
             this.GridTalents.AllowUserToDeleteRows = false;
             this.GridTalents.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
-            this.GridTalents.AutoSizeRowsMode = System.Windows.Forms.DataGridViewAutoSizeRowsMode.AllHeaders;
+            this.GridTalents.AutoSizeRowsMode = System.Windows.Forms.DataGridViewAutoSizeRowsMode.None;// AllHeaders;
             this.GridTalents.ColumnHeadersHeight = 32;
             this.GridTalents.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.ColTitle,
             this.ColValue});
+            this.GridTalents.DefaultCellStyle.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.GridTalents.EditMode = System.Windows.Forms.DataGridViewEditMode.EditOnEnter;
             this.GridTalents.Location = new System.Drawing.Point(4, 128);
             this.GridTalents.MultiSelect = false;
             this.GridTalents.Name = "GridTalents";
-            this.GridTalents.RowHeadersWidth = 30;
             dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
             this.GridTalents.RowsDefaultCellStyle = dataGridViewCellStyle2;
-            this.GridTalents.RowTemplate.DefaultCellStyle.Alignment = System.Windows.Forms.DataGridViewContentAlignment.TopLeft;
-            this.GridTalents.RowTemplate.DefaultCellStyle.Font = new System.Drawing.Font("Segoe UI", 8.765218F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.GridTalents.RowTemplate.DefaultCellStyle.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.GridTalents.RowTemplate.Height = 30;
+            //this.GridTalents.RowTemplate.DefaultCellStyle.Alignment = System.Windows.Forms.DataGridViewContentAlignment.TopLeft;
+            //this.GridTalents.RowTemplate.DefaultCellStyle.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            //this.GridTalents.RowTemplate.DefaultCellStyle.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.GridTalents.RowTemplate.Height = 16;
+            //this.GridTalents.RowTemplate.MinimumHeight = 20;
             this.GridTalents.RowTemplate.ReadOnly = true;
             this.GridTalents.RowTemplate.Resizable = System.Windows.Forms.DataGridViewTriState.True;
             this.GridTalents.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
@@ -496,7 +501,7 @@ namespace DU_Industry_Tool
             this.ColValue.MinimumWidth = 50;
             this.ColValue.Name = "ColValue";
             this.ColValue.Resizable = System.Windows.Forms.DataGridViewTriState.False;
-            this.ColValue.Width = 140;
+            this.ColValue.Width = 50;
             // 
             // OreImageList
             // 
@@ -586,7 +591,7 @@ namespace DU_Industry_Tool
             this.LblPureValue.Location = new System.Drawing.Point(504, 68);
             this.LblPureValue.Name = "LblPureValue";
             this.LblPureValue.Size = new System.Drawing.Size(30, 23);
-            this.LblPureValue.TabIndex = 27;
+            this.LblPureValue.TabIndex = 26;
             this.LblPureValue.Text = "0 L";
             this.LblPureValue.Values.Text = "0 L";
             // 
@@ -595,7 +600,7 @@ namespace DU_Industry_Tool
             this.LblBatchSizeValue.Location = new System.Drawing.Point(504, 42);
             this.LblBatchSizeValue.Name = "LblBatchSizeValue";
             this.LblBatchSizeValue.Size = new System.Drawing.Size(30, 23);
-            this.LblBatchSizeValue.TabIndex = 26;
+            this.LblBatchSizeValue.TabIndex = 27;
             this.LblBatchSizeValue.Text = "0 L";
             this.LblBatchSizeValue.Values.Text = "0 L";
             // 
@@ -627,15 +632,6 @@ namespace DU_Industry_Tool
             this.lblDefaultCraftTime.Text = "Default refine time: ";
             this.lblDefaultCraftTime.Values.Text = "Default refine time: ";
             // 
-            // lblIndustryValue
-            // 
-            this.lblIndustryValue.Location = new System.Drawing.Point(98, 67);
-            this.lblIndustryValue.Name = "lblIndustryValue";
-            this.lblIndustryValue.Size = new System.Drawing.Size(17, 23);
-            this.lblIndustryValue.TabIndex = 14;
-            this.lblIndustryValue.Text = "-";
-            this.lblIndustryValue.Values.Text = "-";
-            // 
             // lblPerIndustryValue
             // 
             this.lblPerIndustryValue.Location = new System.Drawing.Point(504, 12);
@@ -646,35 +642,6 @@ namespace DU_Industry_Tool
             this.lblPerIndustryValue.Values.Text = "0 / day";
             this.lblPerIndustryValue.Click += new System.EventHandler(this.LblPerIndustryValue_Click);
             // 
-            // lblBasicCostValue
-            // 
-            this.lblBasicCostValue.Location = new System.Drawing.Point(98, 40);
-            this.lblBasicCostValue.Name = "lblBasicCostValue";
-            this.lblBasicCostValue.Size = new System.Drawing.Size(31, 23);
-            this.lblBasicCostValue.TabIndex = 12;
-            this.lblBasicCostValue.Text = "0 q";
-            this.toolTip1.SetToolTip(this.lblBasicCostValue, "Ore cost without schematics");
-            this.lblBasicCostValue.Values.Text = "0 q";
-            // 
-            // lblCostValue
-            // 
-            this.lblCostValue.LabelStyle = Krypton.Toolkit.LabelStyle.BoldControl;
-            this.lblCostValue.Location = new System.Drawing.Point(98, 12);
-            this.lblCostValue.Name = "lblCostValue";
-            this.lblCostValue.Size = new System.Drawing.Size(17, 23);
-            this.lblCostValue.TabIndex = 11;
-            this.lblCostValue.Text = "_";
-            this.lblCostValue.Values.Text = "_";
-            // 
-            // lblIndustry
-            // 
-            this.lblIndustry.Location = new System.Drawing.Point(4, 68);
-            this.lblIndustry.Name = "lblIndustry";
-            this.lblIndustry.Size = new System.Drawing.Size(66, 23);
-            this.lblIndustry.TabIndex = 10;
-            this.lblIndustry.Text = "Industry: ";
-            this.lblIndustry.Values.Text = "Industry: ";
-            // 
             // lblNano
             // 
             this.lblNano.Location = new System.Drawing.Point(750, 12);
@@ -684,14 +651,24 @@ namespace DU_Industry_Tool
             this.lblNano.Text = "Nanocraftable";
             this.lblNano.Values.Text = "Nanocraftable";
             // 
-            // lblPerIndustry
+            // lblCostForBatch
             // 
-            this.lblPerIndustry.Location = new System.Drawing.Point(330, 12);
-            this.lblPerIndustry.Name = "lblPerIndustry";
-            this.lblPerIndustry.Size = new System.Drawing.Size(87, 23);
-            this.lblPerIndustry.TabIndex = 7;
-            this.lblPerIndustry.Text = "Per Industry";
-            this.lblPerIndustry.Values.Text = "Per Industry";
+            this.lblCostForBatch.Location = new System.Drawing.Point(4, 12);
+            this.lblCostForBatch.Name = "lblCostForBatch";
+            this.lblCostForBatch.Size = new System.Drawing.Size(78, 23);
+            this.lblCostForBatch.TabIndex = 4;
+            this.lblCostForBatch.Text = "Total Cost: ";
+            this.lblCostForBatch.Values.Text = "Total Cost: ";
+            // 
+            // lblCostValue
+            // 
+            this.lblCostValue.LabelStyle = Krypton.Toolkit.LabelStyle.BoldControl;
+            this.lblCostValue.Location = new System.Drawing.Point(98, 12);
+            this.lblCostValue.Name = "lblCostValue";
+            this.lblCostValue.Size = new System.Drawing.Size(17, 23);
+            this.lblCostValue.TabIndex = 11;
+            this.lblCostValue.Text = "-";
+            this.lblCostValue.Values.Text = "-";
             // 
             // lblBasicCost
             // 
@@ -702,14 +679,62 @@ namespace DU_Industry_Tool
             this.lblBasicCost.Text = "Basic Cost: ";
             this.lblBasicCost.Values.Text = "Basic Cost: ";
             // 
-            // lblCostFor1
+            // lblBasicCostValue
             // 
-            this.lblCostFor1.Location = new System.Drawing.Point(4, 12);
-            this.lblCostFor1.Name = "lblCostFor1";
-            this.lblCostFor1.Size = new System.Drawing.Size(78, 23);
-            this.lblCostFor1.TabIndex = 4;
-            this.lblCostFor1.Text = "Total Cost: ";
-            this.lblCostFor1.Values.Text = "Total Cost: ";
+            this.lblBasicCostValue.Location = new System.Drawing.Point(98, 40);
+            this.lblBasicCostValue.Name = "lblBasicCostValue";
+            this.lblBasicCostValue.Size = new System.Drawing.Size(31, 23);
+            this.lblBasicCostValue.TabIndex = 12;
+            this.lblBasicCostValue.Text = "0 q";
+            this.toolTip1.SetToolTip(this.lblBasicCostValue, "Ore cost without schematics");
+            this.lblBasicCostValue.Values.Text = "0 q";
+
+            // 
+            // lblCostSingle
+            // 
+            this.lblCostSingle.Location = new System.Drawing.Point(4, 68);
+            this.lblCostSingle.Name = "lblCostSingle";
+            this.lblCostSingle.Size = new System.Drawing.Size(78, 23);
+            this.lblCostSingle.TabIndex = 4;
+            this.lblCostSingle.Text = "Cost for 1: ";
+            this.lblCostSingle.Values.Text = "Cost for 1: ";
+            // 
+            // lblCostSingleValue
+            // 
+            this.lblCostSingleValue.Location = new System.Drawing.Point(98, 68);
+            this.lblCostSingleValue.Name = "lblCostSingleValue";
+            this.lblCostSingleValue.Size = new System.Drawing.Size(17, 23);
+            this.lblCostSingleValue.TabIndex = 11;
+            this.lblCostSingleValue.Text = "-";
+            this.lblCostSingleValue.Values.Text = "-";
+
+            // 
+            // lblIndustry
+            // 
+            this.lblIndustry.Location = new System.Drawing.Point(4, 92);
+            this.lblIndustry.Name = "lblIndustry";
+            this.lblIndustry.Size = new System.Drawing.Size(66, 23);
+            this.lblIndustry.TabIndex = 10;
+            this.lblIndustry.Text = "Industry: ";
+            this.lblIndustry.Values.Text = "Industry: ";
+            // 
+            // lblIndustryValue
+            // 
+            this.lblIndustryValue.Location = new System.Drawing.Point(98, 92);
+            this.lblIndustryValue.Name = "lblIndustryValue";
+            this.lblIndustryValue.Size = new System.Drawing.Size(17, 23);
+            this.lblIndustryValue.TabIndex = 14;
+            this.lblIndustryValue.Text = "-";
+            this.lblIndustryValue.Values.Text = "-";
+            // 
+            // lblPerIndustry
+            // 
+            this.lblPerIndustry.Location = new System.Drawing.Point(330, 12);
+            this.lblPerIndustry.Name = "lblPerIndustry";
+            this.lblPerIndustry.Size = new System.Drawing.Size(87, 23);
+            this.lblPerIndustry.TabIndex = 7;
+            this.lblPerIndustry.Text = "Per Industry";
+            this.lblPerIndustry.Values.Text = "Per Industry";
             // 
             // lblUnitData
             // 
@@ -722,11 +747,11 @@ namespace DU_Industry_Tool
             // 
             // ContentDocumentTree
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 18F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.kryptonPanel);
             this.DoubleBuffered = true;
-            this.Font = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.Font = new System.Drawing.Font("Segoe UI", 9.0F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "ContentDocumentTree";
             this.Size = new System.Drawing.Size(1103, 795);
@@ -762,7 +787,7 @@ namespace DU_Industry_Tool
         private BrightIdeasSoftware.OLVColumn olvColumnFiller;
         private System.Windows.Forms.ToolTip toolTip1;
         private KLabel lblUnitData;
-        private KLabel lblCostFor1;
+        private KLabel lblCostForBatch;
         private KLabel lblPerIndustry;
         private KLabel lblBasicCost;
         private ImageList largeImageList;
@@ -771,6 +796,8 @@ namespace DU_Industry_Tool
         private KLabel lblNano;
         private KLabel lblIndustry;
         private KLabel lblCostValue;
+        private KLabel lblCostSingle;
+        private KLabel lblCostSingleValue;
         private KLabel lblBasicCostValue;
         private KLinkLabel lblPerIndustryValue;
         private KLinkLabel lblIndustryValue;

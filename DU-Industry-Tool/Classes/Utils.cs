@@ -116,5 +116,20 @@ namespace DU_Industry_Tool
         {
             return (Math.Abs(a * b) + a) % b;
         }
+
+        public static string[] FunHints = new[]
+        {
+            "Loading data...",
+            "Grab a beer, brb...",
+            "Patience, youngling!",
+            "Git'in it done...",
+            "Out for lunch...",
+            "Checking mails...",
+            "Hold my beer...",
+            "Grabbing coffee...",
+            "Out shopping...",
+            "Mowing the lawn...",
+            "Come back later!",
+        };
     }
 }
