@@ -986,14 +986,14 @@ namespace DU_Industry_Tool
             SaveSettings();
         }
 
-        private void CmbThemes_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
-        {
-            var idx = ((KryptonThemeComboBox)CmbThemes.CustomControl).ThemeSelectedIndex;
-            if (idx >= 0)
-            {
-                kryptonManager.GlobalPaletteMode = (PaletteModeManager)idx;
-            }
-        }
+        //private void CmbThemes_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        //{
+        //    var idx = ((KryptonThemeComboBox)CmbThemes.CustomControl).ThemeSelectedIndex;
+        //    if (idx >= 0)
+        //    {
+        //        kryptonManager.GlobalPaletteMode = (PaletteModeManager)idx;
+        //    }
+        //}
 
         #endregion
 

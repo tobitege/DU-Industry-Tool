@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.4.3
+- Resized search controls for better readability
+
 ## v1.4.2
 - Added "Cost for 1" to results
 - Adjusted "Related Talents" display
