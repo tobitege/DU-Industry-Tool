@@ -166,6 +166,8 @@ namespace DU_Industry_Tool
                         prod.Quantity = prodItem.Quantity;
                         prod.Level = calc.Tier;
                         prod.SchemaType = calc.SchematicType;
+                        prod.Mass += prodItem.Quantity * (calc.Recipe.UnitMass ?? 0);
+                        prod.Volume += prodItem.Quantity * (calc.Recipe.UnitVolume ?? 0);
                         // TODO check why BatchOutput is occasionally null here
                         var batchOutput = calc.IsBatchmode ? (decimal)(calc.BatchOutput) : prod.Quantity;
                         if (calc.CalcSchematicFromQty(prod.SchemaType, prod.Quantity, batchOutput,

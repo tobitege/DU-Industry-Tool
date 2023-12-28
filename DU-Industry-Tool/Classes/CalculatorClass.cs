@@ -631,6 +631,8 @@ namespace DU_Industry_Tool
         public string Key { get; }
         public byte Tier { get; set; }
         public decimal OreCost { get; set; }
+        public decimal Volume { get; set; }
+        public decimal Mass { get; set; }
         public bool Collected { get; set; }
 
         public decimal SchematicsCost { get; protected set; }

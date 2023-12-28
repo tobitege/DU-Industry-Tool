@@ -358,6 +358,8 @@ namespace DU_Industry_Tool
 
                 olvColumnQty.AspectGetter = x => (x is RecipeCalculation t && t.Qty > 0 ? $"{t.Qty:N2}" : "");
                 olvColumnAmt.AspectGetter = x => (x is RecipeCalculation t && t.Amt > 0 ? $"{t.Amt:N2}" : "");
+                olvColumnMass.AspectGetter = x => (x is RecipeCalculation t && t.Mass > 0 ? $"{t.Mass:N3}" : "");
+                olvColumnVol.AspectGetter = x => (x is RecipeCalculation t && t.Vol > 0 ? $"{t.Vol:N3}" : "");
 
                 olvColumnSchemataQ.AspectGetter = x => (x is RecipeCalculation t && t.QtySchemata > 0 
                     ? (DUData.FullSchematicQuantities ? $"{t.QtySchemata:N0}" : $"{t.QtySchemata:N2}") 

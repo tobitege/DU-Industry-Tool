@@ -1,5 +1,6 @@
 ## Release edition
-- v1.0.0 requires .NET Framework 4.8.1 from here: https://dotnet.microsoft.com/en-us/download/dotnet-framework/thank-you/net481-web-installer
+
+- v1.0+ requires .NET Framework 4.8.1 from here: https://dotnet.microsoft.com/en-us/download/dotnet-framework/thank-you/net481-web-installer
 - Maintained by tobitege since v0.5+ by tobitege (https://github.com/tobitege/DU-Industry-Tool)
 - Major updates to recipes to be current as of 2022-11-19.
 - User interface completely overhauled with tree-display of all ingredients and schematics.
@@ -18,15 +19,16 @@ Binary releases available here:
 https://github.com/tobitege/DU-Industry-Tool/releases
 
 # DU-Industry-Tool
+
 Basic WinForms project that allows you to view calculated values of all known in-game recipes. Has search bar, and ability to drill down through intermediates to find their recipes as well
 
 GIF showing functionality
 https://gyazo.com/a8740425ac2fe244d87e87980c16a2cf
 
-
 # Older releases < v1.x are no longer maintained
 
 Anyone could add the mining units or other new items, it's just a json file - but please share it, either through a fork or a PR.  Either add the new stuff manually, or:
+
 1. Do a hyperion export of all item NqRecipeId's for all items (particularly the new ones), along with Name
 2. Create a lua script to run core.getSchematicInfo(id) for every NqRecipeId.  Store all the data it gives you, and export it to json when done (writing to logfile is usually best to be able to copy it out)
 3. Do a hyperion export of all item Groups (it's a separate category in lua export), the GroupId and ParentGroupId (see: Groups.json in this repo, but there may be new ones)

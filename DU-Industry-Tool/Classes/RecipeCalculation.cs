@@ -120,6 +120,30 @@ namespace DU_Industry_Tool
         }
         private decimal amt;
 
+        public decimal Mass
+        {
+            get => mass;
+            set
+            {
+                if (mass.IsEqual(value)) return;
+                mass = value;
+                OnPropertyChanged("Mass");
+            }
+        }
+        private decimal mass;
+
+        public decimal Vol
+        {
+            get => vol;
+            set
+            {
+                if (vol.IsEqual(value)) return;
+                vol = value;
+                OnPropertyChanged("Vol");
+            }
+        }
+        private decimal vol;
+
         public decimal? QtySchemata
         {
             get => qtySchemata;
@@ -199,12 +223,12 @@ namespace DU_Industry_Tool
                     return children;
                 foreach (var prd in calc.Recipe.Products)
                 {
-                    var copyTime = "";
+                    //var copyTime = "";
                     var amtS = 0m;
                     var s = DUData.Schematics.FirstOrDefault(x => x.Key == prd.SchemaType).Value;
                     if (s != null && Calculator.CalcSchematic(s.Key, prd.SchemaQty, out amtS, out _, out var copies))
                     {
-                        copyTime = " C: " + Utils.GetReadableTime(copies * s.BatchTime);
+                        //copyTime = " C: " + Utils.GetReadableTime(copies * s.BatchTime);
                     }
                     var child = new RecipeCalculation(Section, null)
                     {
@@ -214,6 +238,8 @@ namespace DU_Industry_Tool
                         Tier = prd.Level,
                         QtySchemata = prd.SchemaQty,
                         AmtSchemata = amtS,
+                        Mass = Math.Round(prd.Mass / 1000, 3),
+                        Vol = Math.Round(prd.Volume / 1000, 3),
                         comment = prd.IsByproduct ? "Byproduct" : prd.SchemaType + (prd.SchemaQty > 0 ? " (cost broken down)" : "")
                     };
                     children.Add(child);

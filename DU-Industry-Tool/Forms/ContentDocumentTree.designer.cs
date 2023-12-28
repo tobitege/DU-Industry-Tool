@@ -41,6 +41,8 @@ namespace DU_Industry_Tool
             this.olvColumnTier = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
             this.olvColumnQty = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
             this.olvColumnAmt = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
+            this.olvColumnMass = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
+            this.olvColumnVol = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
             this.olvColumnSchemataQ = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
             this.olvColumnSchemataA = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
             this.olvColumnFiller = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
@@ -114,6 +116,8 @@ namespace DU_Industry_Tool
             this.treeListView.AllColumns.Add(this.olvColumnTier);
             this.treeListView.AllColumns.Add(this.olvColumnQty);
             this.treeListView.AllColumns.Add(this.olvColumnAmt);
+            this.treeListView.AllColumns.Add(this.olvColumnMass);
+            this.treeListView.AllColumns.Add(this.olvColumnVol);
             this.treeListView.AllColumns.Add(this.olvColumnSchemataQ);
             this.treeListView.AllColumns.Add(this.olvColumnSchemataA);
             this.treeListView.AllColumns.Add(this.olvColumnFiller);
@@ -129,6 +133,8 @@ namespace DU_Industry_Tool
             this.olvColumnTier,
             this.olvColumnQty,
             this.olvColumnAmt,
+            this.olvColumnMass,
+            this.olvColumnVol,
             this.olvColumnSchemataQ,
             this.olvColumnSchemataA,
             this.olvColumnFiller});
@@ -231,6 +237,32 @@ namespace DU_Industry_Tool
             this.olvColumnAmt.Text = "Amt (q)";
             this.olvColumnAmt.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.olvColumnAmt.Width = 120;
+            // 
+            // olvColumnVol
+            // 
+            this.olvColumnVol.AspectName = "Vol.";
+            this.olvColumnVol.Groupable = false;
+            this.olvColumnVol.HeaderTextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.olvColumnVol.Hideable = false;
+            this.olvColumnVol.IsEditable = false;
+            this.olvColumnVol.MinimumWidth = 50;
+            this.olvColumnVol.Sortable = false;
+            this.olvColumnVol.Text = "Vol (KL)";
+            this.olvColumnVol.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.olvColumnVol.Width = 120;
+            // 
+            // olvColumnMass
+            // 
+            this.olvColumnMass.AspectName = "Mass";
+            this.olvColumnMass.Groupable = false;
+            this.olvColumnMass.HeaderTextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.olvColumnMass.Hideable = false;
+            this.olvColumnMass.IsEditable = false;
+            this.olvColumnMass.MinimumWidth = 50;
+            this.olvColumnMass.Sortable = false;
+            this.olvColumnMass.Text = "Mass (t)";
+            this.olvColumnMass.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.olvColumnMass.Width = 120;
             // 
             // olvColumnSchemataQ
             // 
@@ -784,6 +816,8 @@ namespace DU_Industry_Tool
         private BrightIdeasSoftware.OLVColumn olvColumnAmt;
         private BrightIdeasSoftware.OLVColumn olvColumnSchemataQ;
         private BrightIdeasSoftware.OLVColumn olvColumnSchemataA;
+        private BrightIdeasSoftware.OLVColumn olvColumnMass;
+        private BrightIdeasSoftware.OLVColumn olvColumnVol;
         private BrightIdeasSoftware.OLVColumn olvColumnFiller;
         private System.Windows.Forms.ToolTip toolTip1;
         private KLabel lblUnitData;

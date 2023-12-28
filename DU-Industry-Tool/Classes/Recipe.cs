@@ -258,6 +258,10 @@ namespace DU_Industry_Tool
         public decimal SchemaAmt { get; set; }
         [JsonIgnore]
         public bool IsByproduct { get; set; }
+        [JsonIgnore]
+        public decimal Mass { get; set; }
+        [JsonIgnore]
+        public decimal Volume { get; set; }
 
         public ProductDetail() {}
 
