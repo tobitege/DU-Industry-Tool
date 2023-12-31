@@ -199,7 +199,7 @@ namespace DU_Industry_Tool
                 batches = ProductQuantity / (decimal)calc.BatchOutput;
                 if (DUData.FullSchematicQuantities)
                 {
-                    batches = Math.Floor(batches);
+                    batches = Math.Max(1, Math.Floor(batches));
                 }
             }
             if (CalcSchematic(calc.SchematicType, (int)batches, out var minCost, out _, out _))

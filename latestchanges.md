@@ -1,5 +1,9 @@
 # Latest Changes
 
+## v2024.1.2
+
+- Fix: if quantity is below batch output, use at least 1 schematic for products/ammo, still
+
 ## v2024.1.1
 
 - Finally fixed ammo calculations (min. batch output size of 40)
