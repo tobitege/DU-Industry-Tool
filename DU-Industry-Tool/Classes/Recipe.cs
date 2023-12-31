@@ -24,6 +24,7 @@ namespace DU_Industry_Tool
                 _parentGroupName = value;
                 if (string.IsNullOrEmpty(_parentGroupName))
                 {
+                    IsAmmo = false;
                     IsOre = false;
                     IsPart = false;
                     IsPure = false;
@@ -37,10 +38,13 @@ namespace DU_Industry_Tool
                            _parentGroupName.Equals("Consumables");
                 IsPure = _parentGroupName.Equals("Pure");
                 IsProduct = _parentGroupName.Equals("Product") || _parentGroupName.Equals("Refined Materials");
+                IsAmmo = _parentGroupName.IndexOf(" ammo", StringComparison.InvariantCultureIgnoreCase) > 0;
                 IsFuel = _parentGroupName.Equals("Fuels");
             }
         }
 
+        [JsonIgnore]
+        public bool IsAmmo { get; protected set; }
         [JsonIgnore]
         public bool IsOre { get; protected set; }
         [JsonIgnore]
@@ -54,7 +58,7 @@ namespace DU_Industry_Tool
         [JsonIgnore]
         public bool IsFuel { get; protected set; }
         [JsonIgnore]
-        public bool IsBatchmode => IsOre || IsPure || IsProduct || IsFuel;
+        public bool IsBatchmode => IsOre || IsPure || IsProduct || IsFuel || IsAmmo;
     }
 
     public class SchematicRecipe : ProductNameClass
@@ -229,9 +233,16 @@ namespace DU_Industry_Tool
             BatchTime = recipe.Time;
             if (!recipe.IsBatchmode || recipe.IsOre) return result;
 
-            BatchInput = (recipe.IsProduct ? 100 : 65) * inputMultiplier + inputAdder;
-            BatchOutput = (recipe.IsProduct ? 75 : 45) * outputMultiplier + outputAdder;
-
+            if (recipe.IsAmmo)
+            {
+                BatchInput = inputMultiplier + inputAdder;
+                BatchOutput = 40 * outputMultiplier + outputAdder;
+            }
+            else
+            {
+                BatchInput = (recipe.IsProduct ? 100 : 65) * inputMultiplier + inputAdder;
+                BatchOutput = (recipe.IsProduct ? 75 : 45) * outputMultiplier + outputAdder;
+            }
             if (recipe.Time > 0)
             {
                 BatchTime = recipe.Time * (EfficencyFactor ?? 1);

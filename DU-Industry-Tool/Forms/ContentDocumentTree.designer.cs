@@ -148,7 +148,7 @@ namespace DU_Industry_Tool
             this.treeListView.HideSelection = false;
             this.treeListView.IsSearchOnSortColumn = false;
             this.treeListView.LargeImageList = this.largeImageList;
-            this.treeListView.Location = new System.Drawing.Point(0, 335);
+            this.treeListView.Location = new System.Drawing.Point(0, 360);
             this.treeListView.Margin = new System.Windows.Forms.Padding(2);
             this.treeListView.MinimumSize = new System.Drawing.Size(350, 171);
             this.treeListView.MultiSelect = false;
@@ -160,7 +160,7 @@ namespace DU_Industry_Tool
             this.treeListView.ShowGroups = false;
             this.treeListView.ShowImagesOnSubItems = true;
             this.treeListView.ShowItemCountOnGroups = true;
-            this.treeListView.Size = new System.Drawing.Size(1102, 459);
+            this.treeListView.Size = new System.Drawing.Size(1102, 434);
             this.treeListView.SmallImageList = this.smallImageList;
             this.treeListView.TabIndex = 2;
             this.treeListView.UseCompatibleStateImageBehavior = false;
@@ -387,7 +387,7 @@ namespace DU_Industry_Tool
             this.kryptonHeaderGroup1.Panel.Controls.Add(this.lblCostForBatch);
             this.kryptonHeaderGroup1.Panel.Controls.Add(this.lblUnitData);
             this.kryptonHeaderGroup1.Panel.Controls.Add(this.GridTalents);
-            this.kryptonHeaderGroup1.Size = new System.Drawing.Size(1103, 330);
+            this.kryptonHeaderGroup1.Size = new System.Drawing.Size(1103, 355);
             this.kryptonHeaderGroup1.TabIndex = 2;
             this.kryptonHeaderGroup1.ValuesPrimary.Heading = "Calculation";
             this.kryptonHeaderGroup1.ValuesPrimary.Image = null;
@@ -486,7 +486,7 @@ namespace DU_Industry_Tool
             this.ColValue});
             this.GridTalents.DefaultCellStyle.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.GridTalents.EditMode = System.Windows.Forms.DataGridViewEditMode.EditOnEnter;
-            this.GridTalents.Location = new System.Drawing.Point(4, 128);
+            this.GridTalents.Location = new System.Drawing.Point(4, 150);
             this.GridTalents.MultiSelect = false;
             this.GridTalents.Name = "GridTalents";
             dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
@@ -501,7 +501,7 @@ namespace DU_Industry_Tool
             this.GridTalents.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.GridTalents.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.CellSelect;
             this.GridTalents.ShowEditingIcon = false;
-            this.GridTalents.Size = new System.Drawing.Size(492, 153);
+            this.GridTalents.Size = new System.Drawing.Size(492, 160);
             this.GridTalents.StateSelected.DataCell.Border.Color1 = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(128)))), ((int)(((byte)(0)))));
             this.GridTalents.StateSelected.DataCell.Border.DrawBorders = ((Krypton.Toolkit.PaletteDrawBorders)((((Krypton.Toolkit.PaletteDrawBorders.Top | Krypton.Toolkit.PaletteDrawBorders.Bottom) 
             | Krypton.Toolkit.PaletteDrawBorders.Left) 
@@ -564,7 +564,7 @@ namespace DU_Industry_Tool
             // 
             // lblBatches
             // 
-            this.lblBatches.Location = new System.Drawing.Point(330, 96);
+            this.lblBatches.Location = new System.Drawing.Point(330, 120);
             this.lblBatches.Name = "lblBatches";
             this.lblBatches.Size = new System.Drawing.Size(63, 23);
             this.lblBatches.TabIndex = 34;
@@ -573,7 +573,7 @@ namespace DU_Industry_Tool
             // 
             // lblBatchesValue
             // 
-            this.lblBatchesValue.Location = new System.Drawing.Point(504, 96);
+            this.lblBatchesValue.Location = new System.Drawing.Point(504, 120);
             this.lblBatchesValue.Name = "lblBatchesValue";
             this.lblBatchesValue.Size = new System.Drawing.Size(17, 23);
             this.lblBatchesValue.TabIndex = 33;
@@ -582,7 +582,7 @@ namespace DU_Industry_Tool
             // 
             // lblCraftTimeInfoValue
             // 
-            this.lblCraftTimeInfoValue.Location = new System.Drawing.Point(750, 96);
+            this.lblCraftTimeInfoValue.Location = new System.Drawing.Point(504, 96);
             this.lblCraftTimeInfoValue.Name = "lblCraftTimeInfoValue";
             this.lblCraftTimeInfoValue.Size = new System.Drawing.Size(17, 23);
             this.lblCraftTimeInfoValue.TabIndex = 32;
@@ -590,24 +590,43 @@ namespace DU_Industry_Tool
             this.toolTip1.SetToolTip(this.lblCraftTimeInfoValue, "Remaining quantity that is below batch input volume.");
             this.lblCraftTimeInfoValue.Values.Text = "_";
             // 
-            // lblCraftTime
+            // lblDefaultCraftTime
             // 
-            this.lblCraftTime.Location = new System.Drawing.Point(750, 68);
-            this.lblCraftTime.Name = "lblCraftTime";
-            this.lblCraftTime.Size = new System.Drawing.Size(116, 23);
-            this.lblCraftTime.TabIndex = 30;
-            this.lblCraftTime.Text = "Production time: ";
-            this.lblCraftTime.Values.Text = "Production time: ";
+            this.lblDefaultCraftTime.Location = new System.Drawing.Point(750, 68);
+            this.lblDefaultCraftTime.Name = "lblDefaultCraftTime";
+            this.lblDefaultCraftTime.Size = new System.Drawing.Size(133, 23);
+            this.lblDefaultCraftTime.TabIndex = 23;
+            this.lblDefaultCraftTime.Text = "";
+            this.lblDefaultCraftTime.Values.Text = "Default prod. time: ";
             // 
             // lblDefaultCraftTimeValue
             // 
-            this.lblDefaultCraftTimeValue.Location = new System.Drawing.Point(152, 96);
+            this.lblDefaultCraftTimeValue.Location = new System.Drawing.Point(904, 68);
             this.lblDefaultCraftTimeValue.Name = "lblDefaultCraftTimeValue";
             this.lblDefaultCraftTimeValue.Size = new System.Drawing.Size(17, 23);
             this.lblDefaultCraftTimeValue.TabIndex = 29;
-            this.lblDefaultCraftTimeValue.Text = "_";
+            this.lblDefaultCraftTimeValue.Text = "";
             this.toolTip1.SetToolTip(this.lblDefaultCraftTimeValue, "Ore refine time with talents applied");
             this.lblDefaultCraftTimeValue.Values.Text = "_";
+            // 
+            // lblCraftTime
+            // 
+            this.lblCraftTime.Location = new System.Drawing.Point(750, 96);
+            this.lblCraftTime.Name = "lblCraftTime";
+            this.lblCraftTime.Size = new System.Drawing.Size(116, 23);
+            this.lblCraftTime.TabIndex = 30;
+            this.lblCraftTime.Text = "";
+            this.lblCraftTime.Values.Text = "Production time: ";
+            // 
+            // lblCraftTimeValue
+            // 
+            this.lblCraftTimeValue.Location = new System.Drawing.Point(904, 96);
+            this.lblCraftTimeValue.Name = "lblCraftTimeValue";
+            this.lblCraftTimeValue.Size = new System.Drawing.Size(17, 23);
+            this.lblCraftTimeValue.TabIndex = 24;
+            this.lblCraftTimeValue.Text = "";
+            this.lblCraftTimeValue.Values.Text = "_";
+            this.toolTip1.SetToolTip(this.lblCraftTimeValue, "Time with talents applied");
             // 
             // LblPure
             // 
@@ -615,8 +634,8 @@ namespace DU_Industry_Tool
             this.LblPure.Name = "LblPure";
             this.LblPure.Size = new System.Drawing.Size(90, 23);
             this.LblPure.TabIndex = 28;
-            this.LblPure.Text = "Pure output:";
-            this.LblPure.Values.Text = "Pure output:";
+            this.LblPure.Text = "";
+            this.LblPure.Values.Text = "Output:";
             // 
             // LblPureValue
             // 
@@ -624,8 +643,8 @@ namespace DU_Industry_Tool
             this.LblPureValue.Name = "LblPureValue";
             this.LblPureValue.Size = new System.Drawing.Size(30, 23);
             this.LblPureValue.TabIndex = 26;
-            this.LblPureValue.Text = "0 L";
-            this.LblPureValue.Values.Text = "0 L";
+            this.LblPureValue.Text = "";
+            this.LblPureValue.Values.Text = "0";
             // 
             // LblBatchSizeValue
             // 
@@ -633,8 +652,8 @@ namespace DU_Industry_Tool
             this.LblBatchSizeValue.Name = "LblBatchSizeValue";
             this.LblBatchSizeValue.Size = new System.Drawing.Size(30, 23);
             this.LblBatchSizeValue.TabIndex = 27;
-            this.LblBatchSizeValue.Text = "0 L";
-            this.LblBatchSizeValue.Values.Text = "0 L";
+            this.LblBatchSizeValue.Text = "";
+            this.LblBatchSizeValue.Values.Text = "0";
             // 
             // LblBatchSize
             // 
@@ -642,31 +661,12 @@ namespace DU_Industry_Tool
             this.LblBatchSize.Name = "LblBatchSize";
             this.LblBatchSize.Size = new System.Drawing.Size(83, 23);
             this.LblBatchSize.TabIndex = 25;
-            this.LblBatchSize.Text = "Batch sizes:";
+            this.LblBatchSize.Text = "";
             this.LblBatchSize.Values.Text = "Batch sizes:";
-            // 
-            // lblCraftTimeValue
-            // 
-            this.lblCraftTimeValue.Location = new System.Drawing.Point(880, 68);
-            this.lblCraftTimeValue.Name = "lblCraftTimeValue";
-            this.lblCraftTimeValue.Size = new System.Drawing.Size(17, 23);
-            this.lblCraftTimeValue.TabIndex = 24;
-            this.lblCraftTimeValue.Text = "_";
-            this.toolTip1.SetToolTip(this.lblCraftTimeValue, "Time with talents applied");
-            this.lblCraftTimeValue.Values.Text = "_";
-            // 
-            // lblDefaultCraftTime
-            // 
-            this.lblDefaultCraftTime.Location = new System.Drawing.Point(4, 96);
-            this.lblDefaultCraftTime.Name = "lblDefaultCraftTime";
-            this.lblDefaultCraftTime.Size = new System.Drawing.Size(133, 23);
-            this.lblDefaultCraftTime.TabIndex = 23;
-            this.lblDefaultCraftTime.Text = "Default refine time: ";
-            this.lblDefaultCraftTime.Values.Text = "Default refine time: ";
             // 
             // lblPerIndustryValue
             // 
-            this.lblPerIndustryValue.Location = new System.Drawing.Point(504, 12);
+            this.lblPerIndustryValue.Location = new System.Drawing.Point(750, 12);
             this.lblPerIndustryValue.Name = "lblPerIndustryValue";
             this.lblPerIndustryValue.Size = new System.Drawing.Size(55, 23);
             this.lblPerIndustryValue.TabIndex = 13;
@@ -680,7 +680,7 @@ namespace DU_Industry_Tool
             this.lblNano.Name = "lblNano";
             this.lblNano.Size = new System.Drawing.Size(101, 23);
             this.lblNano.TabIndex = 8;
-            this.lblNano.Text = "Nanocraftable";
+            this.lblNano.Text = "";
             this.lblNano.Values.Text = "Nanocraftable";
             // 
             // lblCostForBatch
@@ -689,7 +689,7 @@ namespace DU_Industry_Tool
             this.lblCostForBatch.Name = "lblCostForBatch";
             this.lblCostForBatch.Size = new System.Drawing.Size(78, 23);
             this.lblCostForBatch.TabIndex = 4;
-            this.lblCostForBatch.Text = "Total Cost: ";
+            this.lblCostForBatch.Text = "";
             this.lblCostForBatch.Values.Text = "Total Cost: ";
             // 
             // lblCostValue
@@ -699,7 +699,7 @@ namespace DU_Industry_Tool
             this.lblCostValue.Name = "lblCostValue";
             this.lblCostValue.Size = new System.Drawing.Size(17, 23);
             this.lblCostValue.TabIndex = 11;
-            this.lblCostValue.Text = "-";
+            this.lblCostValue.Text = "";
             this.lblCostValue.Values.Text = "-";
             // 
             // lblBasicCost
@@ -708,7 +708,7 @@ namespace DU_Industry_Tool
             this.lblBasicCost.Name = "lblBasicCost";
             this.lblBasicCost.Size = new System.Drawing.Size(78, 23);
             this.lblBasicCost.TabIndex = 6;
-            this.lblBasicCost.Text = "Basic Cost: ";
+            this.lblBasicCost.Text = "";
             this.lblBasicCost.Values.Text = "Basic Cost: ";
             // 
             // lblBasicCostValue
@@ -717,9 +717,9 @@ namespace DU_Industry_Tool
             this.lblBasicCostValue.Name = "lblBasicCostValue";
             this.lblBasicCostValue.Size = new System.Drawing.Size(31, 23);
             this.lblBasicCostValue.TabIndex = 12;
-            this.lblBasicCostValue.Text = "0 q";
-            this.toolTip1.SetToolTip(this.lblBasicCostValue, "Ore cost without schematics");
+            this.lblBasicCostValue.Text = "";
             this.lblBasicCostValue.Values.Text = "0 q";
+            this.toolTip1.SetToolTip(this.lblBasicCostValue, "Ore cost without schematics");
 
             // 
             // lblCostSingle
@@ -728,7 +728,7 @@ namespace DU_Industry_Tool
             this.lblCostSingle.Name = "lblCostSingle";
             this.lblCostSingle.Size = new System.Drawing.Size(78, 23);
             this.lblCostSingle.TabIndex = 4;
-            this.lblCostSingle.Text = "Cost for 1: ";
+            this.lblCostSingle.Text = "";
             this.lblCostSingle.Values.Text = "Cost for 1: ";
             // 
             // lblCostSingleValue
@@ -737,17 +737,17 @@ namespace DU_Industry_Tool
             this.lblCostSingleValue.Name = "lblCostSingleValue";
             this.lblCostSingleValue.Size = new System.Drawing.Size(17, 23);
             this.lblCostSingleValue.TabIndex = 11;
-            this.lblCostSingleValue.Text = "-";
+            this.lblCostSingleValue.Text = "";
             this.lblCostSingleValue.Values.Text = "-";
 
             // 
             // lblIndustry
             // 
-            this.lblIndustry.Location = new System.Drawing.Point(4, 92);
+            this.lblIndustry.Location = new System.Drawing.Point(4, 94);
             this.lblIndustry.Name = "lblIndustry";
             this.lblIndustry.Size = new System.Drawing.Size(66, 23);
             this.lblIndustry.TabIndex = 10;
-            this.lblIndustry.Text = "Industry: ";
+            this.lblIndustry.Text = "";
             this.lblIndustry.Values.Text = "Industry: ";
             // 
             // lblIndustryValue
@@ -756,16 +756,16 @@ namespace DU_Industry_Tool
             this.lblIndustryValue.Name = "lblIndustryValue";
             this.lblIndustryValue.Size = new System.Drawing.Size(17, 23);
             this.lblIndustryValue.TabIndex = 14;
-            this.lblIndustryValue.Text = "-";
+            this.lblIndustryValue.Text = "";
             this.lblIndustryValue.Values.Text = "-";
             // 
             // lblPerIndustry
             // 
-            this.lblPerIndustry.Location = new System.Drawing.Point(330, 12);
+            this.lblPerIndustry.Location = new System.Drawing.Point(504, 12);
             this.lblPerIndustry.Name = "lblPerIndustry";
             this.lblPerIndustry.Size = new System.Drawing.Size(87, 23);
             this.lblPerIndustry.TabIndex = 7;
-            this.lblPerIndustry.Text = "Per Industry";
+            this.lblPerIndustry.Text = "";
             this.lblPerIndustry.Values.Text = "Per Industry";
             // 
             // lblUnitData
@@ -774,7 +774,7 @@ namespace DU_Industry_Tool
             this.lblUnitData.Name = "lblUnitData";
             this.lblUnitData.Size = new System.Drawing.Size(38, 23);
             this.lblUnitData.TabIndex = 2;
-            this.lblUnitData.Text = "Unit ";
+            this.lblUnitData.Text = "";
             this.lblUnitData.Values.Text = "Unit ";
             // 
             // ContentDocumentTree

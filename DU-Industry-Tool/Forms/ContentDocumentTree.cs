@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Windows.Forms;
 using DU_Industry_Tool.Interfaces;
 using Krypton.Toolkit;
@@ -193,17 +194,41 @@ namespace DU_Industry_Tool
             LblHint.Hide();
 
             lblCostForBatch.Show();
-            lblCostValue.Text = (calc.OreCost + calc.SchematicsCost).ToString("N2") +
-                                $" q (x{calc.Quantity:N2}"+
-                                (calc.IsBatchmode ? " / L" : "") + ")";
+            var batchQ = calc.Quantity;
+            var fullCost = calc.OreCost + calc.SchematicsCost;
+            // Ammo override: ammunition has special batch size of 40.
+            // We take the requested amount as # of ammo rounds to be calculated
+            // and determine the minimum of batches to be produced
+            if (calc.IsAmmo && calc.BatchOutput > 0)
+            {
+                // TODO: full batch (Ceiling) or fractional batch??
+                batchQ = batchQ / (decimal)(calc.BatchOutput ?? 40);
+            }
+
+            lblCostValue.Text = fullCost.ToString("N2") + " q ";
+            if (calc.IsBatchmode)
+            {
+                if (calc.IsAmmo)
+                {
+                    lblCostValue.Text += $"({batchQ:N2} batches)";
+                }
+                else
+                {
+                    lblCostValue.Text += $"(x{batchQ:N2} / L)";
+                }
+            }
             lblBasicCost.Show();
-            lblBasicCostValue.Text = $" {calc.OreCost:N2} q" + (calc.IsBatchmode ? " / L" : "");
+            lblBasicCostValue.Text = $"{calc.OreCost:N2} q";
+            if (calc.IsBatchmode && !calc.IsAmmo)
+            {
+                lblBasicCostValue.Text += " / L";
+            }
 
             if (calc.Quantity > 1)
             {
                 lblCostSingle.Show();
                 lblCostSingleValue.Show();
-                lblCostSingleValue.Text = ((calc.OreCost + calc.SchematicsCost) / calc.Quantity).ToString("N2") + " q ";
+                lblCostSingleValue.Text = (fullCost / calc.Quantity).ToString("N2") + " q ";
             }
 
             // Prepare talents grid and only show Recalculate button if any exist
@@ -260,18 +285,29 @@ namespace DU_Industry_Tool
             var batchInputVol = (calc.IsProduct ? 100 : 65) * calc.InputMultiplier  + calc.InputAdder;
             var batchOutputVol = (calc.IsProduct ? 75 : 45) * calc.OutputMultiplier + calc.OutputAdder;
 
-            // For T1 ORE a special rule exists, to fit as many batches into 3 minutes as possible
-            // In that case we must use Ceiling instead of Floor!
+            lblDefaultCraftTime.Values.Text = "Default refin. time:";
+            if (calc.IsAmmo)
+            {
+                batchInputVol = calc.BatchInput ?? 1;
+                batchOutputVol = calc.BatchOutput ?? 40;
+            }
+            if (calc.IsPart || calc.IsProduct || calc.IsAmmo)
+            {
+                lblDefaultCraftTime.Values.Text = "Default prod. time: ";
+            }
             if (calc.IsOre && calc.Tier == 1)
             {
+                // Fit as many batches into 3 minutes as possible
+                // In that case we must use Ceiling instead of Floor!
                 batches = (int)(time > 180 ? Math.Ceiling(180 / time) : Math.Floor(180 / time));
-                time = Math.Round(time * Math.Max(1,batches), 0);
+                time = Math.Round(time * Math.Max(1, batches), 0);
             }
 
-            lblDefaultCraftTimeValue.Text = Utils.GetReadableTime(time);
+            lblDefaultCraftTimeValue.Values.Text = Utils.GetReadableTime(time);
+            lblDefaultCraftTimeValue.Show();
             lblDefaultCraftTime.Show();
 
-            // below we deal with batch numbers
+            // display some batch-based numbers
             var batchVol = Math.Max(1, (calc.IsOre ? batchInputVol : batchOutputVol));
             if (newQty >= 1 && batchInputVol > 0 && batchOutputVol > 0)
             {
@@ -285,15 +321,16 @@ namespace DU_Industry_Tool
                     var overflow = (calc.IsOre ? calc.Quantity : newQty) - (batchCnt * batchVol);
                     lblCraftTimeValue.Text = Utils.GetReadableTime(time * batchCnt);
                     lblBatchesValue.Text = $"{batchCnt:N0} full batches";
+                    lblBatchesValue.Show();
                     lblBatches.Show();
                     if (overflow > 0)
                     {
-                        lblCraftTimeInfoValue.Text = (calc.IsOre ? "Unrefined:" : "Not produced:")+  $" {overflow:N2} L";
+                        lblCraftTimeInfoValue.Text = (calc.IsOre ? "Unrefined:" : "Not produced:") + $" {overflow:N2}";
                     }
                     if (calc.IsBatchmode && !calc.IsOre)
                     {
                         LblPure.Text = calc.IsPure ? "Pure output:" : (calc.IsProduct ? "Product output:" : "Output:");
-                        LblPureValue.Text = $"{batchCnt * batchVol:N2} L";
+                        LblPureValue.Text = $"{batchCnt * batchVol:N2}";
                     }
                 }
                 lblCraftTime.Show();
@@ -302,13 +339,13 @@ namespace DU_Industry_Tool
             var batchesPerDay = Math.Floor(86400 / (decimal)(calc.BatchTime ?? 86400));
             LblBatchSize.Show();
             lblPerIndustry.Show();
-            LblBatchSizeValue.Text = $"{batchInputVol:N2} L input / {batchOutputVol:N2} L output";
+            LblBatchSizeValue.Text = $"{batchInputVol:N2} in / {batchOutputVol:N2} out";
             lblPerIndustryValue.Text = $"{batchesPerDay:N0} batches / day";
             lblPerIndustryValue.Tag = calc.Key + "#" + Math.Ceiling(batchesPerDay*batchVol);
             lblPerIndustryValue.Click += LblPerIndustryValue_Click;
         }
 
-        public void SetupGrid(CalculatorClass calc)
+        private void SetupGrid(CalculatorClass calc)
         {
             BtnRestoreState.Visible = true;
             BtnSaveState.Visible = true;

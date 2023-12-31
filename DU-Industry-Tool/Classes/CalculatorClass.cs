@@ -180,12 +180,11 @@ namespace DU_Industry_Tool
                     }
                 }
             }
-
-            // calculate T2+ ore schematic costs
-            if (!prodMode)
+            else
             {
                 calc.ResetSchematicCost();
             }
+            // calculate T2+ ore schematic costs
             CollectSchematics(calc, SummationType.PURES);
             CollectSchematics(calc, SummationType.PRODUCTS);
 
@@ -342,6 +341,16 @@ namespace DU_Industry_Tool
             calc.GetTalents();
 
             var productQty = product?.Quantity ?? amount;
+
+            // Ammo override: ammunition has special batch size of 40 like "magazine size".
+            // We take the requested amount as # of ammo rounds to be calculated
+            // and determine the minimum of batches to be produced
+            if (depth == 0 && calc.IsAmmo)
+            {
+                // at minimum 1 batch; using fractional values here
+                productQty = Math.Max(1, Math.Floor(amount / (decimal)(calc.BatchOutput ?? 40)));
+                amount = productQty;
+            }
             var curLevel = level;
             level += "     ";
             Debug.WriteLineIf(!silent, $"{curLevel}> {recipe.Name} ({amount:N2})");
