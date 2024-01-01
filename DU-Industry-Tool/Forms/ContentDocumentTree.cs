@@ -134,7 +134,7 @@ namespace DU_Industry_Tool
             // IF ore, then we basically display values from its Pure (except plasma)
             // to have any useful information for it :)
             Ore ore = null;
-            var batches = 1;
+            var batches = 1m;
             var industry = calc.Recipe.Industry;
 
             if (calc.IsOre || calc.IsPlasma)
@@ -172,7 +172,7 @@ namespace DU_Industry_Tool
                             out batches , out var minCost, out var _, out var _))
                     {
                         // store values in main calc!
-                        calc.AddSchema(calcP.SchematicType, (int)batches, minCost);
+                        calc.AddSchema(calcP.SchematicType, batches, minCost);
                         calc.AddSchematicCost(minCost);
                     }
                     time = calc.BatchTime ?? time;
@@ -393,15 +393,15 @@ namespace DU_Industry_Tool
                     return "";
                 };
 
-                olvColumnQty.AspectGetter = x => (x is RecipeCalculation t && t.Qty > 0 ? $"{t.Qty:N2}" : "");
-                olvColumnAmt.AspectGetter = x => (x is RecipeCalculation t && t.Amt > 0 ? $"{t.Amt:N2}" : "");
+                olvColumnQty.AspectGetter = x => (x is RecipeCalculation t && t.Qty > 0 ? $"{t.Qty:N3}" : "");
+                olvColumnAmt.AspectGetter = x => (x is RecipeCalculation t && t.Amt > 0 ? $"{t.Amt:N3}" : "");
                 olvColumnMass.AspectGetter = x => (x is RecipeCalculation t && t.Mass > 0 ? $"{t.Mass:N3}" : "");
                 olvColumnVol.AspectGetter = x => (x is RecipeCalculation t && t.Vol > 0 ? $"{t.Vol:N3}" : "");
 
                 olvColumnSchemataQ.AspectGetter = x => (x is RecipeCalculation t && t.QtySchemata > 0 
-                    ? (DUData.FullSchematicQuantities ? $"{t.QtySchemata:N0}" : $"{t.QtySchemata:N2}") 
+                    ? (DUData.FullSchematicQuantities ? $"{t.QtySchemata:N0}" : $"{t.QtySchemata:N3}") 
                     : "");
-                olvColumnSchemataA.AspectGetter = x => (x is RecipeCalculation t && t.AmtSchemata > 0 ? $"{t.AmtSchemata:N2}" : "");
+                olvColumnSchemataA.AspectGetter = x => (x is RecipeCalculation t && t.AmtSchemata > 0 ? $"{t.AmtSchemata:N3}" : "");
 
                 olvColumnTier.AspectGetter = x => (x is RecipeCalculation t && t.Tier > 0 ? $"{t.Tier}" : "");
 

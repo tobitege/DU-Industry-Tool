@@ -150,7 +150,7 @@ namespace DU_Industry_Tool
                 calc.GetTalents();
 
                 // Add items to the overall products list
-                var batchCount = 1;
+                var batchCount = 1m;
                 foreach (var prod in calc.Recipe.Products)
                 {
                     /* Example: Production List item: 5000 L Pure Silver
@@ -169,7 +169,7 @@ namespace DU_Industry_Tool
                         prod.Mass += prodItem.Quantity * (calc.Recipe.UnitMass ?? 0);
                         prod.Volume += prodItem.Quantity * (calc.Recipe.UnitVolume ?? 0);
                         // TODO check why BatchOutput is occasionally null here
-                        var batchOutput = calc.IsBatchmode ? (decimal)(calc.BatchOutput) : prod.Quantity;
+                        var batchOutput = calc.IsBatchmode ? (decimal)(calc.BatchOutput ?? 0) : prod.Quantity;
                         if (calc.CalcSchematicFromQty(prod.SchemaType, prod.Quantity, batchOutput,
                                 out batchCount , out var minCost, out var _, out var _))
                         {

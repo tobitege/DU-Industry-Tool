@@ -588,7 +588,7 @@ namespace DU_Industry_Tool
                     var costToMake = Calculator.CalculateRecipe(recipe.Key, cnt, silent: true);
                     var calc = Calculator.Get(recipe.Key, Guid.Empty);
 
-                    worksheet.Cell(row, 2).Value = Math.Round(costToMake,2);
+                    worksheet.Cell(row, 2).Value = Math.Round(costToMake, 2);
 
                     var orders = _market.MarketOrders.Values.Where(o => o.ItemType == recipe.NqId && o.BuyQuantity < 0 && DateTime.Now < o.ExpirationDate && o.Price > 0);
 

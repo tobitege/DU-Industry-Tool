@@ -1,5 +1,11 @@
 # Changelog
 
+## v2024.1.3
+
+- Decided to use the "Full schematics" option also on the Schematics in the bottom calculation tree
+- Quantities and amounts are now displayed rounded to 3 decimals
+- With above also fixed in some cases schematics for products/ammo being rounded down instead of up
+
 ## v2024.1.2
 
 - Fix: if quantity is below batch output, use at least 1 schematic for products/ammo, still

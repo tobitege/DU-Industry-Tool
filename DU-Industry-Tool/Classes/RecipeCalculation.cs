@@ -26,7 +26,7 @@ namespace DU_Industry_Tool
 
         public RecipeCalculation(string section)
         {
-            if (string.IsNullOrEmpty(section)) throw new ArgumentNullException(@"RecipeCalculation");
+            if (string.IsNullOrEmpty(section)) throw new ArgumentNullException(nameof(RecipeCalculation));
             Section = section;
             Id = Guid.NewGuid();
             ParentId = Guid.Empty;
@@ -277,7 +277,7 @@ namespace DU_Industry_Tool
                     return children;
                 foreach (var schemaItem in calc.SumSchemClass)
                 {
-                    if (!Calculator.CalcSchematic(schemaItem.Key, schemaItem.Value.Item1,
+                    if (!Calculator.CalcSchematic(schemaItem.Key, Math.Round(schemaItem.Value.Item1, 3),
                             out var minCost, out var maxCost, out var copies))
                     {
                         continue;
@@ -288,7 +288,7 @@ namespace DU_Industry_Tool
                     {
                         Entry = schemaItem.Key,
                         QtySchemata = schemaItem.Value.Item1,
-                        AmtSchemata = maxCost, //minCost,
+                        AmtSchemata = minCost,
                         Comment = "C: "+Utils.GetReadableTime(copyTime)+
                                   $" (x{copies}) {s.Cost * s.BatchSize:N2}q for {s.BatchSize}",
                         ParentId = Id

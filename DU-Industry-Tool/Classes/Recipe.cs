@@ -264,7 +264,7 @@ namespace DU_Industry_Tool
         [JsonIgnore]
         public string SchemaType { get; set; }
         [JsonIgnore]
-        public int SchemaQty { get; set; }
+        public decimal SchemaQty { get; set; }
         [JsonIgnore]
         public decimal SchemaAmt { get; set; }
         [JsonIgnore]

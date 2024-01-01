@@ -175,7 +175,7 @@ namespace DU_Industry_Tool
                     else
                     if (CalcSchematic(pCalc.SchematicType, prod.Quantity, out var minCost2, out _, out _))
                     {
-                        calc.AddSchema(pCalc.SchematicType, (int)Math.Ceiling(prod.Quantity), minCost2);
+                        calc.AddSchema(pCalc.SchematicType, prod.Quantity, minCost2);
                         calc.AddSchematicCost(minCost2);
                     }
                 }
@@ -196,15 +196,15 @@ namespace DU_Industry_Tool
             var batches = ProductQuantity;
             if (calc.IsBatchmode && calc.BatchOutput > 0)
             {
-                batches = ProductQuantity / (decimal)calc.BatchOutput;
+                batches = Math.Round(ProductQuantity / (decimal)calc.BatchOutput, 3);
                 if (DUData.FullSchematicQuantities)
                 {
-                    batches = Math.Max(1, Math.Floor(batches));
+                    batches = Math.Ceiling(batches);
                 }
             }
-            if (CalcSchematic(calc.SchematicType, (int)batches, out var minCost, out _, out _))
+            if (CalcSchematic(calc.SchematicType, batches, out var minCost, out _, out _))
             {
-                calc.AddSchema(calc.SchematicType, (int)batches, minCost);
+                calc.AddSchema(calc.SchematicType, batches, minCost);
                 calc.AddSchematicCost(minCost);
             }
         }
@@ -228,15 +228,18 @@ namespace DU_Industry_Tool
                 return false;
             }
 
-            //qtySchematic = Math.Ceiling(qtySchematic);
-            minCost = Math.Round(schemata.Cost * qtySchematic); // cost is a breakdown to x1 schematic
+            minCost = Math.Round(schemata.Cost * qtySchematic, 3); // cost is a breakdown to x1 schematic
             // number of copy jobs that need to be started to cover all needed schematics,
             // (which depends on the batch size of a copy, e.g. 10 per copy process):
-            qtyCopies = qtySchematic / (decimal)Math.Max(1, schemata.BatchSize);
-            qtyCopies = Math.Ceiling(qtyCopies);
+            qtyCopies = qtySchematic / Math.Max(1, Math.Round((decimal)schemata.BatchSize, 3));
+            
+            if (DUData.FullSchematicQuantities)
+            {
+                qtyCopies = Math.Ceiling(qtyCopies);
+            }
+            
             // copyCost is the single schematic cost multiplied by batch size and the number of copies:
-            copyCost = schemata.Cost * schemata.BatchSize * qtyCopies;
-            copyCost = Math.Round(copyCost, 2);
+            copyCost = Math.Round(schemata.Cost * schemata.BatchSize * qtyCopies);
             return true;
         }
 
@@ -263,7 +266,7 @@ namespace DU_Industry_Tool
                 tmp.Quantity = val.Qty;
                 tmp.GetTalents();
                 if (tmp.BatchOutput == null) continue;// happens (on purpose)
-                tmp.Quantity = tmp.Quantity / (decimal)tmp.BatchOutput;
+                tmp.Quantity = Math.Round(tmp.Quantity / (decimal)tmp.BatchOutput, 3);
                 if (DUData.FullSchematicQuantities)
                 {
                     tmp.Quantity = (int)Math.Ceiling(tmp.Quantity);
@@ -276,7 +279,7 @@ namespace DU_Industry_Tool
                     continue;
                 }
                 val.AmtSchemata = minCost;
-                calc.AddSchema(val.SchematicType, (int)Math.Ceiling((decimal)val.QtySchemata), minCost);
+                calc.AddSchema(val.SchematicType, val.QtySchemata ?? 0, minCost);
                 calc.AddSchematicCost(minCost);
                 calc.Sums[sumType][entry.Key] = val;
             }
@@ -347,8 +350,7 @@ namespace DU_Industry_Tool
             // and determine the minimum of batches to be produced
             if (depth == 0 && calc.IsAmmo)
             {
-                // at minimum 1 batch; using fractional values here
-                productQty = Math.Max(1, Math.Floor(amount / (decimal)(calc.BatchOutput ?? 40)));
+                productQty = Math.Round(amount / (decimal)(calc.BatchOutput ?? 40), 3);
                 amount = productQty;
             }
             var curLevel = level;
@@ -362,7 +364,7 @@ namespace DU_Industry_Tool
                 var ore = DUData.Ores.FirstOrDefault(o => o.Key == recipe.Key);
                 if (ore != null)
                 {
-                    cost = Math.Round(amount * ore.Value, 2);
+                    cost = Math.Round(amount * ore.Value, 3);
                 }
                 calc.OreCost = cost;
                 return cost;
@@ -411,7 +413,7 @@ namespace DU_Industry_Tool
                     else
                         // assumption: Plasma qty always 1
                         qty = myRecipe.IsPlasma ? 1 : (amount / factor);
-                    cost = Math.Round(qty * DUData.Ores.First(o => o.Key == ingredient.Type).Value, 2);
+                    cost = Math.Round(qty * DUData.Ores.First(o => o.Key == ingredient.Type).Value, 3);
                     // Only for ores we accumulate the cost within "calc"!
                     calc2.OreCost = cost;
                     calc2.Quantity = qty;
@@ -580,7 +582,7 @@ namespace DU_Industry_Tool
                 entry.GetTalents();
                 entry.SetParent(calc.Id);
 
-                var factor = 1M;
+                var factor = 1m;
                 var productQty = calc.Recipe.Products.First().Quantity;
                 if (reverse)
                 {
@@ -596,7 +598,7 @@ namespace DU_Industry_Tool
                     //entry.SchematicType = calc.Recipe.SchemaType;
                     factor = (productQty * calc.OutputMultiplier + calc.OutputAdder) /
                              (ingredient.Quantity * calc.InputMultiplier + calc.InputAdder);
-                    entry.Quantity = Math.Round(quantity * factor,2);
+                    entry.Quantity = Math.Round(quantity * factor, 3);
                     //if (!calc.IsOre)
                     //{
                     //    entry.BatchInput  = ingredient.Quantity * calc.InputMultiplier;
@@ -631,7 +633,7 @@ namespace DU_Industry_Tool
         private SchematicRecipe _recipe;
 
         public Dictionary<SummationType, SortedDictionary<string, CalcEntry>> Sums { get; }
-        public SortedDictionary<string, Tuple<int, decimal>> SumSchemClass { get; private set; }
+        public SortedDictionary<string, Tuple<decimal, decimal>> SumSchemClass { get; private set; }
 
         public Guid Id { get; private set; }
         public Guid Parent { get; private set; }
@@ -673,7 +675,7 @@ namespace DU_Industry_Tool
             Id = Guid.NewGuid();
             Sums = new Dictionary<SummationType, SortedDictionary<string, CalcEntry>>();
             SchematicsCost = 0;
-            SumSchemClass = new SortedDictionary<string, Tuple<int, decimal>>();
+            SumSchemClass = new SortedDictionary<string, Tuple<decimal, decimal>>();
         }
 
         public CalculatorClass(string key) : this()
@@ -716,9 +718,9 @@ namespace DU_Industry_Tool
             Parent = parent;
         }
 
-        public void AddSchematicCost(decimal quantity)
+        public void AddSchematicCost(decimal cost)
         {
-            SchematicsCost += quantity;
+            SchematicsCost += cost;
         }
 
         public void ResetSchematicCost()
@@ -726,12 +728,12 @@ namespace DU_Industry_Tool
             SchematicsCost = 0;
         }
 
-        public void AddSchema(string schemaKey, int qty, decimal amount)
+        public void AddSchema(string schemaKey, decimal qty, decimal amount)
         {
-            if (string.IsNullOrEmpty(schemaKey) || qty < 1) return;
+            if (string.IsNullOrEmpty(schemaKey) || qty < 0.001m) return;
             if (SumSchemClass == null)
             {
-                SumSchemClass = new SortedDictionary<string, Tuple<int, decimal>>();
+                SumSchemClass = new SortedDictionary<string, Tuple<decimal, decimal>>();
             }
 
             if (SumSchemClass.ContainsKey(schemaKey))
@@ -739,10 +741,10 @@ namespace DU_Industry_Tool
                 var item1 = SumSchemClass[schemaKey].Item1 + qty;
                 var item2 = SumSchemClass[schemaKey].Item2 + amount;
                 SumSchemClass.Remove(schemaKey);
-                SumSchemClass.Add(schemaKey, new Tuple<int, decimal>(item1, item2));
+                SumSchemClass.Add(schemaKey, new Tuple<decimal, decimal>(item1, item2));
             }
             else
-                SumSchemClass.Add(schemaKey, new Tuple<int, decimal>(qty, amount));
+                SumSchemClass.Add(schemaKey, new Tuple<decimal, decimal>(qty, amount));
         }
 
         public void Add(SummationType sumType, string key, CalcEntry value)
@@ -799,8 +801,9 @@ namespace DU_Industry_Tool
             return GetTalents(Recipe); // in RecipeBase
         }
 
+        // not used for pures, but elements
         public bool CalcSchematicFromQty(string schematicType, decimal qty, decimal batchOutput,
-                        out int batches, out decimal minCost, out decimal copyCost, out decimal qtyCopies)
+                        out decimal batches, out decimal minCost, out decimal copyCost, out decimal qtyCopies)
         {
             minCost = 0M;
             copyCost = 0M;
@@ -815,8 +818,8 @@ namespace DU_Industry_Tool
             {
                 qty /= batchOutput;
             }
-            batches = DUData.FullSchematicQuantities ? (int)Math.Ceiling(qty) : (int)qty;
-            return Calculator.CalcSchematic(schematicType, (int)batches, out minCost, out copyCost, out qtyCopies);
+            batches = DUData.FullSchematicQuantities ? (int)Math.Ceiling(qty) : Math.Round(qty, 3);
+            return Calculator.CalcSchematic(schematicType, batches, out minCost, out copyCost, out qtyCopies);
         }
     }
 }
