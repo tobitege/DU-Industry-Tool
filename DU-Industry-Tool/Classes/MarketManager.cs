@@ -100,18 +100,27 @@ namespace DU_Industry_Tool
                                     Price = ulong.Parse(match.Groups[7].Value)/100, // Weirdly, their prices are *100
                                     LogDate = lastDate
                                 };
-
-
-                                if (data.ExpirationDate > DateTime.Now)
+                                if (!string.IsNullOrEmpty(match.Groups[7].Value))
                                 {
+                                    data.PlayerId = ulong.Parse(match.Groups[7].Value);
+                                }
+                                // Fill data with the item's name
+                                var descr = DUData.Recipes.FirstOrDefault(x => x.Value.NqId == data.ItemType);
+                                if (!string.IsNullOrEmpty(descr.Value?.Name))
+                                {
+                                    data.Description = descr.Value.Name;
+                                }
 
-                                    if (MarketOrders.ContainsKey(data.OrderId))
-                                    {
-                                        if (MarketOrders[data.OrderId].UpdateDate < data.UpdateDate)
-                                            MarketOrders[data.OrderId] = data;
-                                    }
-                                    else
+                                if (data.ExpirationDate <= DateTime.Now) continue;
+
+                                if (MarketOrders.ContainsKey(data.OrderId))
+                                {
+                                    if (MarketOrders[data.OrderId].UpdateDate < data.UpdateDate)
                                         MarketOrders[data.OrderId] = data;
+                                }
+                                else
+                                {
+                                    MarketOrders[data.OrderId] = data;
                                 }
                             }
                         }
@@ -119,8 +128,7 @@ namespace DU_Industry_Tool
                     CheckedLogFiles.Add(Path.GetFileName(file));
                     numProcessed++;
                     Console.WriteLine("Finished log file " + numProcessed + " of " + files.Length);
-                    if (form != null)
-                        form.UpdateProgressBar(Math.Min((int)(((float)numProcessed / files.Length) * 100),99));
+                    form?.UpdateProgressBar(Math.Min((int)(((float)numProcessed / files.Length) * 100),99));
                 }
             }
             // Alright, here's the fun part.  Group all of them by ItemType, and then find the most recent LogTime for that ItemType.  Discard all who don't have that same LogTime
@@ -143,48 +151,6 @@ namespace DU_Industry_Tool
         {
             var saveable = new SaveableMarketData() { CheckedLogFiles = CheckedLogFiles, Data = MarketOrders, LogFolderPath = LogFolderPath };
             File.WriteAllText("MarketOrders.json", JsonConvert.SerializeObject(saveable));
-        }
-
-        private const char CR = '\r';
-        private const char LF = '\n';
-        private const char NULL = (char)0;
-        public static long CountLinesSmarter(Stream stream)
-        {
-
-            var lineCount = 0L;
-
-            var byteBuffer = new byte[1024 * 1024];
-            var detectedEOL = NULL;
-            var currentChar = NULL;
-
-            int bytesRead;
-            while ((bytesRead = stream.Read(byteBuffer, 0, byteBuffer.Length)) > 0)
-            {
-                for (var i = 0; i < bytesRead; i++)
-                {
-                    currentChar = (char)byteBuffer[i];
-
-                    if (detectedEOL != NULL)
-                    {
-                        if (currentChar == detectedEOL)
-                        {
-                            lineCount++;
-                        }
-                    }
-                    else if (currentChar == LF || currentChar == CR)
-                    {
-                        detectedEOL = currentChar;
-                        lineCount++;
-                    }
-                }
-            }
-
-            // We had a NON-EOL character at the end without a new line
-            if (currentChar != LF && currentChar != CR && currentChar != NULL)
-            {
-                lineCount++;
-            }
-            return lineCount;
         }
     }
 }

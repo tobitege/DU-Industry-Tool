@@ -159,7 +159,6 @@ namespace DU_Industry_Tool
                      *   Input                Output
                      *   6029 L Acanthite     5000 L Pure Silver
                      *                        1667 L Pure Sulfur
-                     *
                      */
                     if (prod.Name.Equals(prodItem.Name, StringComparison.InvariantCultureIgnoreCase))
                     {
@@ -248,6 +247,7 @@ namespace DU_Industry_Tool
 
         public static Dictionary<string, Group> Groups { get; private set; }
         public static SortedDictionary<string, Schematic> Schematics { get; private set; } = new SortedDictionary<string, Schematic>();
+        public static int[] SchemCraftingTalents { get; set; } = new[] { 0, 0, 0, 0 };
         public static List<Talent> Talents { get; private set; } = new List<Talent>();
         public static List<string> Groupnames { get; private set; } = new List<string>(370);
         public static SortedDictionary<string, string> ItemTypeNames { get; set; }
@@ -266,8 +266,8 @@ namespace DU_Industry_Tool
         public static readonly string ProductionListTitle = "Production List";
         #endregion
 
+        //public static readonly string IndustryTitle = "Industry";
         public static readonly string SubpartSectionTitle = "Subpart";
-        public static readonly string IndustryTitle = "Industry";
         public static readonly string SchematicsTitle = "Schematics";
         public static readonly string PlasmaStart = "Relic Plasma";
         public static readonly string ByproductMarker = " (B)";
@@ -303,12 +303,12 @@ namespace DU_Industry_Tool
             return result != null;
         }
 
-        public static bool GetRecipeName(string key, out string result)
-        {
-            result = null;
-            if (GetRecipeCloneByKey(key, out var tmp)) result = tmp.Name;
-            return result != null;
-        }
+        //public static bool GetRecipeName(string key, out string result)
+        //{
+        //    result = null;
+        //    if (GetRecipeCloneByKey(key, out var tmp)) result = tmp.Name;
+        //    return result != null;
+        //}
 
         public static void LoadRecipes()
         {
@@ -328,17 +328,46 @@ namespace DU_Industry_Tool
             return res.Value ?? itemName;
         }
 
+        ///<summary>
+        ///Apply cost-reduction and output-raising talents for schematics crafting.
+        ///For time being (pun intended) we ignore time-reduction talents.
+        ///Schematics file is to be kept "vanilla" with 0 talents,
+        ///so recalculate prices and batch outputs once on startup.
+        ///</summary>
+        private static void ApplySchematicCraftingTalents()
+        {
+            // TODO
+            var costFactor = 1m - DUData.SchemCraftingTalents[0] * 0.05m - DUData.SchemCraftingTalents[1] * 0.03m;
+            var prodFactor = 1m + DUData.SchemCraftingTalents[2] * 0.03m + DUData.SchemCraftingTalents[3] * 0.02m;
+            foreach (var item in Schematics)
+            {
+                item.Value.BatchSize = (int)Math.Round(item.Value.BatchSize * prodFactor, MidpointRounding.AwayFromZero);
+                item.Value.BatchCost = Math.Round(item.Value.Cost * costFactor, MidpointRounding.AwayFromZero);
+                item.Value.Cost = Math.Round(item.Value.BatchCost / item.Value.BatchSize, 2);
+            }
+        }
+        
         public static void LoadSchematics()
         {
             // Schematics and prices
             // mostly by formula as of patch 0.31.6
-
+            var loaded = false;
             if (File.Exists("schematicValues.json"))
             {
-                Schematics = JsonConvert.DeserializeObject<SortedDictionary<string, Schematic>>(
-                                        File.ReadAllText("schematicValues.json"));
-                return;
+                try
+                {
+                    Schematics = JsonConvert.DeserializeObject<SortedDictionary<string, Schematic>>(
+                                            File.ReadAllText("schematicValues.json"));
+                    loaded = true;
+                    ApplySchematicCraftingTalents();
+                }
+                catch (Exception) { }
             }
+            if (!loaded)
+            {
+                MessageBox.Show("Required file 'schematicValues.json' not found or invalid!\r\nPlease restore from GitHub repo!");
+            }
+            
             // Generate (prefixed with Tx with x = tier):
             // U  = Pures, e.g. T2U
             // P  = Products, e.g. T3P
@@ -346,6 +375,7 @@ namespace DU_Industry_Tool
             // HP = Honeycomb Products, e.g. T3HP
             // SC = Scraps, e.g. T2SC
             // TxEy = Tier x, Element size y, e.g. T2XL tier 2, XL
+            /*
             var groups = new[] { "U", "P", "HU", "HP", "SC" };
             var prices = new [] { 187.5M, 180, 125, 50, 30 }; // only first price for each group
             var scraps = new [] { 30, 75, 187.48M, 468.72M };
@@ -548,8 +578,9 @@ namespace DU_Industry_Tool
                 BatchTime = 1000800
             };
             Schematics.Add(schema.Key, schema);
-
+            ApplySchematicCraftingTalents();
             SaveSchematicValues();
+            */
         }
 
         public static void LoadOres()
@@ -627,38 +658,41 @@ namespace DU_Industry_Tool
 
         public static void LoadTalents()
         {
-            // Generate Talents
-            // Check if they have a talent file already to load values from instead
+            // Check if talents file already exists to load values from
             if (File.Exists("talentSettings.json"))
             {
                 Talents = JsonConvert.DeserializeObject<List<Talent>>(File.ReadAllText("talentSettings.json"));
                 // make sure new talents are available
                 AddPureEfficiencyTalents();
+                return;
             }
-            else
+
+            // Generate Talents:
+            // below is to re-generate the talents file programmatically if it was missing
+            var multiplierTalentGroups = new[] { "Pure", "Scraps", "Product" }; // Setup the names of the item-specific multiplier talents
+
+            var genericScrapTalents =
+                new
+                    List<Talent>() // Setup the scrap talents so we can add each scrap to their applicableRecipe later
+                    {
+                        new Talent() { Name = "Basic Scrap Refinery", Addition = -1, InputTalent = true },
+                        new Talent() { Name = "Uncommon Scrap Refinery", Addition = -1, InputTalent = true },
+                        new Talent() { Name = "Advanced Scrap Refinery", Addition = -1, InputTalent = true },
+                        new Talent() { Name = "Rare Scrap Refinery", Addition = -1, InputTalent = true }
+                    };
+
+            foreach (var kvp in Recipes.Where(r => r.Value?.ParentGroupName != null &&
+                                                   multiplierTalentGroups.Any(t => t == r.Value.ParentGroupName)))
             {
-                var multiplierTalentGroups =
-                    new[] { "Pure", "Scraps", "Product" }; // Setup the names of the item-specific multiplier talents
-
-                var genericScrapTalents =
-                    new
-                        List<Talent>() // Setup the scrap talents so we can add each scrap to their applicableRecipe later
-                        {
-                            new Talent() { Name = "Basic Scrap Refinery", Addition = -1, InputTalent = true },
-                            new Talent() { Name = "Uncommon Scrap Refinery", Addition = -1, InputTalent = true },
-                            new Talent() { Name = "Advanced Scrap Refinery", Addition = -1, InputTalent = true },
-                            new Talent() { Name = "Rare Scrap Refinery", Addition = -1, InputTalent = true }
-                        };
-
-                foreach (var kvp in Recipes.Where(r => r.Value?.ParentGroupName != null &&
-                                                       multiplierTalentGroups.Any(t => t == r.Value.ParentGroupName)))
+                // Iterate over every recipe that is part of one of the multiplierTalentGroups, "Pure", "Scraps", or "Product"
+                var recipe = kvp.Value;
+                var talent = new Talent() { Name = recipe.Name + " Productivity", Addition = 0, Multiplier = 0.03M }; // They all have 3% multiplier
+                talent.ApplicableRecipes.Add(kvp.Key); // Each of these only applies to its one specific element
+                Talents.Add(talent);
+                switch (recipe.ParentGroupName)
                 {
-                    // Iterate over every recipe that is part of one of the multiplierTalentGroups, "Pure", "Scraps", or "Product"
-                    var recipe = kvp.Value;
-                    var talent = new Talent() { Name = recipe.Name + " Productivity", Addition = 0, Multiplier = 0.03M }; // They all have 3% multiplier
-                    talent.ApplicableRecipes.Add(kvp.Key); // Each of these only applies to its one specific element
-                    Talents.Add(talent);
-                    if (recipe.ParentGroupName == "Pure" || recipe.ParentGroupName == "Product")
+                    case "Pure":
+                    case "Product":
                     {
                         // Pures and products have an input reduction of 0.03 multiplier as well as the output multiplier
                         var nameString = recipe.Name;
@@ -670,8 +704,10 @@ namespace DU_Industry_Tool
                         talent = new Talent() { Name = nameString + " Refining", Addition = 0, Multiplier = -0.03M, InputTalent = true };
                         talent.ApplicableRecipes.Add(kvp.Key);
                         Talents.Add(talent);
+
+                        break;
                     }
-                    else if (recipe.ParentGroupName == "Scraps")
+                    case "Scraps":
                     {
                         // And scraps get a flat -1L general, and -2 specific
                         talent = new Talent() { Name = recipe.Name + " Scrap Refinery", Addition = -2, InputTalent = true };
@@ -679,90 +715,92 @@ namespace DU_Industry_Tool
                         Talents.Add(talent);
                         if (recipe.Level < 5) // Exotics don't have one
                             genericScrapTalents[recipe.Level - 1].ApplicableRecipes.Add(kvp.Key);
+
+                        break;
                     }
                 }
-
-                Talents.AddRange(genericScrapTalents);
-
-                // Fuel talents
-                // Generic gets -2% per level to inputs
-                var genericRefineryTalent = new Talent()
-                    { Name = "Fuel Refinery", Addition = 0, Multiplier = -0.02M, InputTalent = true };
-
-                foreach (var groupList in Recipes
-                             .Where(r => r.Value != null && r.Value.ParentGroupName == "Fuels")
-                             .GroupBy(r => r.Value.GroupId))
-                {
-                    var groupName = Groups.Values.FirstOrDefault(g => g.Id == groupList.Key)?.Name;
-                    var outTalent = new Talent()
-                        { Name = groupName + " Productivity", Addition = 0, Multiplier = 0.05M };
-                    var inTalent = new Talent()
-                        { Name = groupName + " Refinery", Addition = 0, Multiplier = -0.03M, InputTalent = true };
-                    // Specific gets -3% per level to inputs
-
-                    // Store that everything in this group is applicable to all of these Recipes (mostly catches the kergon varieties)
-                    foreach (var recipe in groupList)
-                    {
-                        outTalent.ApplicableRecipes.Add(recipe.Key);
-                        inTalent.ApplicableRecipes.Add(recipe.Key);
-                        genericRefineryTalent.ApplicableRecipes.Add(recipe.Key);
-                    }
-
-                    Talents.Add(outTalent);
-                    Talents.Add(inTalent);
-                }
-
-                Talents.Add(genericRefineryTalent);
-
-                AddPureEfficiencyTalents();
-
-                // Intermediary talents
-                Talents.Add(new Talent()
-                {
-                    Name = "Basic Intermediary Part Productivity", Addition = 1, Multiplier = 0,
-                    ApplicableRecipes = Recipes
-                        .Where(r => r.Value != null && r.Value.ParentGroupName == "Intermediary parts" &&
-                                    r.Value.Level == 1).Select(r => r.Key)
-                        .ToList()
-                });
-                Talents.Add(new Talent()
-                {
-                    Name = "Uncommon Intermediary Part Productivity", Addition = 1, Multiplier = 0,
-                    ApplicableRecipes = Recipes
-                        .Where(r => r.Value != null && r.Value.ParentGroupName == "Intermediary parts" &&
-                                    r.Value.Level == 2).Select(r => r.Key)
-                        .ToList()
-                });
-                Talents.Add(new Talent()
-                {
-                    Name = "Advanced Intermediary Part Productivity", Addition = 1, Multiplier = 0,
-                    ApplicableRecipes = Recipes
-                        .Where(r => r.Value != null && r.Value.ParentGroupName == "Intermediary parts" &&
-                                    r.Value.Level == 3).Select(r => r.Key)
-                        .ToList()
-                });
-
-                // Ammo Talents... they have uncommon, advanced of each of xs, s, m, l
-                var typeList = new[] { "Uncommon", "Advanced" };
-                foreach (var type in typeList)
-                {
-                    foreach (var size in SizeList)
-                    {
-                        if (size == "XL") continue;
-                        Talents.Add(new Talent()
-                        {
-                            Name = type + " Ammo " + size + " Productivity", Addition = 1, Multiplier = 0,
-                            ApplicableRecipes = Recipes
-                                .Where(r => r.Value != null && r.Value.ParentGroupName.Contains("Ammo") &&
-                                            r.Value.Level == (type == "Uncommon" ? 2 : 3) &&
-                                            r.Value.Name.ToLower().EndsWith(" ammo " + size.ToLower())).Select(r => r.Key)
-                                .ToList()
-                        });
-                    }
-                }
-                Talents.Sort(TalentComparer);
-                SaveTalents();
             }
+
+            Talents.AddRange(genericScrapTalents);
+
+            // Fuel talents
+            // Generic gets -2% per level to inputs
+            var genericRefineryTalent = new Talent()
+                { Name = "Fuel Refinery", Addition = 0, Multiplier = -0.02M, InputTalent = true };
+
+            foreach (var groupList in Recipes
+                         .Where(r => r.Value != null && r.Value.ParentGroupName == "Fuels")
+                         .GroupBy(r => r.Value.GroupId))
+            {
+                var groupName = Groups.Values.FirstOrDefault(g => g.Id == groupList.Key)?.Name;
+                var outTalent = new Talent()
+                    { Name = groupName + " Productivity", Addition = 0, Multiplier = 0.05M };
+                var inTalent = new Talent()
+                    { Name = groupName + " Refinery", Addition = 0, Multiplier = -0.03M, InputTalent = true };
+                // Specific gets -3% per level to inputs
+
+                // Store that everything in this group is applicable to all of these Recipes (mostly catches the kergon varieties)
+                foreach (var recipe in groupList)
+                {
+                    outTalent.ApplicableRecipes.Add(recipe.Key);
+                    inTalent.ApplicableRecipes.Add(recipe.Key);
+                    genericRefineryTalent.ApplicableRecipes.Add(recipe.Key);
+                }
+
+                Talents.Add(outTalent);
+                Talents.Add(inTalent);
+            }
+
+            Talents.Add(genericRefineryTalent);
+
+            AddPureEfficiencyTalents();
+
+            // Intermediary talents
+            Talents.Add(new Talent()
+            {
+                Name = "Basic Intermediary Part Productivity", Addition = 1, Multiplier = 0,
+                ApplicableRecipes = Recipes
+                    .Where(r => r.Value != null && r.Value.ParentGroupName == "Intermediary parts" &&
+                                r.Value.Level == 1).Select(r => r.Key)
+                    .ToList()
+            });
+            Talents.Add(new Talent()
+            {
+                Name = "Uncommon Intermediary Part Productivity", Addition = 1, Multiplier = 0,
+                ApplicableRecipes = Recipes
+                    .Where(r => r.Value != null && r.Value.ParentGroupName == "Intermediary parts" &&
+                                r.Value.Level == 2).Select(r => r.Key)
+                    .ToList()
+            });
+            Talents.Add(new Talent()
+            {
+                Name = "Advanced Intermediary Part Productivity", Addition = 1, Multiplier = 0,
+                ApplicableRecipes = Recipes
+                    .Where(r => r.Value != null && r.Value.ParentGroupName == "Intermediary parts" &&
+                                r.Value.Level == 3).Select(r => r.Key)
+                    .ToList()
+            });
+
+            // Ammo Talents... they have uncommon, advanced of each of xs, s, m, l
+            var typeList = new[] { "Uncommon", "Advanced" };
+            foreach (var type in typeList)
+            {
+                foreach (var size in SizeList)
+                {
+                    if (size == "XL") continue;
+                    Talents.Add(new Talent()
+                    {
+                        Name = type + " Ammo " + size + " Productivity", Addition = 1, Multiplier = 0,
+                        ApplicableRecipes = Recipes
+                            .Where(r => r.Value != null && r.Value.ParentGroupName.Contains("Ammo") &&
+                                        r.Value.Level == (type == "Uncommon" ? 2 : 3) &&
+                                        r.Value.Name.ToLower().EndsWith(" ammo " + size.ToLower())).Select(r => r.Key)
+                            .ToList()
+                    });
+                }
+            }
+            Talents.Sort(TalentComparer);
+            SaveTalents();
         }
 
         private static void AddPureEfficiencyTalents()
@@ -830,7 +868,7 @@ namespace DU_Industry_Tool
             }
         }
 
-        public static void SaveSchematicValues()
+        private static void SaveSchematicValues()
         {
             try
             {
@@ -856,7 +894,7 @@ namespace DU_Industry_Tool
             return "";
         }
 
-        public static string FindParent(Guid groupId)
+        private static string FindParent(Guid groupId)
         {
             if (groupId == Guid.Empty) return "";
             var grp = DUData.Groups.FirstOrDefault(x => x.Value.Id == groupId);
@@ -883,7 +921,7 @@ namespace DU_Industry_Tool
         }
 
         // This was going to be recursive but those are way too generic. We just want one parent up.
-        public static string GetParentGroupName(Guid id)
+        private static string GetParentGroupName(Guid id)
         {
             var group = Groups.Values.FirstOrDefault(g => g.Id == id);
             if (group == null) return null;

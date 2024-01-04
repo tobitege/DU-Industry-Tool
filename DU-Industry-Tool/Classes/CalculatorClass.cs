@@ -80,17 +80,23 @@ namespace DU_Industry_Tool
             return true;
         }
 
-        public static bool GetFromStoreById(Guid id, out CalculatorClass calc)
-        {
-            calc = All.FirstOrDefault(x => x.Key == id).Value;
-            return calc != null;
-        }
+        //public static bool GetFromStoreById(Guid id, out CalculatorClass calc)
+        //{
+        //    calc = All.FirstOrDefault(x => x.Key == id).Value;
+        //    return calc != null;
+        //}
 
-        public static bool GetFromStoreByName(Guid parentId, string name, out IEnumerable<CalculatorClass> calc)
-        {
-            calc = All.Where(x => x.Key == parentId && x.Value?.Name == name).Select(x => x.Value);
-            return calc?.Any() == true;
-        }
+        //public static bool GetFromStoreByName(Guid parentId, string name, out IEnumerable<CalculatorClass> calc)
+        //{
+        //    calc = All.Where(x => x.Key == parentId && x.Value?.Name == name).Select(x => x.Value);
+        //    return calc?.Any() == true;
+        //}
+
+        //public static bool GetFromStoreWithSums(Guid id, out CalculatorClass calc)
+        //{
+        //    calc = All.FirstOrDefault(x => x.Key == id && x.Value?.Sums?.Any() == true).Value;
+        //    return calc != null;
+        //}
 
         public static bool GetFromStoreWithNodes(Guid id, out CalculatorClass calc)
         {
@@ -110,13 +116,7 @@ namespace DU_Industry_Tool
             return calc != null;
         }
 
-        public static bool GetFromStoreWithSums(Guid id, out CalculatorClass calc)
-        {
-            calc = All.FirstOrDefault(x => x.Key == id && x.Value?.Sums?.Any() == true).Value;
-            return calc != null;
-        }
-
-        public static void Collect(CalculatorClass calc)
+        private static void Collect(CalculatorClass calc)
         {
             // Summarize all categories over all ingredients
             foreach (var entry in All)
@@ -504,40 +504,40 @@ namespace DU_Industry_Tool
             return ApplicableTalents;
         }
 
-        public static decimal GetBaseCost(string key)
-        {
-            // Just like the other one, but ignore DUData.Talents.
-            if (DUData.Recipes?.Keys.Contains(key) != true)
-                return 0;
-            var recipe = DUData.Recipes[key];
+        //public static decimal GetBaseCost(string key)
+        //{
+        //    // Just like the other one, but ignore DUData.Talents.
+        //    if (DUData.Recipes?.Keys.Contains(key) != true)
+        //        return 0;
+        //    var recipe = DUData.Recipes[key];
 
-            // Skip catalysts entirely tho.
-            if (DUData.Groups.Values.FirstOrDefault(g => g.Id == recipe.GroupId)?.Name == "Catalyst")
-                return 0;
+        //    // Skip catalysts entirely tho.
+        //    if (DUData.Groups.Values.FirstOrDefault(g => g.Id == recipe.GroupId)?.Name == "Catalyst")
+        //        return 0;
 
-            decimal totalCost = 0;
-            foreach (var ingredient in recipe.Ingredients)
-            {
-                if (!DUData.Recipes.Keys.Contains(ingredient.Type))
-                {
-                    Console.WriteLine($@"Schematic {ingredient.Type} not found!");
-                    continue;
-                }
+        //    decimal totalCost = 0;
+        //    foreach (var ingredient in recipe.Ingredients)
+        //    {
+        //        if (!DUData.Recipes.Keys.Contains(ingredient.Type))
+        //        {
+        //            Console.WriteLine($@"Schematic {ingredient.Type} not found!");
+        //            continue;
+        //        }
 
-                if (DUData.Recipes.Keys.Contains(ingredient.Type) && DUData.Recipes[ingredient.Type].ParentGroupName == "Ore")
-                {
-                    totalCost += (ingredient.Quantity *
-                                  DUData.Ores.First(o => o.Key == ingredient.Type).Value) /
-                                 (recipe.Products.First().Quantity);
-                }
-                else
-                {
-                    totalCost += GetBaseCost(ingredient.Type) * ingredient.Quantity /
-                                 (recipe.Products.First().Quantity);
-                }
-            }
-            return totalCost;
-        }
+        //        if (DUData.Recipes.Keys.Contains(ingredient.Type) && DUData.Recipes[ingredient.Type].ParentGroupName == "Ore")
+        //        {
+        //            totalCost += (ingredient.Quantity *
+        //                          DUData.Ores.First(o => o.Key == ingredient.Type).Value) /
+        //                         (recipe.Products.First().Quantity);
+        //        }
+        //        else
+        //        {
+        //            totalCost += GetBaseCost(ingredient.Type) * ingredient.Quantity /
+        //                         (recipe.Products.First().Quantity);
+        //        }
+        //    }
+        //    return totalCost;
+        //}
 
         /// <summary>
         /// This method returns a list of all ingredients for a given item, taking into account available talents.

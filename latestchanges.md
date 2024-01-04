@@ -1,5 +1,13 @@
 # Latest Changes
 
+## v2024.1.4
+
+- IMPORTANT: "schematicsValues.json" file has been updated and should NOT be manually edited!
+- Added 4 talents to the Schematics form (schematics crafting) for cost and output for accurate schematic prices
+- Added Excel export button to the schematics dialog incl. time and item ID
+- MarketOrders.json: added a "Description" attribute to give the actual item's name; also re-added the PlayerId if found
+- Fixed some internal forms handling
+
 ## v2024.1.3
 
 - Decided to use the "Full schematics" option also on the Schematics in the bottom calculation tree

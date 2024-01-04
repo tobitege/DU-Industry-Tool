@@ -344,10 +344,12 @@ namespace DU_Industry_Tool
     {
         public string Key { get; set; }
         public string Name { get; set; }
-        public decimal Cost { get; set; }  // cost per 1 copy
+        public decimal Cost { get; set; }       // cost per 1 schematic
+        public decimal BatchCost { get; set; }  // cost per 1 batch
         public int Level { get; set; }
-        public int BatchSize { get; set; } // copies per batch
-        public int BatchTime { get; set; } // seconds
+        public int BatchSize { get; set; }      // copies per batch
+        public int BatchTime { get; set; }      // crafting time in seconds per batch
+        public ulong NqId { get; set; }         // NQ's item id
     }
 
     // external/3rd party json structures:

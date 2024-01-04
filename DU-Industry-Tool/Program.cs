@@ -18,7 +18,7 @@ namespace DU_Industry_Tool
             PortableJsonSettingsProvider.SettingsFileName = "DU-Industry-Tool.usersettings.json";
             PortableSettingsProviderBase.SettingsDirectory = Application.StartupPath;
             PortableJsonSettingsProvider.ApplyProvider(Properties.Settings.Default);
-            Application.Run(new MainForm(new IndustryManager()));
+            Application.Run(new MainForm());
         }
     }
 }

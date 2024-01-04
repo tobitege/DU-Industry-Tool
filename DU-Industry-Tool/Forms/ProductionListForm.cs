@@ -215,6 +215,5 @@ namespace DU_Industry_Tool
             }
             return false;
         }
-
     }
 }

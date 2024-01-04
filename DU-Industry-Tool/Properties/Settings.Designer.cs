@@ -130,5 +130,53 @@ namespace DU_Industry_Tool.Properties {
                 this["FullSchematicQuantities"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int SchemCraftCost1 {
+            get {
+                return ((int)(this["SchemCraftCost1"]));
+            }
+            set {
+                this["SchemCraftCost1"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int SchemCraftCost2 {
+            get {
+                return ((int)(this["SchemCraftCost2"]));
+            }
+            set {
+                this["SchemCraftCost2"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int SchemCraftOutput1 {
+            get {
+                return ((int)(this["SchemCraftOutput1"]));
+            }
+            set {
+                this["SchemCraftOutput1"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int SchemCraftOutput2 {
+            get {
+                return ((int)(this["SchemCraftOutput2"]));
+            }
+            set {
+                this["SchemCraftOutput2"] = value;
+            }
+        }
     }
 }

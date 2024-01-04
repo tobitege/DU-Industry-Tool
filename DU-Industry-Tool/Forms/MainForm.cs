@@ -23,21 +23,42 @@ namespace DU_Industry_Tool
     public partial class MainForm : KryptonForm
     {
         private bool _startUp = true;
-        private readonly IndustryManager _manager;
-        private readonly MarketManager _market;
+        private IndustryManager _manager;
+        private MarketManager _market;
         private bool _marketFiltered;
         private readonly List<string> _breadcrumbs = new List<string>();
         private bool _navUpdating;
         private decimal _overrideQty;
 
-        public MainForm(IndustryManager manager)
+        public MainForm()
         {
             InitializeComponent();
 
             CultureInfo.CurrentCulture = new CultureInfo("en-us");
             QuantityBox.SelectedIndex = 0;
+        }
 
-            _manager = manager;
+        private void MainForm_Load(object sender, EventArgs e)
+        {
+            // Setup docking functionality
+            var w = kryptonDockingManager.ManageWorkspace(kryptonDockableWorkspace);
+            if (w != null)
+            {
+                kryptonDockingManager.ManageControl(kryptonPage1, w);
+            }
+            kryptonDockingManager.ManageFloating(this);
+
+            // Do not allow the left-side page to be closed or made auto hidden/docked
+            kryptonPage1.ClearFlags(KryptonPageFlags.DockingAllowAutoHidden |
+                            KryptonPageFlags.DockingAllowDocked |
+                            KryptonPageFlags.DockingAllowClose);
+
+            OnMainformResize(sender, e);
+
+            Properties.Settings.Default.Reload();
+            ApplySettings();
+
+            _manager = new IndustryManager();
             _market = new MarketManager();
 
             kryptonPage1.Flags = 0;
@@ -52,6 +73,8 @@ namespace DU_Industry_Tool
             ProductionListUpdates(null);
 
             LoadTree();
+
+            _startUp = false;
         }
 
         private void LoadTree()
@@ -689,29 +712,6 @@ namespace DU_Industry_Tool
             kryptonNavigator1.Width = ClientSize.Width - searchPanel.Width - 0;
         }
 
-        private void MainForm_Load(object sender, EventArgs e)
-        {
-            // Setup docking functionality
-            var w = kryptonDockingManager.ManageWorkspace(kryptonDockableWorkspace);
-            if (w != null)
-            {
-                kryptonDockingManager.ManageControl(kryptonPage1, w);
-            }
-            kryptonDockingManager.ManageFloating(this);
-
-            // Do not allow the left-side page to be closed or made auto hidden/docked
-            kryptonPage1.ClearFlags(KryptonPageFlags.DockingAllowAutoHidden |
-                            KryptonPageFlags.DockingAllowDocked |
-                            KryptonPageFlags.DockingAllowClose);
-
-            OnMainformResize(sender, e);
-
-            Properties.Settings.Default.Reload();
-            ApplySettings();
-
-            _startUp = false;
-        }
-
         private void MainForm_KeyUp(object sender, KeyEventArgs e)
         {
             if (!e.Control) return;
@@ -811,6 +811,11 @@ namespace DU_Industry_Tool
             }
 
             LoadAndRunProductionList(Properties.Settings.Default.LastProductionList);
+
+            DUData.SchemCraftingTalents[0] = Properties.Settings.Default.SchemCraftCost1;
+            DUData.SchemCraftingTalents[1] = Properties.Settings.Default.SchemCraftCost2;
+            DUData.SchemCraftingTalents[2] = Properties.Settings.Default.SchemCraftOutput1;
+            DUData.SchemCraftingTalents[3] = Properties.Settings.Default.SchemCraftOutput2;
         }
 
         private void SaveSettings()
@@ -824,6 +829,10 @@ namespace DU_Industry_Tool
             Properties.Settings.Default.RestoreWindow = CbRestoreWindow.Checked;
             Properties.Settings.Default.ThemeId = (int)kryptonManager.GlobalPaletteMode;
             Properties.Settings.Default.FullSchematicQuantities = DUData.FullSchematicQuantities;
+            Properties.Settings.Default.SchemCraftCost1 = DUData.SchemCraftingTalents[0];
+            Properties.Settings.Default.SchemCraftCost2 = DUData.SchemCraftingTalents[1];
+            Properties.Settings.Default.SchemCraftOutput1 = DUData.SchemCraftingTalents[2];
+            Properties.Settings.Default.SchemCraftOutput2 = DUData.SchemCraftingTalents[3];
             Properties.Settings.Default.Save();
         }
 
@@ -941,20 +950,33 @@ namespace DU_Industry_Tool
 
         private void BtnTalents_Click(object sender, EventArgs e)
         {
-            var form = new SkillForm();
-            form.ShowDialog(this);
+            using (var form = new SkillForm())
+            {
+                form.ShowDialog(this);
+            }
         }
 
         private void BtnOreValues_Click(object sender, EventArgs e)
         {
-            var form = new OreValueForm();
-            form.ShowDialog(this);
+            using (var form = new OreValueForm())
+            {
+                form.ShowDialog(this);
+            }
         }
 
         private void BtnSchematics_Click(object sender, EventArgs e)
         {
-            var form = new SchematicValueForm();
-            form.ShowDialog(this);
+            var oldTalents = DUData.SchemCraftingTalents.Clone();
+            using (var form = new SchematicValueForm())
+            {
+                form.ShowDialog(this);
+            }
+            // if schematic crafting talents have changed, reload vanilla talents
+            // and re-apply talents:
+            if (oldTalents != DUData.SchemCraftingTalents)
+            {
+                DUData.LoadSchematics();
+            }
         }
 
         private void RibbonAppButtonExit_Click(object sender, EventArgs e)
@@ -964,8 +986,10 @@ namespace DU_Industry_Tool
 
         private void RibbonButtonAboutClick(object sender, EventArgs e)
         {
-            var form = new AboutForm();
-            form.ShowDialog(this);
+            using (var form = new AboutForm())
+            {
+                form.ShowDialog(this);
+            }
         }
 
         private void RbOffice2010Blue_Click(object sender, EventArgs e)
