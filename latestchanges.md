@@ -1,5 +1,14 @@
 # Latest Changes
 
+## v2024.1.5
+
+- Schematics dialog: it is extended to be a calculator: each schematic can have a
+quantity and gets the sum displayed. The total of all is below the grid.
+- Added 3 buttons to load, save the entered quantities from/to a file as well
+as a button to reset all.
+- Export button now has options to include/exclude data
+- Usage hint: select talents and hit Apply button to recalculate all schematics.
+
 ## v2024.1.4
 
 - IMPORTANT: "schematicsValues.json" file has been updated and should NOT be manually edited!
