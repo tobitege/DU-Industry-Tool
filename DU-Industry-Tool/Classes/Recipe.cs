@@ -350,6 +350,17 @@ namespace DU_Industry_Tool
         public int BatchSize { get; set; }      // copies per batch
         public int BatchTime { get; set; }      // crafting time in seconds per batch
         public ulong NqId { get; set; }         // NQ's item id
+        [JsonIgnore]
+        public decimal? Qty { get; set; }
+        [JsonIgnore]
+        public decimal? Total { get; set; }
+    }
+
+    public class SchematicInfo
+    {
+        public string Key { get; set; }
+        public decimal? Qty { get; set; }
+        public decimal? Total { get; set; }
     }
 
     // external/3rd party json structures:

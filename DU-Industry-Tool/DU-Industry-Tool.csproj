@@ -78,6 +78,12 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Controls\ButtonRow.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\ButtonRow.Designer.cs">
+      <DependentUpon>ButtonRow.cs</DependentUpon>
+    </Compile>
     <Compile Include="Classes\Calculator2OutputClass.cs" />
     <Compile Include="Classes\CalculatorClass.cs" />
     <Compile Include="Classes\DUData.cs" />
@@ -144,6 +150,9 @@
     <Compile Include="Forms\SkillForm.Designer.cs">
       <DependentUpon>SkillForm.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="Controls\ButtonRow.resx">
+      <DependentUpon>ButtonRow.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Forms\AboutForm.resx">
       <DependentUpon>AboutForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -180,6 +189,7 @@
     <None Include="Groups.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <EmbeddedResource Include="latestchanges.md" />
     <None Include="licenses\KryptonToolkit.license">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

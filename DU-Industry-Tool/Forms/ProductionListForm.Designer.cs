@@ -58,7 +58,6 @@ namespace DU_Industry_Tool
             this.ComboRecipeNames = new Krypton.Toolkit.KryptonComboBox();
             this.kryptonLabel1 = new Krypton.Toolkit.KryptonLabel();
             this.LblLoaded = new Krypton.Toolkit.KryptonLabel();
-            this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.recipeNamesBindingSource = new System.Windows.Forms.BindingSource(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.MainPanel)).BeginInit();
             this.MainPanel.SuspendLayout();
@@ -80,19 +79,18 @@ namespace DU_Industry_Tool
             this.MainPanel.Location = new System.Drawing.Point(0, 0);
             this.MainPanel.Margin = new System.Windows.Forms.Padding(0);
             this.MainPanel.Name = "MainPanel";
-            this.MainPanel.Size = new System.Drawing.Size(532, 603);
+            this.MainPanel.Size = new System.Drawing.Size(532, 605);
             this.MainPanel.TabIndex = 0;
             // 
             // BtnCalculate
             // 
             this.BtnCalculate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.BtnCalculate.KryptonCommand = this.kCmdCalculate;
-            this.BtnCalculate.Location = new System.Drawing.Point(235, 542);
+            this.BtnCalculate.Location = new System.Drawing.Point(235, 544);
             this.BtnCalculate.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
             this.BtnCalculate.Name = "BtnCalculate";
             this.BtnCalculate.Size = new System.Drawing.Size(150, 42);
             this.BtnCalculate.TabIndex = 4;
-            this.toolTip1.SetToolTip(this.BtnCalculate, "Run the full calculation for the current production list.");
             this.BtnCalculate.Values.Text = "Calculate";
             // 
             // kCmdCalculate
@@ -106,12 +104,11 @@ namespace DU_Industry_Tool
             this.BtnClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.BtnClose.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.BtnClose.KryptonCommand = this.kCmdClose;
-            this.BtnClose.Location = new System.Drawing.Point(401, 542);
+            this.BtnClose.Location = new System.Drawing.Point(401, 544);
             this.BtnClose.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
             this.BtnClose.Name = "BtnClose";
             this.BtnClose.Size = new System.Drawing.Size(105, 42);
             this.BtnClose.TabIndex = 3;
-            this.toolTip1.SetToolTip(this.BtnClose, "Close without any calculation.");
             this.BtnClose.Values.Text = "Add";
             // 
             // kCmdClose
@@ -148,7 +145,7 @@ namespace DU_Industry_Tool
             this.dgvProductionList.RowTemplate.Height = 24;
             this.dgvProductionList.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.dgvProductionList.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.CellSelect;
-            this.dgvProductionList.Size = new System.Drawing.Size(532, 336);
+            this.dgvProductionList.Size = new System.Drawing.Size(532, 338);
             this.dgvProductionList.TabIndex = 1;
             // 
             // Column1
@@ -227,8 +224,7 @@ namespace DU_Industry_Tool
             this.BtnClear.StateNormal.Border.ImageStyle = Krypton.Toolkit.PaletteImageStyle.CenterMiddle;
             this.BtnClear.StateNormal.Border.Rounding = 2F;
             this.BtnClear.TabIndex = 8;
-            this.toolTip1.SetToolTip(this.BtnClear, "Clear the current production list.");
-            this.BtnClear.ToolTipValues.Description = "Clear current list";
+            this.BtnClear.ToolTipValues.Description = "Clear the current production list.";
             this.BtnClear.ToolTipValues.EnableToolTips = true;
             this.BtnClear.ToolTipValues.Heading = "Clear";
             this.BtnClear.Values.Text = "Clear List";
@@ -252,9 +248,8 @@ namespace DU_Industry_Tool
             this.BtnSave.StateNormal.Border.ImageStyle = Krypton.Toolkit.PaletteImageStyle.CenterMiddle;
             this.BtnSave.StateNormal.Border.Rounding = 2F;
             this.BtnSave.TabIndex = 7;
-            this.toolTip1.SetToolTip(this.BtnSave, "Save the current production list to a file. That file could be shared with other " +
-        "users.");
-            this.BtnSave.ToolTipValues.Description = "Save current list to file";
+            this.BtnSave.ToolTipValues.Description = "Save the current production list to a file. That file could be shared with other " +
+    "users.";
             this.BtnSave.ToolTipValues.EnableToolTips = true;
             this.BtnSave.ToolTipValues.Heading = "Save";
             this.BtnSave.Values.Text = "Save List";
@@ -278,8 +273,7 @@ namespace DU_Industry_Tool
             this.BtnLoad.StateNormal.Border.ImageStyle = Krypton.Toolkit.PaletteImageStyle.CenterMiddle;
             this.BtnLoad.StateNormal.Border.Rounding = 2F;
             this.BtnLoad.TabIndex = 6;
-            this.toolTip1.SetToolTip(this.BtnLoad, "Load a production list from a file.");
-            this.BtnLoad.ToolTipValues.Description = "Load a list from file";
+            this.BtnLoad.ToolTipValues.Description = "Load a production list from a file";
             this.BtnLoad.ToolTipValues.EnableToolTips = true;
             this.BtnLoad.ToolTipValues.Heading = "Load";
             this.BtnLoad.Values.Text = "Load List";
@@ -295,7 +289,7 @@ namespace DU_Industry_Tool
             this.lblQty.Location = new System.Drawing.Point(9, 102);
             this.lblQty.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
             this.lblQty.Name = "lblQty";
-            this.lblQty.Size = new System.Drawing.Size(79, 24);
+            this.lblQty.Size = new System.Drawing.Size(89, 27);
             this.lblQty.TabIndex = 5;
             this.lblQty.Values.Text = "Quantity:";
             // 
@@ -305,7 +299,7 @@ namespace DU_Industry_Tool
             this.lblRecipe.Location = new System.Drawing.Point(12, 61);
             this.lblRecipe.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
             this.lblRecipe.Name = "lblRecipe";
-            this.lblRecipe.Size = new System.Drawing.Size(64, 24);
+            this.lblRecipe.Size = new System.Drawing.Size(72, 27);
             this.lblRecipe.TabIndex = 4;
             this.lblRecipe.Values.Text = "Recipe:";
             // 
@@ -319,7 +313,7 @@ namespace DU_Industry_Tool
             0,
             0});
             this.NumUpDownQuantity.Name = "NumUpDownQuantity";
-            this.NumUpDownQuantity.Size = new System.Drawing.Size(88, 28);
+            this.NumUpDownQuantity.Size = new System.Drawing.Size(87, 31);
             this.NumUpDownQuantity.StateCommon.Border.DrawBorders = ((Krypton.Toolkit.PaletteDrawBorders)((((Krypton.Toolkit.PaletteDrawBorders.Top | Krypton.Toolkit.PaletteDrawBorders.Bottom) 
             | Krypton.Toolkit.PaletteDrawBorders.Left) 
             | Krypton.Toolkit.PaletteDrawBorders.Right)));
@@ -384,7 +378,7 @@ namespace DU_Industry_Tool
             this.kryptonLabel1.Location = new System.Drawing.Point(10, 18);
             this.kryptonLabel1.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
             this.kryptonLabel1.Name = "kryptonLabel1";
-            this.kryptonLabel1.Size = new System.Drawing.Size(453, 24);
+            this.kryptonLabel1.Size = new System.Drawing.Size(435, 23);
             this.kryptonLabel1.StateCommon.LongText.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.kryptonLabel1.StateCommon.ShortText.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.kryptonLabel1.TabIndex = 0;
@@ -396,7 +390,7 @@ namespace DU_Industry_Tool
             this.LblLoaded.Location = new System.Drawing.Point(9, 560);
             this.LblLoaded.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
             this.LblLoaded.Name = "LblLoaded";
-            this.LblLoaded.Size = new System.Drawing.Size(65, 24);
+            this.LblLoaded.Size = new System.Drawing.Size(73, 27);
             this.LblLoaded.TabIndex = 6;
             this.LblLoaded.Values.Text = "Loaded:";
             this.LblLoaded.Visible = false;
@@ -409,7 +403,7 @@ namespace DU_Industry_Tool
             // ProductionListForm
             // 
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Inherit;
-            this.ClientSize = new System.Drawing.Size(532, 603);
+            this.ClientSize = new System.Drawing.Size(532, 605);
             this.Controls.Add(this.LblLoaded);
             this.Controls.Add(this.MainPanel);
             this.DoubleBuffered = true;
@@ -460,6 +454,5 @@ namespace DU_Industry_Tool
         private KryptonDataGridViewComboBoxColumn Column1;
         private KryptonDataGridViewNumericUpDownColumn Column2;
         private KryptonLabel LblLoaded;
-        private System.Windows.Forms.ToolTip toolTip1;
     }
 }
