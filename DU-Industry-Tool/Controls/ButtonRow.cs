@@ -1,11 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using Krypton.Toolkit;
 
@@ -29,7 +22,7 @@ namespace DU_Industry_Tool
             for (int i = minValue; i <= maxValue; i++)
             {
                 var btn = new KryptonButton();
-                btn.Margin = new System.Windows.Forms.Padding(5);
+                btn.Margin = new System.Windows.Forms.Padding(2);
                 btn.Name = "btn"+i;
                 btn.Text = i.ToString();
                 btn.Tag = i;

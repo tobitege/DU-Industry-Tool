@@ -1,5 +1,9 @@
 # Changelog
 
+## v2024.1.7
+
+- Schematics: UI fixes due to DPI scaling
+
 ## v2024.1.6
 
 - Schematics dialog: it is extended to be a calculator: each schematic can have a

@@ -37,14 +37,12 @@ namespace DU_Industry_Tool
             this.panel.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.panel.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.panel.Font = new System.Drawing.Font("Segoe UI Semibold", 10.01739F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.panel.Location = new System.Drawing.Point(0, 0);
             this.panel.Margin = new System.Windows.Forms.Padding(0);
             this.panel.MinimumSize = new System.Drawing.Size(204, 30);
             this.panel.Name = "panel";
-            this.panel.Padding = new System.Windows.Forms.Padding(2);
-            this.panel.Size = new System.Drawing.Size(208, 36);
+            this.panel.Size = new System.Drawing.Size(208, 40);
             this.panel.TabIndex = 0;
             // 
             // ButtonRow
@@ -53,7 +51,7 @@ namespace DU_Industry_Tool
             this.Controls.Add(this.panel);
             this.Margin = new System.Windows.Forms.Padding(0);
             this.Name = "ButtonRow";
-            this.Size = new System.Drawing.Size(209, 40);
+            this.Size = new System.Drawing.Size(210, 42);
             this.ResumeLayout(false);
 
         }

@@ -95,7 +95,7 @@
             this.Qty,
             this.Sum});
             this.schematicsGrid.GridColor = System.Drawing.SystemColors.Window;
-            this.schematicsGrid.Location = new System.Drawing.Point(8, 261);
+            this.schematicsGrid.Location = new System.Drawing.Point(7, 218);
             this.schematicsGrid.MultiSelect = false;
             this.schematicsGrid.Name = "schematicsGrid";
             this.schematicsGrid.RowHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.Single;
@@ -105,7 +105,7 @@
             this.schematicsGrid.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.schematicsGrid.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.CellSelect;
             this.schematicsGrid.ShowEditingIcon = false;
-            this.schematicsGrid.Size = new System.Drawing.Size(822, 511);
+            this.schematicsGrid.Size = new System.Drawing.Size(686, 427);
             this.schematicsGrid.TabIndex = 10;
             this.schematicsGrid.RowValidating += new System.Windows.Forms.DataGridViewCellCancelEventHandler(this.schematicsGrid_RowValidating);
             // 
@@ -142,7 +142,7 @@
             this.BatchSize.Name = "BatchSize";
             this.BatchSize.ReadOnly = true;
             this.BatchSize.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
-            this.BatchSize.Width = 85;
+            this.BatchSize.Width = 68;
             // 
             // BatchCost
             // 
@@ -209,9 +209,9 @@
             this.closeBtn.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.closeBtn.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.closeBtn.Font = new System.Drawing.Font("Segoe UI Semibold", 10.01739F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.closeBtn.Location = new System.Drawing.Point(730, 816);
+            this.closeBtn.Location = new System.Drawing.Point(609, 678);
             this.closeBtn.Name = "closeBtn";
-            this.closeBtn.Size = new System.Drawing.Size(96, 29);
+            this.closeBtn.Size = new System.Drawing.Size(80, 28);
             this.closeBtn.TabIndex = 12;
             this.closeBtn.Values.Text = "&Close";
             this.closeBtn.Click += new System.EventHandler(this.closeBtn_Click);
@@ -221,19 +221,20 @@
             this.applyBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.applyBtn.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.applyBtn.Font = new System.Drawing.Font("Segoe UI Semibold", 10.01739F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.applyBtn.Location = new System.Drawing.Point(380, 816);
+            this.applyBtn.Location = new System.Drawing.Point(317, 678);
             this.applyBtn.Name = "applyBtn";
-            this.applyBtn.Size = new System.Drawing.Size(96, 29);
+            this.applyBtn.Size = new System.Drawing.Size(80, 28);
             this.applyBtn.TabIndex = 11;
             this.applyBtn.Values.Text = "&Apply";
             this.applyBtn.Click += new System.EventHandler(this.applyBtn_Click);
             // 
             // exportKBtn
             // 
+            this.exportKBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.exportKBtn.KryptonContextMenu = this.exportMenu;
-            this.exportKBtn.Location = new System.Drawing.Point(8, 816);
+            this.exportKBtn.Location = new System.Drawing.Point(10, 678);
             this.exportKBtn.Name = "exportKBtn";
-            this.exportKBtn.Size = new System.Drawing.Size(158, 29);
+            this.exportKBtn.Size = new System.Drawing.Size(132, 28);
             this.exportKBtn.TabIndex = 26;
             this.exportKBtn.Values.Text = "Export to Excel";
             this.exportKBtn.Click += new System.EventHandler(this.exportKBtn_Click);
@@ -294,10 +295,10 @@
             // BtnClear
             // 
             this.BtnClear.KryptonCommand = this.kCmdClearList;
-            this.BtnClear.Location = new System.Drawing.Point(685, 221);
-            this.BtnClear.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
+            this.BtnClear.Location = new System.Drawing.Point(572, 184);
+            this.BtnClear.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.BtnClear.Name = "BtnClear";
-            this.BtnClear.Size = new System.Drawing.Size(32, 32);
+            this.BtnClear.Size = new System.Drawing.Size(29, 29);
             this.BtnClear.StateNormal.Border.Color1 = System.Drawing.Color.Black;
             this.BtnClear.StateNormal.Border.DrawBorders = ((Krypton.Toolkit.PaletteDrawBorders)((((Krypton.Toolkit.PaletteDrawBorders.Top | Krypton.Toolkit.PaletteDrawBorders.Bottom) 
             | Krypton.Toolkit.PaletteDrawBorders.Left) 
@@ -313,10 +314,10 @@
             // BtnLoad
             // 
             this.BtnLoad.KryptonCommand = this.kCmdLoadList;
-            this.BtnLoad.Location = new System.Drawing.Point(607, 221);
-            this.BtnLoad.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
+            this.BtnLoad.Location = new System.Drawing.Point(507, 184);
+            this.BtnLoad.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.BtnLoad.Name = "BtnLoad";
-            this.BtnLoad.Size = new System.Drawing.Size(32, 32);
+            this.BtnLoad.Size = new System.Drawing.Size(29, 29);
             this.BtnLoad.StateNormal.Border.Color1 = System.Drawing.Color.Black;
             this.BtnLoad.StateNormal.Border.DrawBorders = ((Krypton.Toolkit.PaletteDrawBorders)((((Krypton.Toolkit.PaletteDrawBorders.Top | Krypton.Toolkit.PaletteDrawBorders.Bottom) 
             | Krypton.Toolkit.PaletteDrawBorders.Left) 
@@ -332,10 +333,10 @@
             // BtnSave
             // 
             this.BtnSave.KryptonCommand = this.kCmdSaveList;
-            this.BtnSave.Location = new System.Drawing.Point(647, 221);
-            this.BtnSave.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
+            this.BtnSave.Location = new System.Drawing.Point(540, 184);
+            this.BtnSave.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.BtnSave.Name = "BtnSave";
-            this.BtnSave.Size = new System.Drawing.Size(32, 32);
+            this.BtnSave.Size = new System.Drawing.Size(29, 29);
             this.BtnSave.StateNormal.Border.Color1 = System.Drawing.Color.Black;
             this.BtnSave.StateNormal.Border.DrawBorders = ((Krypton.Toolkit.PaletteDrawBorders)((((Krypton.Toolkit.PaletteDrawBorders.Top | Krypton.Toolkit.PaletteDrawBorders.Bottom) 
             | Krypton.Toolkit.PaletteDrawBorders.Left) 
@@ -351,12 +352,11 @@
             // tbSkill4
             // 
             this.tbSkill4.AutoSize = true;
-            this.tbSkill4.Location = new System.Drawing.Point(372, 168);
+            this.tbSkill4.Location = new System.Drawing.Point(311, 140);
             this.tbSkill4.Margin = new System.Windows.Forms.Padding(0);
-            this.tbSkill4.MinimumSize = new System.Drawing.Size(0, 44);
             this.tbSkill4.Name = "tbSkill4";
             this.tbSkill4.Padding = new System.Windows.Forms.Padding(2);
-            this.tbSkill4.Size = new System.Drawing.Size(221, 49);
+            this.tbSkill4.Size = new System.Drawing.Size(208, 37);
             this.tbSkill4.TabIndex = 3;
             this.tbSkill4.Tag = "3";
             this.tbSkill4.ValueSelected += new System.EventHandler<int>(this.buttonRow1_ValueSelected);
@@ -364,12 +364,11 @@
             // tbSkill3
             // 
             this.tbSkill3.AutoSize = true;
-            this.tbSkill3.Location = new System.Drawing.Point(372, 119);
+            this.tbSkill3.Location = new System.Drawing.Point(311, 99);
             this.tbSkill3.Margin = new System.Windows.Forms.Padding(0);
-            this.tbSkill3.MinimumSize = new System.Drawing.Size(0, 44);
             this.tbSkill3.Name = "tbSkill3";
             this.tbSkill3.Padding = new System.Windows.Forms.Padding(2);
-            this.tbSkill3.Size = new System.Drawing.Size(221, 49);
+            this.tbSkill3.Size = new System.Drawing.Size(208, 37);
             this.tbSkill3.TabIndex = 2;
             this.tbSkill3.Tag = "2";
             this.tbSkill3.ValueSelected += new System.EventHandler<int>(this.buttonRow1_ValueSelected);
@@ -377,12 +376,11 @@
             // tbSkill2
             // 
             this.tbSkill2.AutoSize = true;
-            this.tbSkill2.Location = new System.Drawing.Point(372, 70);
+            this.tbSkill2.Location = new System.Drawing.Point(311, 55);
             this.tbSkill2.Margin = new System.Windows.Forms.Padding(0);
-            this.tbSkill2.MinimumSize = new System.Drawing.Size(0, 44);
             this.tbSkill2.Name = "tbSkill2";
             this.tbSkill2.Padding = new System.Windows.Forms.Padding(2);
-            this.tbSkill2.Size = new System.Drawing.Size(221, 49);
+            this.tbSkill2.Size = new System.Drawing.Size(208, 37);
             this.tbSkill2.TabIndex = 1;
             this.tbSkill2.Tag = "1";
             this.tbSkill2.ValueSelected += new System.EventHandler<int>(this.buttonRow1_ValueSelected);
@@ -390,12 +388,11 @@
             // tbSkill1
             // 
             this.tbSkill1.AutoSize = true;
-            this.tbSkill1.Location = new System.Drawing.Point(372, 21);
+            this.tbSkill1.Location = new System.Drawing.Point(311, 13);
             this.tbSkill1.Margin = new System.Windows.Forms.Padding(0);
-            this.tbSkill1.MinimumSize = new System.Drawing.Size(0, 44);
             this.tbSkill1.Name = "tbSkill1";
             this.tbSkill1.Padding = new System.Windows.Forms.Padding(2);
-            this.tbSkill1.Size = new System.Drawing.Size(221, 49);
+            this.tbSkill1.Size = new System.Drawing.Size(208, 37);
             this.tbSkill1.TabIndex = 0;
             this.tbSkill1.Tag = "0";
             this.tbSkill1.ValueSelected += new System.EventHandler<int>(this.buttonRow1_ValueSelected);
@@ -403,9 +400,9 @@
             // totalSumLabel
             // 
             this.totalSumLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.totalSumLabel.Location = new System.Drawing.Point(733, 784);
+            this.totalSumLabel.Location = new System.Drawing.Point(611, 654);
             this.totalSumLabel.Name = "totalSumLabel";
-            this.totalSumLabel.Size = new System.Drawing.Size(93, 26);
+            this.totalSumLabel.Size = new System.Drawing.Size(79, 22);
             this.totalSumLabel.StateCommon.ShortText.Font = new System.Drawing.Font("Segoe UI", 10.01739F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.totalSumLabel.TabIndex = 27;
             this.totalSumLabel.TabStop = false;
@@ -414,9 +411,9 @@
             // 
             // kLabel5
             // 
-            this.kLabel5.Location = new System.Drawing.Point(9, 228);
+            this.kLabel5.Location = new System.Drawing.Point(8, 190);
             this.kLabel5.Name = "kLabel5";
-            this.kLabel5.Size = new System.Drawing.Size(273, 26);
+            this.kLabel5.Size = new System.Drawing.Size(229, 22);
             this.kLabel5.StateCommon.ShortText.Font = new System.Drawing.Font("Segoe UI", 10.01739F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.kLabel5.TabIndex = 9;
             this.kLabel5.TabStop = false;
@@ -425,9 +422,9 @@
             // 
             // craftingLbl
             // 
-            this.craftingLbl.Location = new System.Drawing.Point(8, 3);
+            this.craftingLbl.Location = new System.Drawing.Point(7, 3);
             this.craftingLbl.Name = "craftingLbl";
-            this.craftingLbl.Size = new System.Drawing.Size(226, 26);
+            this.craftingLbl.Size = new System.Drawing.Size(190, 22);
             this.craftingLbl.StateCommon.ShortText.Font = new System.Drawing.Font("Segoe UI", 10.01739F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.craftingLbl.TabIndex = 0;
             this.craftingLbl.TabStop = false;
@@ -438,9 +435,9 @@
             // 
             this.skill4.AutoSize = false;
             this.skill4.LabelStyle = Krypton.Toolkit.LabelStyle.Custom1;
-            this.skill4.Location = new System.Drawing.Point(347, 179);
+            this.skill4.Location = new System.Drawing.Point(290, 149);
             this.skill4.Name = "skill4";
-            this.skill4.Size = new System.Drawing.Size(22, 23);
+            this.skill4.Size = new System.Drawing.Size(18, 19);
             this.skill4.StateCommon.ShortText.Font = new System.Drawing.Font("Segoe UI Semibold", 11.89565F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.skill4.TabIndex = 24;
             this.skill4.TabStop = false;
@@ -451,9 +448,9 @@
             // 
             this.skill3.AutoSize = false;
             this.skill3.LabelStyle = Krypton.Toolkit.LabelStyle.Custom1;
-            this.skill3.Location = new System.Drawing.Point(347, 131);
+            this.skill3.Location = new System.Drawing.Point(290, 107);
             this.skill3.Name = "skill3";
-            this.skill3.Size = new System.Drawing.Size(22, 23);
+            this.skill3.Size = new System.Drawing.Size(18, 19);
             this.skill3.StateCommon.ShortText.Font = new System.Drawing.Font("Segoe UI Semibold", 11.89565F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.skill3.TabIndex = 23;
             this.skill3.TabStop = false;
@@ -464,9 +461,9 @@
             // 
             this.skill2.AutoSize = false;
             this.skill2.LabelStyle = Krypton.Toolkit.LabelStyle.Custom1;
-            this.skill2.Location = new System.Drawing.Point(347, 81);
+            this.skill2.Location = new System.Drawing.Point(290, 63);
             this.skill2.Name = "skill2";
-            this.skill2.Size = new System.Drawing.Size(22, 23);
+            this.skill2.Size = new System.Drawing.Size(18, 19);
             this.skill2.StateCommon.ShortText.Font = new System.Drawing.Font("Segoe UI Semibold", 11.89565F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.skill2.TabIndex = 21;
             this.skill2.TabStop = false;
@@ -477,9 +474,9 @@
             // 
             this.skill1.AutoSize = false;
             this.skill1.LabelStyle = Krypton.Toolkit.LabelStyle.Custom1;
-            this.skill1.Location = new System.Drawing.Point(347, 36);
+            this.skill1.Location = new System.Drawing.Point(290, 20);
             this.skill1.Name = "skill1";
-            this.skill1.Size = new System.Drawing.Size(22, 23);
+            this.skill1.Size = new System.Drawing.Size(18, 19);
             this.skill1.StateCommon.ShortText.Font = new System.Drawing.Font("Segoe UI Semibold", 11.89565F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.skill1.TabIndex = 20;
             this.skill1.TabStop = false;
@@ -489,9 +486,9 @@
             // 
             // kLabel4
             // 
-            this.kLabel4.Location = new System.Drawing.Point(8, 179);
+            this.kLabel4.Location = new System.Drawing.Point(7, 149);
             this.kLabel4.Name = "kLabel4";
-            this.kLabel4.Size = new System.Drawing.Size(286, 27);
+            this.kLabel4.Size = new System.Drawing.Size(204, 20);
             this.kLabel4.TabIndex = 7;
             this.kLabel4.TabStop = false;
             this.kLabel4.Text = "Adv. Schematic Output Prod. (+2%)";
@@ -499,18 +496,18 @@
             // 
             // kLabel3
             // 
-            this.kLabel3.Location = new System.Drawing.Point(8, 131);
+            this.kLabel3.Location = new System.Drawing.Point(7, 109);
             this.kLabel3.Name = "kLabel3";
-            this.kLabel3.Size = new System.Drawing.Size(298, 27);
+            this.kLabel3.Size = new System.Drawing.Size(213, 20);
             this.kLabel3.TabIndex = 5;
             this.kLabel3.Text = "Schematic Output Productivity (+3%)";
             this.kLabel3.Values.Text = "Schematic Output Productivity (+3%)";
             // 
             // kLabel2
             // 
-            this.kLabel2.Location = new System.Drawing.Point(9, 81);
+            this.kLabel2.Location = new System.Drawing.Point(8, 68);
             this.kLabel2.Name = "kLabel2";
-            this.kLabel2.Size = new System.Drawing.Size(287, 27);
+            this.kLabel2.Size = new System.Drawing.Size(205, 20);
             this.kLabel2.TabIndex = 3;
             this.kLabel2.TabStop = false;
             this.kLabel2.Text = "Adv. Schematic Cost Optim. (-3% q)";
@@ -518,9 +515,9 @@
             // 
             // kLabel1
             // 
-            this.kLabel1.Location = new System.Drawing.Point(8, 36);
+            this.kLabel1.Location = new System.Drawing.Point(7, 30);
             this.kLabel1.Name = "kLabel1";
-            this.kLabel1.Size = new System.Drawing.Size(296, 27);
+            this.kLabel1.Size = new System.Drawing.Size(211, 20);
             this.kLabel1.TabIndex = 1;
             this.kLabel1.TabStop = false;
             this.kLabel1.Text = "Schematic Cost Optimization (-5% q)";
@@ -529,10 +526,10 @@
             // SchematicValueForm
             // 
             this.AcceptButton = this.applyBtn;
-            this.AutoScaleDimensions = new System.Drawing.SizeF(115F, 115F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.ClientSize = new System.Drawing.Size(842, 855);
+            this.ClientSize = new System.Drawing.Size(705, 714);
             this.Controls.Add(this.BtnSave);
             this.Controls.Add(this.BtnClear);
             this.Controls.Add(this.BtnLoad);
@@ -558,7 +555,7 @@
             this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.MinimumSize = new System.Drawing.Size(860, 720);
+            this.MinimumSize = new System.Drawing.Size(721, 607);
             this.Name = "SchematicValueForm";
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Show;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
