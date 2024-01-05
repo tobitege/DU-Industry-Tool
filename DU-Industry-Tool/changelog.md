@@ -1,6 +1,6 @@
 # Changelog
 
-## v2024.1.5
+## v2024.1.6
 
 - Schematics dialog: it is extended to be a calculator: each schematic can have a
 quantity and gets the sum displayed. The total of all is below the grid.
