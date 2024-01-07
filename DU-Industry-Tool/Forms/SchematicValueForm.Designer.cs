@@ -72,6 +72,9 @@
             this.kLabel3 = new DU_Industry_Tool.KLabel();
             this.kLabel2 = new DU_Industry_Tool.KLabel();
             this.kLabel1 = new DU_Industry_Tool.KLabel();
+            this.applyGrossMargin = new Krypton.Toolkit.KryptonCheckBox();
+            this.grossMarginEdit = new Krypton.Toolkit.KryptonNumericUpDown();
+            this.duCraftImportBtn = new Krypton.Toolkit.KryptonButton();
             ((System.ComponentModel.ISupportInitialize)(this.schematicsGrid)).BeginInit();
             this.SuspendLayout();
             // 
@@ -79,12 +82,12 @@
             // 
             this.schematicsGrid.AllowUserToAddRows = false;
             this.schematicsGrid.AllowUserToDeleteRows = false;
-            this.schematicsGrid.AllowUserToResizeColumns = false;
             this.schematicsGrid.AllowUserToResizeRows = false;
             this.schematicsGrid.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.schematicsGrid.BackgroundColor = System.Drawing.SystemColors.Window;
+            this.schematicsGrid.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.schematicsGrid.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.schematicsGrid.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.KEY,
@@ -94,18 +97,17 @@
             this.Quanta,
             this.Qty,
             this.Sum});
-            this.schematicsGrid.GridColor = System.Drawing.SystemColors.Window;
-            this.schematicsGrid.Location = new System.Drawing.Point(7, 218);
+            this.schematicsGrid.GridColor = System.Drawing.SystemColors.GradientActiveCaption;
+            this.schematicsGrid.Location = new System.Drawing.Point(9, 272);
+            this.schematicsGrid.Margin = new System.Windows.Forms.Padding(4);
             this.schematicsGrid.MultiSelect = false;
             this.schematicsGrid.Name = "schematicsGrid";
             this.schematicsGrid.RowHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.Single;
-            this.schematicsGrid.RowHeadersVisible = false;
             this.schematicsGrid.RowHeadersWidth = 21;
             this.schematicsGrid.RowTemplate.Height = 24;
             this.schematicsGrid.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.schematicsGrid.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.CellSelect;
-            this.schematicsGrid.ShowEditingIcon = false;
-            this.schematicsGrid.Size = new System.Drawing.Size(686, 427);
+            this.schematicsGrid.Size = new System.Drawing.Size(858, 534);
             this.schematicsGrid.TabIndex = 10;
             this.schematicsGrid.RowValidating += new System.Windows.Forms.DataGridViewCellCancelEventHandler(this.schematicsGrid_RowValidating);
             // 
@@ -142,7 +144,7 @@
             this.BatchSize.Name = "BatchSize";
             this.BatchSize.ReadOnly = true;
             this.BatchSize.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
-            this.BatchSize.Width = 68;
+            this.BatchSize.Width = 85;
             // 
             // BatchCost
             // 
@@ -209,9 +211,10 @@
             this.closeBtn.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.closeBtn.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.closeBtn.Font = new System.Drawing.Font("Segoe UI Semibold", 10.01739F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.closeBtn.Location = new System.Drawing.Point(609, 678);
+            this.closeBtn.Location = new System.Drawing.Point(761, 848);
+            this.closeBtn.Margin = new System.Windows.Forms.Padding(4);
             this.closeBtn.Name = "closeBtn";
-            this.closeBtn.Size = new System.Drawing.Size(80, 28);
+            this.closeBtn.Size = new System.Drawing.Size(100, 35);
             this.closeBtn.TabIndex = 12;
             this.closeBtn.Values.Text = "&Close";
             this.closeBtn.Click += new System.EventHandler(this.closeBtn_Click);
@@ -221,9 +224,10 @@
             this.applyBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.applyBtn.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.applyBtn.Font = new System.Drawing.Font("Segoe UI Semibold", 10.01739F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.applyBtn.Location = new System.Drawing.Point(317, 678);
+            this.applyBtn.Location = new System.Drawing.Point(396, 848);
+            this.applyBtn.Margin = new System.Windows.Forms.Padding(4);
             this.applyBtn.Name = "applyBtn";
-            this.applyBtn.Size = new System.Drawing.Size(80, 28);
+            this.applyBtn.Size = new System.Drawing.Size(100, 35);
             this.applyBtn.TabIndex = 11;
             this.applyBtn.Values.Text = "&Apply";
             this.applyBtn.Click += new System.EventHandler(this.applyBtn_Click);
@@ -232,9 +236,10 @@
             // 
             this.exportKBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.exportKBtn.KryptonContextMenu = this.exportMenu;
-            this.exportKBtn.Location = new System.Drawing.Point(10, 678);
+            this.exportKBtn.Location = new System.Drawing.Point(12, 848);
+            this.exportKBtn.Margin = new System.Windows.Forms.Padding(4);
             this.exportKBtn.Name = "exportKBtn";
-            this.exportKBtn.Size = new System.Drawing.Size(132, 28);
+            this.exportKBtn.Size = new System.Drawing.Size(165, 35);
             this.exportKBtn.TabIndex = 26;
             this.exportKBtn.Values.Text = "Export to Excel";
             this.exportKBtn.Click += new System.EventHandler(this.exportKBtn_Click);
@@ -295,10 +300,10 @@
             // BtnClear
             // 
             this.BtnClear.KryptonCommand = this.kCmdClearList;
-            this.BtnClear.Location = new System.Drawing.Point(572, 184);
-            this.BtnClear.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.BtnClear.Location = new System.Drawing.Point(715, 230);
+            this.BtnClear.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.BtnClear.Name = "BtnClear";
-            this.BtnClear.Size = new System.Drawing.Size(29, 29);
+            this.BtnClear.Size = new System.Drawing.Size(36, 36);
             this.BtnClear.StateNormal.Border.Color1 = System.Drawing.Color.Black;
             this.BtnClear.StateNormal.Border.DrawBorders = ((Krypton.Toolkit.PaletteDrawBorders)((((Krypton.Toolkit.PaletteDrawBorders.Top | Krypton.Toolkit.PaletteDrawBorders.Bottom) 
             | Krypton.Toolkit.PaletteDrawBorders.Left) 
@@ -314,10 +319,10 @@
             // BtnLoad
             // 
             this.BtnLoad.KryptonCommand = this.kCmdLoadList;
-            this.BtnLoad.Location = new System.Drawing.Point(507, 184);
-            this.BtnLoad.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.BtnLoad.Location = new System.Drawing.Point(634, 230);
+            this.BtnLoad.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.BtnLoad.Name = "BtnLoad";
-            this.BtnLoad.Size = new System.Drawing.Size(29, 29);
+            this.BtnLoad.Size = new System.Drawing.Size(36, 36);
             this.BtnLoad.StateNormal.Border.Color1 = System.Drawing.Color.Black;
             this.BtnLoad.StateNormal.Border.DrawBorders = ((Krypton.Toolkit.PaletteDrawBorders)((((Krypton.Toolkit.PaletteDrawBorders.Top | Krypton.Toolkit.PaletteDrawBorders.Bottom) 
             | Krypton.Toolkit.PaletteDrawBorders.Left) 
@@ -333,10 +338,10 @@
             // BtnSave
             // 
             this.BtnSave.KryptonCommand = this.kCmdSaveList;
-            this.BtnSave.Location = new System.Drawing.Point(540, 184);
-            this.BtnSave.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.BtnSave.Location = new System.Drawing.Point(675, 230);
+            this.BtnSave.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.BtnSave.Name = "BtnSave";
-            this.BtnSave.Size = new System.Drawing.Size(29, 29);
+            this.BtnSave.Size = new System.Drawing.Size(36, 36);
             this.BtnSave.StateNormal.Border.Color1 = System.Drawing.Color.Black;
             this.BtnSave.StateNormal.Border.DrawBorders = ((Krypton.Toolkit.PaletteDrawBorders)((((Krypton.Toolkit.PaletteDrawBorders.Top | Krypton.Toolkit.PaletteDrawBorders.Bottom) 
             | Krypton.Toolkit.PaletteDrawBorders.Left) 
@@ -352,11 +357,11 @@
             // tbSkill4
             // 
             this.tbSkill4.AutoSize = true;
-            this.tbSkill4.Location = new System.Drawing.Point(311, 140);
+            this.tbSkill4.Location = new System.Drawing.Point(389, 181);
             this.tbSkill4.Margin = new System.Windows.Forms.Padding(0);
             this.tbSkill4.Name = "tbSkill4";
             this.tbSkill4.Padding = new System.Windows.Forms.Padding(2);
-            this.tbSkill4.Size = new System.Drawing.Size(208, 37);
+            this.tbSkill4.Size = new System.Drawing.Size(208, 38);
             this.tbSkill4.TabIndex = 3;
             this.tbSkill4.Tag = "3";
             this.tbSkill4.ValueSelected += new System.EventHandler<int>(this.buttonRow1_ValueSelected);
@@ -364,11 +369,11 @@
             // tbSkill3
             // 
             this.tbSkill3.AutoSize = true;
-            this.tbSkill3.Location = new System.Drawing.Point(311, 99);
+            this.tbSkill3.Location = new System.Drawing.Point(389, 130);
             this.tbSkill3.Margin = new System.Windows.Forms.Padding(0);
             this.tbSkill3.Name = "tbSkill3";
             this.tbSkill3.Padding = new System.Windows.Forms.Padding(2);
-            this.tbSkill3.Size = new System.Drawing.Size(208, 37);
+            this.tbSkill3.Size = new System.Drawing.Size(208, 38);
             this.tbSkill3.TabIndex = 2;
             this.tbSkill3.Tag = "2";
             this.tbSkill3.ValueSelected += new System.EventHandler<int>(this.buttonRow1_ValueSelected);
@@ -376,11 +381,11 @@
             // tbSkill2
             // 
             this.tbSkill2.AutoSize = true;
-            this.tbSkill2.Location = new System.Drawing.Point(311, 55);
+            this.tbSkill2.Location = new System.Drawing.Point(389, 75);
             this.tbSkill2.Margin = new System.Windows.Forms.Padding(0);
             this.tbSkill2.Name = "tbSkill2";
             this.tbSkill2.Padding = new System.Windows.Forms.Padding(2);
-            this.tbSkill2.Size = new System.Drawing.Size(208, 37);
+            this.tbSkill2.Size = new System.Drawing.Size(208, 38);
             this.tbSkill2.TabIndex = 1;
             this.tbSkill2.Tag = "1";
             this.tbSkill2.ValueSelected += new System.EventHandler<int>(this.buttonRow1_ValueSelected);
@@ -388,11 +393,11 @@
             // tbSkill1
             // 
             this.tbSkill1.AutoSize = true;
-            this.tbSkill1.Location = new System.Drawing.Point(311, 13);
+            this.tbSkill1.Location = new System.Drawing.Point(389, 22);
             this.tbSkill1.Margin = new System.Windows.Forms.Padding(0);
             this.tbSkill1.Name = "tbSkill1";
             this.tbSkill1.Padding = new System.Windows.Forms.Padding(2);
-            this.tbSkill1.Size = new System.Drawing.Size(208, 37);
+            this.tbSkill1.Size = new System.Drawing.Size(208, 38);
             this.tbSkill1.TabIndex = 0;
             this.tbSkill1.Tag = "0";
             this.tbSkill1.ValueSelected += new System.EventHandler<int>(this.buttonRow1_ValueSelected);
@@ -400,9 +405,10 @@
             // totalSumLabel
             // 
             this.totalSumLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.totalSumLabel.Location = new System.Drawing.Point(611, 654);
+            this.totalSumLabel.Location = new System.Drawing.Point(766, 819);
+            this.totalSumLabel.Margin = new System.Windows.Forms.Padding(4);
             this.totalSumLabel.Name = "totalSumLabel";
-            this.totalSumLabel.Size = new System.Drawing.Size(79, 22);
+            this.totalSumLabel.Size = new System.Drawing.Size(97, 27);
             this.totalSumLabel.StateCommon.ShortText.Font = new System.Drawing.Font("Segoe UI", 10.01739F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.totalSumLabel.TabIndex = 27;
             this.totalSumLabel.TabStop = false;
@@ -411,9 +417,10 @@
             // 
             // kLabel5
             // 
-            this.kLabel5.Location = new System.Drawing.Point(8, 190);
+            this.kLabel5.Location = new System.Drawing.Point(10, 238);
+            this.kLabel5.Margin = new System.Windows.Forms.Padding(4);
             this.kLabel5.Name = "kLabel5";
-            this.kLabel5.Size = new System.Drawing.Size(229, 22);
+            this.kLabel5.Size = new System.Drawing.Size(284, 27);
             this.kLabel5.StateCommon.ShortText.Font = new System.Drawing.Font("Segoe UI", 10.01739F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.kLabel5.TabIndex = 9;
             this.kLabel5.TabStop = false;
@@ -422,9 +429,10 @@
             // 
             // craftingLbl
             // 
-            this.craftingLbl.Location = new System.Drawing.Point(7, 3);
+            this.craftingLbl.Location = new System.Drawing.Point(9, 4);
+            this.craftingLbl.Margin = new System.Windows.Forms.Padding(4);
             this.craftingLbl.Name = "craftingLbl";
-            this.craftingLbl.Size = new System.Drawing.Size(190, 22);
+            this.craftingLbl.Size = new System.Drawing.Size(236, 27);
             this.craftingLbl.StateCommon.ShortText.Font = new System.Drawing.Font("Segoe UI", 10.01739F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.craftingLbl.TabIndex = 0;
             this.craftingLbl.TabStop = false;
@@ -435,10 +443,11 @@
             // 
             this.skill4.AutoSize = false;
             this.skill4.LabelStyle = Krypton.Toolkit.LabelStyle.Custom1;
-            this.skill4.Location = new System.Drawing.Point(290, 149);
+            this.skill4.Location = new System.Drawing.Point(362, 186);
+            this.skill4.Margin = new System.Windows.Forms.Padding(4);
             this.skill4.Name = "skill4";
-            this.skill4.Size = new System.Drawing.Size(18, 19);
-            this.skill4.StateCommon.ShortText.Font = new System.Drawing.Font("Segoe UI Semibold", 11.89565F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.skill4.Size = new System.Drawing.Size(22, 24);
+            this.skill4.StateCommon.ShortText.Font = new System.Drawing.Font("Segoe UI Semibold", 10.2F, System.Drawing.FontStyle.Bold);
             this.skill4.TabIndex = 24;
             this.skill4.TabStop = false;
             this.skill4.Text = "0";
@@ -448,10 +457,11 @@
             // 
             this.skill3.AutoSize = false;
             this.skill3.LabelStyle = Krypton.Toolkit.LabelStyle.Custom1;
-            this.skill3.Location = new System.Drawing.Point(290, 107);
+            this.skill3.Location = new System.Drawing.Point(362, 134);
+            this.skill3.Margin = new System.Windows.Forms.Padding(4);
             this.skill3.Name = "skill3";
-            this.skill3.Size = new System.Drawing.Size(18, 19);
-            this.skill3.StateCommon.ShortText.Font = new System.Drawing.Font("Segoe UI Semibold", 11.89565F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.skill3.Size = new System.Drawing.Size(22, 24);
+            this.skill3.StateCommon.ShortText.Font = new System.Drawing.Font("Segoe UI Semibold", 10.2F, System.Drawing.FontStyle.Bold);
             this.skill3.TabIndex = 23;
             this.skill3.TabStop = false;
             this.skill3.Text = "0";
@@ -461,10 +471,11 @@
             // 
             this.skill2.AutoSize = false;
             this.skill2.LabelStyle = Krypton.Toolkit.LabelStyle.Custom1;
-            this.skill2.Location = new System.Drawing.Point(290, 63);
+            this.skill2.Location = new System.Drawing.Point(362, 79);
+            this.skill2.Margin = new System.Windows.Forms.Padding(4);
             this.skill2.Name = "skill2";
-            this.skill2.Size = new System.Drawing.Size(18, 19);
-            this.skill2.StateCommon.ShortText.Font = new System.Drawing.Font("Segoe UI Semibold", 11.89565F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.skill2.Size = new System.Drawing.Size(22, 24);
+            this.skill2.StateCommon.ShortText.Font = new System.Drawing.Font("Segoe UI Semibold", 10.2F, System.Drawing.FontStyle.Bold);
             this.skill2.TabIndex = 21;
             this.skill2.TabStop = false;
             this.skill2.Text = "0";
@@ -474,10 +485,11 @@
             // 
             this.skill1.AutoSize = false;
             this.skill1.LabelStyle = Krypton.Toolkit.LabelStyle.Custom1;
-            this.skill1.Location = new System.Drawing.Point(290, 20);
+            this.skill1.Location = new System.Drawing.Point(362, 25);
+            this.skill1.Margin = new System.Windows.Forms.Padding(4);
             this.skill1.Name = "skill1";
-            this.skill1.Size = new System.Drawing.Size(18, 19);
-            this.skill1.StateCommon.ShortText.Font = new System.Drawing.Font("Segoe UI Semibold", 11.89565F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.skill1.Size = new System.Drawing.Size(22, 24);
+            this.skill1.StateCommon.ShortText.Font = new System.Drawing.Font("Segoe UI Semibold", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.skill1.TabIndex = 20;
             this.skill1.TabStop = false;
             this.skill1.Text = "0";
@@ -486,9 +498,10 @@
             // 
             // kLabel4
             // 
-            this.kLabel4.Location = new System.Drawing.Point(7, 149);
+            this.kLabel4.Location = new System.Drawing.Point(9, 186);
+            this.kLabel4.Margin = new System.Windows.Forms.Padding(4);
             this.kLabel4.Name = "kLabel4";
-            this.kLabel4.Size = new System.Drawing.Size(204, 20);
+            this.kLabel4.Size = new System.Drawing.Size(253, 24);
             this.kLabel4.TabIndex = 7;
             this.kLabel4.TabStop = false;
             this.kLabel4.Text = "Adv. Schematic Output Prod. (+2%)";
@@ -496,18 +509,20 @@
             // 
             // kLabel3
             // 
-            this.kLabel3.Location = new System.Drawing.Point(7, 109);
+            this.kLabel3.Location = new System.Drawing.Point(9, 136);
+            this.kLabel3.Margin = new System.Windows.Forms.Padding(4);
             this.kLabel3.Name = "kLabel3";
-            this.kLabel3.Size = new System.Drawing.Size(213, 20);
+            this.kLabel3.Size = new System.Drawing.Size(264, 24);
             this.kLabel3.TabIndex = 5;
             this.kLabel3.Text = "Schematic Output Productivity (+3%)";
             this.kLabel3.Values.Text = "Schematic Output Productivity (+3%)";
             // 
             // kLabel2
             // 
-            this.kLabel2.Location = new System.Drawing.Point(8, 68);
+            this.kLabel2.Location = new System.Drawing.Point(10, 85);
+            this.kLabel2.Margin = new System.Windows.Forms.Padding(4);
             this.kLabel2.Name = "kLabel2";
-            this.kLabel2.Size = new System.Drawing.Size(205, 20);
+            this.kLabel2.Size = new System.Drawing.Size(254, 24);
             this.kLabel2.TabIndex = 3;
             this.kLabel2.TabStop = false;
             this.kLabel2.Text = "Adv. Schematic Cost Optim. (-3% q)";
@@ -515,21 +530,67 @@
             // 
             // kLabel1
             // 
-            this.kLabel1.Location = new System.Drawing.Point(7, 30);
+            this.kLabel1.Location = new System.Drawing.Point(9, 38);
+            this.kLabel1.Margin = new System.Windows.Forms.Padding(4);
             this.kLabel1.Name = "kLabel1";
-            this.kLabel1.Size = new System.Drawing.Size(211, 20);
+            this.kLabel1.Size = new System.Drawing.Size(262, 24);
             this.kLabel1.TabIndex = 1;
             this.kLabel1.TabStop = false;
             this.kLabel1.Text = "Schematic Cost Optimization (-5% q)";
             this.kLabel1.Values.Text = "Schematic Cost Optimization (-5% q)";
             // 
+            // applyGrossMargin
+            // 
+            this.applyGrossMargin.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.applyGrossMargin.Location = new System.Drawing.Point(602, 24);
+            this.applyGrossMargin.Name = "applyGrossMargin";
+            this.applyGrossMargin.Size = new System.Drawing.Size(192, 24);
+            this.applyGrossMargin.TabIndex = 31;
+            this.applyGrossMargin.ToolTipValues.Description = "% on top of single price before calculating sum";
+            this.applyGrossMargin.ToolTipValues.Heading = "Gross Margin %";
+            this.applyGrossMargin.Values.Text = "Apply Gross Margin (%)?";
+            this.applyGrossMargin.Visible = false;
+            // 
+            // grossMarginEdit
+            // 
+            this.grossMarginEdit.AllowDecimals = true;
+            this.grossMarginEdit.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.grossMarginEdit.DecimalPlaces = 2;
+            this.grossMarginEdit.Location = new System.Drawing.Point(625, 54);
+            this.grossMarginEdit.MinimumSize = new System.Drawing.Size(70, 0);
+            this.grossMarginEdit.Name = "grossMarginEdit";
+            this.grossMarginEdit.Size = new System.Drawing.Size(76, 26);
+            this.grossMarginEdit.TabIndex = 32;
+            this.grossMarginEdit.Value = new decimal(new int[] {
+            1234,
+            0,
+            0,
+            131072});
+            this.grossMarginEdit.Visible = false;
+            // 
+            // duCraftImportBtn
+            // 
+            this.duCraftImportBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.duCraftImportBtn.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.duCraftImportBtn.Font = new System.Drawing.Font("Segoe UI Semibold", 10.01739F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.duCraftImportBtn.Location = new System.Drawing.Point(206, 848);
+            this.duCraftImportBtn.Margin = new System.Windows.Forms.Padding(4);
+            this.duCraftImportBtn.Name = "duCraftImportBtn";
+            this.duCraftImportBtn.Size = new System.Drawing.Size(147, 35);
+            this.duCraftImportBtn.TabIndex = 33;
+            this.duCraftImportBtn.ToolTipValues.Description = "Import skills from clipboard if copied from du-craft.online website";
+            this.duCraftImportBtn.ToolTipValues.Heading = "du-craft skills import";
+            this.duCraftImportBtn.Values.Text = "DU-Craft skills...";
+            this.duCraftImportBtn.Click += new System.EventHandler(this.duCraftImportBtn_Click);
+            // 
             // SchematicValueForm
             // 
             this.AcceptButton = this.applyBtn;
-            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.ClientSize = new System.Drawing.Size(705, 714);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
+            this.ClientSize = new System.Drawing.Size(881, 892);
+            this.Controls.Add(this.duCraftImportBtn);
+            this.Controls.Add(this.grossMarginEdit);
+            this.Controls.Add(this.applyGrossMargin);
             this.Controls.Add(this.BtnSave);
             this.Controls.Add(this.BtnClear);
             this.Controls.Add(this.BtnLoad);
@@ -553,9 +614,10 @@
             this.Controls.Add(this.closeBtn);
             this.Controls.Add(this.schematicsGrid);
             this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.MinimumSize = new System.Drawing.Size(721, 607);
+            this.MinimumSize = new System.Drawing.Size(897, 747);
             this.Name = "SchematicValueForm";
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Show;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
@@ -606,5 +668,8 @@
         private Krypton.Toolkit.KryptonButton BtnClear;
         private Krypton.Toolkit.KryptonButton BtnLoad;
         private Krypton.Toolkit.KryptonButton BtnSave;
+        private Krypton.Toolkit.KryptonCheckBox applyGrossMargin;
+        private Krypton.Toolkit.KryptonNumericUpDown grossMarginEdit;
+        private Krypton.Toolkit.KryptonButton duCraftImportBtn;
     }
 }

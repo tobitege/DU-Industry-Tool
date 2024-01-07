@@ -143,7 +143,6 @@ namespace DU_Industry_Tool
             {
                 var json = JsonConvert.SerializeObject(savedQty);
                 File.WriteAllText(dlg.FileName, json);
-
             }
             catch (Exception ex)
             {
@@ -352,8 +351,36 @@ namespace DU_Industry_Tool
             }
         }
 
+        private readonly string exl_int_format = "#,##0";
+        private readonly string exl_num_format = "#,##0.00";
+
         private void exportKBtn_Click(object sender, EventArgs e)
         {
+            var fname = "Schematics Export " + DateTime.Now.ToString("yyyy-MM-dd") + ".xlsx";
+            var dlg = new SaveFileDialog
+            {
+                AddExtension = true,
+                CheckPathExists = true,
+                DefaultExt = ".xlsx",
+                FileName = fname,
+                Filter = @"XLSX|*.xlsx|All files|*.*",
+                FilterIndex = 1,
+                Title = @"Schematics Export",
+                InitialDirectory = "",
+                ShowHelp = false,
+                SupportMultiDottedExtensions = true,
+                CheckFileExists = false,
+                OverwritePrompt = false
+            };
+            if (dlg.ShowDialog() != DialogResult.OK) return;
+            if (File.Exists(dlg.FileName) &&
+                (KryptonMessageBox.Show(@"Overwrite existing file?", @"Overwrite",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes))
+            {
+                return;
+            }
+            fname = dlg.FileName;
+
             using (var workbook = new XLWorkbook())
             {
                 var worksheet = workbook.Worksheets.Add("Schematics Values " + DateTime.Now.ToString("yyyy-MM-dd"));
@@ -410,7 +437,7 @@ namespace DU_Industry_Tool
                 if (expOptInclSchemDetails.Checked)
                 {
                     colIdx++;
-                    worksheet.Cell(row, colIdx).Value = "Time (seconds)";
+                    worksheet.Cell(row, colIdx).Value = "Time (h:m:s)";
                     colIdx++;
                     worksheet.Cell(row, colIdx).Value = "Item ID";
                 }
@@ -427,22 +454,21 @@ namespace DU_Industry_Tool
                         worksheet.Cell(row, colIdx).Value = schem.Value.BatchSize;
                         colIdx++;
                         worksheet.Cell(row, colIdx).Value = schem.Value.BatchCost;
-                        colIdx++;
-                        worksheet.Cell(row, colIdx).Value = schem.Value.Cost;
+                        worksheet.Cell(row, colIdx).Style.NumberFormat.Format = exl_num_format;
                     }
-                    else
-                    {
-                        colIdx++;
-                        worksheet.Cell(row, colIdx).Value = schem.Value.Cost;
-                    }
+                    colIdx++;
+                    worksheet.Cell(row, colIdx).Value = schem.Value.Cost;
+                    worksheet.Cell(row, colIdx).Style.NumberFormat.Format = exl_num_format;
                     if (expOptInclQtySums.Checked)
                     {
                         if (schem.Value.Qty != null && schem.Value.Total != null)
                         {
                             colIdx++;
                             worksheet.Cell(row, colIdx).Value = schem.Value.Qty;
+                            worksheet.Cell(row, colIdx).Style.NumberFormat.Format = exl_int_format;
                             colIdx++;
                             worksheet.Cell(row, colIdx).FormulaR1C1 = "=(R[0]C[-2]*R[0]C[-1])";
+                            worksheet.Cell(row, colIdx).Style.NumberFormat.Format = exl_num_format;
                             total += (schem.Value.Total ?? 0);
                         }
                         else
@@ -453,7 +479,7 @@ namespace DU_Industry_Tool
                     if (expOptInclSchemDetails.Checked)
                     {
                         colIdx++;
-                        worksheet.Cell(row, colIdx).Value = schem.Value.BatchTime;
+                        worksheet.Cell(row, colIdx).Value = "  "+Utils.GetReadableTime(schem.Value.BatchTime);
                         colIdx++;
                         worksheet.Cell(row, colIdx).Value = schem.Value.NqId;
                     }
@@ -462,21 +488,40 @@ namespace DU_Industry_Tool
                 {
                     row++;
                     worksheet.Cell(row, totalIdx).Value = total;
+                    worksheet.Cell(row, totalIdx).Style.NumberFormat.Format = exl_num_format;
+                    worksheet.Cell(row, totalIdx).Style.Font.SetBold();
                 }
 
                 worksheet.ColumnsUsed().AdjustToContents(1, 50);
-                var fname = "Schematics Export " + DateTime.Now.ToString("yyyy-MM-dd") + ".xlsx";
+
                 try
                 {
                     workbook.SaveAs(fname);
-                    MessageBox.Show($"Exported '{fname}' in the same folder as this tool!");
+                    KryptonMessageBox.Show("Data successfully exported to file.", "Success",
+                        MessageBoxButtons.OK, KryptonMessageBoxIcon.INFORMATION);
+
                 }
-                catch (Exception exception)
+                catch (Exception ex)
                 {
-                    MessageBox.Show($"Export to '{fname}' FAILED!\r\nIs it opened by another program?");
+                    KryptonMessageBox.Show(@"Export failed!\r\nMake sure the file is not already open in another application.\r\n" + ex.Message,
+                        @"ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
 
+        private void duCraftImportBtn_Click(object sender, EventArgs e)
+        {
+            if (KryptonMessageBox.Show("Try to load skills from clipboard?\n\nMake sure to use the Copy Config button on the du-craft.online site now!\n\nThis will OVERWRITE above talent values!", @"Confirm",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+            {
+                return;
+            }
+            var ducraft = new DuCraftDataHandler();
+            if (!ducraft.LoadFromClipboard()) return;
+            tbSkill1.SetValue(ducraft.GetSkillValue(DuCraftDataHandler.CostOptimizationBasic));
+            tbSkill2.SetValue(ducraft.GetSkillValue(DuCraftDataHandler.CostOptimizationAdvanced));
+            tbSkill3.SetValue(ducraft.GetSkillValue(DuCraftDataHandler.OutputProductivityBasic));
+            tbSkill4.SetValue(ducraft.GetSkillValue(DuCraftDataHandler.OutputProductivityAdvanced));
+        }
     }
 }

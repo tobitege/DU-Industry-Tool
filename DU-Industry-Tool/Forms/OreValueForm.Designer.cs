@@ -94,7 +94,7 @@ namespace DU_Industry_Tool
             this.Test.DefaultCellStyle = dataGridViewCellStyle2;
             this.Test.HeaderText = "Quanta/L";
             this.Test.Maximum = new decimal(new int[] {
-            99000000,
+            999000000,
             0,
             0,
             0});

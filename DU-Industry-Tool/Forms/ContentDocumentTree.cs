@@ -4,8 +4,8 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Windows.Forms;
+using ClosedXML.Excel;
 using DU_Industry_Tool.Interfaces;
 using Krypton.Toolkit;
 using Color = System.Drawing.Color;
@@ -385,8 +385,7 @@ namespace DU_Industry_Tool
                 {
                     if (x is RecipeCalculation t)
                     {
-                        if ((!t.IsSection && t.Section == DUData.ProductionListTitle) ||
-                            (!t.IsSection && t.Section == DUData.SchematicsTitle))
+                        if (!t.IsSection && (t.Section == DUData.ProductionListTitle || t.Section == DUData.SchematicsTitle))
                             return "";
                         return !t.IsSection && t.Entry != t.Section ? t.Entry : "";
                     }
@@ -574,6 +573,324 @@ namespace DU_Industry_Tool
             {
                 fontSize += fontDelta;
                 treeListView.Font = new Font("Segoe UI", fontSize, FontStyle.Regular, GraphicsUnit.Point, ((byte)(0)));
+            }
+        }
+
+        private readonly string exl_int_format = "#,##0";
+        private readonly string exl_num_format = "#,##0.00";
+        
+        private void exportProdListSection(IXLWorksheet worksheet, ref int i, ref int ix)
+        {
+            try
+            {
+                i++;
+                ix += 2;
+                worksheet.Cell(ix, 1).Value = "Item";
+                worksheet.Cell(ix, 2).Value = "Quantity";
+                worksheet.Cell(ix, 3).Value = "Item cost (q)";
+                worksheet.Cell(ix, 4).Value = "Total (q)";
+                worksheet.Cell(ix, 5).Value = "contained schematics (q)";
+                worksheet.Cell(ix, 6).Value = "Mass (t)";
+                worksheet.Cell(ix, 7).Value = "Volume (KL)";
+                worksheet.Row(ix).CellsUsed().Style.Font.SetBold();
+                var range = worksheet.Range($"B{ix}:G{ix}");
+                range.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                ix++;
+                var prodListStart = ix;
+                while (i < treeListView.Items.Count)
+                {
+                    var r = treeListView.Items[i];
+                    var section = r.SubItems[olvColumnSection.Index].Text;
+
+                    // we return when next section is reached
+                    if (section == "Ores")
+                    {
+                        // leave "i" on current row
+                        worksheet.Cell(ix, 4).FormulaA1 = $"=SUM(D{prodListStart}:D{ix - 1})"; // Total
+                        worksheet.Cell(ix, 5).FormulaA1 = $"=SUM(E{prodListStart}:E{ix - 1})"; // Total schematics
+                        worksheet.Cell(ix, 6).FormulaA1 = $"=SUM(F{prodListStart}:F{ix - 1})"; // Mass
+                        worksheet.Cell(ix, 7).FormulaA1 = $"=SUM(G{prodListStart}:G{ix - 1})"; // Volume
+                        range = worksheet.Range($"B{prodListStart}:B{ix}");
+                        range.Style.NumberFormat.Format = exl_int_format;
+                        range = worksheet.Range($"C{prodListStart}:G{ix}");
+                        range.Style.NumberFormat.Format = exl_num_format;
+                        worksheet.Row(ix).CellsUsed().Style.Font.SetBold();
+                        return;
+                    }
+
+                    worksheet.Cell(ix, 1).Value = section;
+                    var qty = 0m;
+                    if (!string.IsNullOrEmpty(r.SubItems[olvColumnQty.Index].Text))
+                    {
+                        qty = decimal.Parse(r.SubItems[olvColumnQty.Index].Text);
+                        worksheet.Cell(ix, 2).Value = qty;
+                    }
+                    if (qty > 0 && !string.IsNullOrEmpty(r.SubItems[olvColumnAmt.Index].Text))
+                    {
+                        var total = decimal.Parse(r.SubItems[olvColumnAmt.Index].Text);
+                        var itemCost = Math.Round(total / qty, 2, MidpointRounding.AwayFromZero);
+                        worksheet.Cell(ix, 3).Value = itemCost;
+                        worksheet.Cell(ix, 4).FormulaR1C1 = "=(R[0]C[-2]*R[0]C[-1])";
+                    }
+                    if (!string.IsNullOrEmpty(r.SubItems[olvColumnSchemataA.Index].Text))
+                    {
+                        worksheet.Cell(ix, 5).Value = decimal.Parse(r.SubItems[olvColumnSchemataA.Index].Text);
+                    }
+                    if (!string.IsNullOrEmpty(r.SubItems[olvColumnMass.Index].Text))
+                    {
+                        worksheet.Cell(ix, 6).Value = decimal.Parse(r.SubItems[olvColumnMass.Index].Text);
+                    }
+                    if (!string.IsNullOrEmpty(r.SubItems[olvColumnVol.Index].Text))
+                    {
+                        worksheet.Cell(ix, 7).Value = decimal.Parse(r.SubItems[olvColumnVol.Index].Text);
+                    }
+                    ix++;
+                    i++;
+                }
+            }
+            catch { }
+        }
+
+        private void exportOresPuresSection(IXLWorksheet worksheet, string currSection, string nextSection, ref int i, ref int ix, bool orePrice, bool schems)
+        {
+            try
+            {
+                ix += 2;
+                worksheet.Cell(ix, 1).Value = currSection;
+                worksheet.Cell(ix, 2).Value = "Quantity (L)";
+                if (orePrice)
+                {
+                    worksheet.Cell(ix, 3).Value = "q / L";
+                    worksheet.Cell(ix, 4).Value = "Amount (q)";
+                    worksheet.Cell(ix, 6).Value = "Mass (t)";
+                    worksheet.Cell(ix, 7).Value = "Volume (KL)";
+                }
+                if (schems)
+                {
+                    worksheet.Cell(ix, 5).Value = "Schema qty.";
+                    worksheet.Cell(ix, 6).Value = "Schema cost (q)";
+                    worksheet.Cell(ix, 7).Value = "Schema type";
+                }
+                worksheet.Row(ix).CellsUsed().Style.Font.SetBold();
+                var range = worksheet.Range($"B{ix}:G{ix}");
+                range.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                ix++;
+                var dataStart = ix;
+                i++;
+                while (i < treeListView.Items.Count)
+                {
+                    var r = treeListView.Items[i];
+                    var section = r.SubItems[olvColumnSection.Index].Text;
+
+                    // we return when next section is reached
+                    if (section == nextSection)
+                    {
+                        // leave "i" on current row
+                        if (orePrice)
+                        {
+                            worksheet.Cell(ix, 2).FormulaA1 = $"=SUM(B{dataStart}:B{ix - 1})"; // L ore
+                            worksheet.Cell(ix, 4).FormulaA1 = $"=SUM(D{dataStart}:D{ix - 1})"; // Amount
+                            worksheet.Cell(ix, 6).FormulaA1 = $"=SUM(F{dataStart}:F{ix - 1})"; // Mass
+                            worksheet.Cell(ix, 7).FormulaA1 = $"=SUM(G{dataStart}:G{ix - 1})"; // Volume
+                        }
+                        if (schems)
+                        {
+                            worksheet.Cell(ix, 6).FormulaA1 = $"=SUM(F{dataStart}:F{ix - 1})"; // Schema Amount
+                        }
+                        range = worksheet.Range($"B{dataStart}:G{ix}");
+                        range.Style.NumberFormat.Format = exl_num_format;
+                        worksheet.Row(ix).CellsUsed().Style.Font.SetBold();
+                        return;
+                    }
+
+                    worksheet.Cell(ix, 1).Value = section;
+                    decimal.TryParse(r.SubItems[olvColumnQty.Index].Text, out var qty);
+                    worksheet.Cell(ix, 2).Value = Math.Round(qty, 2, MidpointRounding.AwayFromZero);
+                    if (orePrice)
+                    {
+                        worksheet.Cell(ix, 3).Value = DUData.GetOrePriceByName(section);
+                        worksheet.Cell(ix, 4).FormulaR1C1 = "=(R[0]C[-2]*R[0]C[-1])";
+                        var rec = DUData.Recipes.FirstOrDefault(x => x.Value.Name == section);
+                        if (rec.Value?.UnitMass != null)
+                        {
+                            worksheet.Cell(ix, 6).Value = (qty * rec.Value.UnitMass) / 1000;
+                        }
+                        if (rec.Value?.UnitVolume != null)
+                        {
+                            worksheet.Cell(ix, 7).Value = (qty * rec.Value.UnitVolume) / 1000;
+                        }
+                    }
+
+                    if (schems && decimal.TryParse(r.SubItems[olvColumnSchemataQ.Index].Text, out qty))
+                    {
+                        worksheet.Cell(ix, 5).Value = qty;
+                        if (decimal.TryParse(r.SubItems[olvColumnSchemataA.Index].Text, out qty))
+                        {
+                            worksheet.Cell(ix, 6).Value = qty;
+                        }
+                        if (!string.IsNullOrEmpty(r.SubItems[olvColumnFiller.Index].Text))
+                        {
+                            worksheet.Cell(ix, 7).Value = r.SubItems[olvColumnFiller.Index].Text;
+                        }
+                    }
+                    ix++;
+                    i++;
+                }
+            }
+            catch { }
+        }
+
+        private void exportBtn_Click(object sender, EventArgs e)
+        {
+            if (treeListView.Items.Count == 0) return;
+
+            var dlg = new SaveFileDialog
+            {
+                AddExtension = true,
+                CheckPathExists = true,
+                DefaultExt = ".xlsx",
+                Filter = @"XLSX|*.xlsx|All files|*.*",
+                FilterIndex = 1,
+                Title = @"Export",
+                InitialDirectory = "",
+                ShowHelp = false,
+                SupportMultiDottedExtensions = true,
+                CheckFileExists = false,
+                OverwritePrompt = false
+            };
+            if (IsProductionList)
+            {
+                var mgr = DUData.IndyMgrInstance;
+                dlg.FileName = DUData.ProductionListTitle;
+                dlg.FileName += mgr.Databindings.ListLoaded ? " - " + Path.ChangeExtension(mgr.Databindings.GetFilename(), "") : ".";
+            }
+            else
+            {
+                dlg.FileName = $"Calculation {Calc.Name} (x{Calc.Quantity}).";
+            }
+            dlg.FileName += "xlsx";
+            if (dlg.ShowDialog() != DialogResult.OK) return;
+
+            if (File.Exists(dlg.FileName) &&
+                (KryptonMessageBox.Show(@"Overwrite existing file?", @"Overwrite",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes))
+            {
+                return;
+            }
+
+            using (var workbook = new XLWorkbook())
+            {
+                var worksheet = workbook.Worksheets.Add("Calculation");
+                var ix = 1;
+
+                worksheet.Cell(ix, 1).Value = IsProductionList ? DUData.ProductionListTitle : "Item calculation";
+                worksheet.Row(ix).CellsUsed().Style.Font.SetBold();
+
+                if (!IsProductionList)
+                {
+                    ix += 2;
+                    worksheet.Cell(ix, 1).Value = "Item";
+                    worksheet.Cell(ix, 2).Value = "Amount (q)";
+                    worksheet.Cell(ix, 3).Value = "Quantity";
+                    worksheet.Cell(ix, 4).Value = "Total (q)";
+                    worksheet.Row(ix).CellsUsed().Style.Font.SetBold();
+
+                    ix++;
+                    worksheet.Cell(ix, 1).Value = kryptonHeaderGroup1.ValuesPrimary.Heading;
+                    var total = Math.Round(Calc.OreCost + Calc.SchematicsCost, 2);
+                    worksheet.Cell(ix, 2).Value = Calc.Quantity == 1 ? total : Math.Round(total / Calc.Quantity, 2);
+                    worksheet.Cell(ix, 3).Value = Calc.Quantity;
+                    worksheet.Cell(ix, 4).Value = total;
+
+                    ix += 2;
+                    worksheet.Cell(ix, 1).Value = "Item details";
+                    worksheet.Row(ix).CellsUsed().Style.Font.SetBold();
+                }
+
+                var schemSection = false;
+                var prodListEndIdx = 1;
+                try
+                {
+                    var i = 0;
+                    while (i < treeListView.Items.Count)
+                    {
+                        var r = treeListView.Items[i];
+                        var section = r.SubItems[olvColumnSection.Index].Text;
+
+                        if (section == DUData.ProductionListTitle)
+                        {
+                            exportProdListSection(worksheet, ref i, ref ix);
+
+                            ix += 2;
+                            worksheet.Cell(ix, 1).Value = "Below are totals for full order!";
+                            worksheet.Row(ix).CellsUsed().Style.Font.SetBold();
+                            prodListEndIdx = ix+1;
+                            continue;
+                        }
+                        
+                        if (section == "Ores")
+                        {
+                            if (!IsProductionList) prodListEndIdx = ix;
+                            exportOresPuresSection(worksheet, section, "Pures", ref i, ref ix, true, false);
+                            continue;
+                        }
+                        
+                        if (section == "Pures")
+                        {
+                            exportOresPuresSection(worksheet, section, "Products", ref i, ref ix, false, true);
+                            continue;
+                        }
+                        
+                        if ((schemSection || (r.SubItems.Count == 10 && !string.IsNullOrEmpty(r.SubItems[3].Text))))
+                        {
+                            ix++;
+                            worksheet.Cell(ix, 1).Value = r.SubItems[0].Text;
+                            if (!string.IsNullOrEmpty(r.SubItems[olvColumnQty.Index].Text))
+                            {
+                                worksheet.Cell(ix, 2).Value = decimal.Parse(r.SubItems[olvColumnQty.Index].Text);
+                            }
+                            if (!string.IsNullOrEmpty(r.SubItems[olvColumnAmt.Index].Text))
+                            {
+                                worksheet.Cell(ix, 3).Value = decimal.Parse(r.SubItems[olvColumnAmt.Index].Text);
+                            }
+                            if (!string.IsNullOrEmpty(r.SubItems[olvColumnSchemataQ.Index].Text))
+                            {
+                                worksheet.Cell(ix, 5).Value = decimal.Parse(r.SubItems[olvColumnSchemataQ.Index].Text);
+                            }
+                            if (!string.IsNullOrEmpty(r.SubItems[olvColumnSchemataA.Index].Text))
+                            {
+                                worksheet.Cell(ix, 6).Value = decimal.Parse(r.SubItems[olvColumnSchemataA.Index].Text);
+                            }
+                            if (!string.IsNullOrEmpty(r.SubItems[olvColumnFiller.Index].Text))
+                            {
+                                worksheet.Cell(ix, 7).Value = r.SubItems[olvColumnFiller.Index].Text;
+                            }
+                        }
+                        else
+                        {
+                            ix += 2;
+                            worksheet.Cell(ix, 1).Value = section;
+                            worksheet.Row(ix).CellsUsed().Style.Font.SetBold();
+                            if (section == "Schematics")
+                            {
+                                schemSection = true;
+                            }
+                        }
+                        i++;
+                    }
+                    var range = worksheet.Range($"B{prodListEndIdx}:G{ix}");
+                    range.Style.NumberFormat.Format = exl_num_format;
+                    worksheet.ColumnsUsed().AdjustToContents(1, 50);
+                    workbook.SaveAs(dlg.FileName);
+
+                    KryptonMessageBox.Show("Data successfully exported to file.", "Success",
+                        MessageBoxButtons.OK, KryptonMessageBoxIcon.INFORMATION);
+                }
+                catch (Exception ex)
+                {
+                    KryptonMessageBox.Show(@"Could not save calculation!" + Environment.NewLine + ex.Message,
+                        @"ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
     }

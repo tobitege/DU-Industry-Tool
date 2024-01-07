@@ -223,24 +223,18 @@ namespace DU_Industry_Tool
                     return children;
                 foreach (var prd in calc.Recipe.Products)
                 {
-                    //var copyTime = "";
-                    var amtS = 0m;
-                    var s = DUData.Schematics.FirstOrDefault(x => x.Key == prd.SchemaType).Value;
-                    if (s != null && Calculator.CalcSchematic(s.Key, prd.SchemaQty, out amtS, out _, out var copies))
-                    {
-                        //copyTime = " C: " + Utils.GetReadableTime(copies * s.BatchTime);
-                    }
                     var child = new RecipeCalculation(Section, null)
                     {
                         Entry = prd.Name,
-                        Qty = prd.Quantity,
                         ParentId = Id,
                         Tier = prd.Level,
-                        QtySchemata = prd.SchemaQty,
-                        AmtSchemata = amtS,
-                        Mass = Math.Round(prd.Mass / 1000, 3),
-                        Vol = Math.Round(prd.Volume / 1000, 3),
-                        comment = prd.IsByproduct ? "Byproduct" : prd.SchemaType + (prd.SchemaQty > 0 ? " (cost broken down)" : "")
+                        Amt = Math.Round(prd.Cost, 2, MidpointRounding.AwayFromZero),
+                        Qty = prd.Quantity,
+                        AmtSchemata = Math.Round(prd.SchemaAmt, 2, MidpointRounding.AwayFromZero),
+                        Mass = Math.Round(prd.Mass / 1000, 2),
+                        Vol = Math.Round(prd.Volume / 1000, 2),
+                        comment = prd.IsByproduct ? "Byproduct" : prd.SchemaType + (prd.SchemaQty > 0 ? " (total schematics cost)" : "")
+                        //comment = "total schematics cost"
                     };
                     children.Add(child);
                 }
@@ -249,7 +243,7 @@ namespace DU_Industry_Tool
 
             // For a recipe-driven entry, add sections (depth is even)
             // or the individual entries (depth is odd)
-            // We only want Pures, Products and Parts here, though.
+            // We only want Ores, Pures, Products and Parts here, though.
             if (Depth > 0)
             {
                 if (!Calculator.GetFromStoreWithNodes(Id, out var calc))
@@ -288,9 +282,9 @@ namespace DU_Industry_Tool
                     {
                         Entry = schemaItem.Key,
                         QtySchemata = schemaItem.Value.Item1,
-                        AmtSchemata = minCost,
+                        AmtSchemata = Math.Round(minCost, 3),
                         Comment = "C: "+Utils.GetReadableTime(copyTime)+
-                                  $" (x{copies}) {s.Cost * s.BatchSize:N2}q for {s.BatchSize}",
+                                  $" (x{copies:N3}) {s.Cost * s.BatchSize:N3} q for {s.BatchSize}",
                         ParentId = Id
                     };
                     if (char.IsDigit(child.Entry[1]))
@@ -336,12 +330,6 @@ namespace DU_Industry_Tool
 
                 if (SumType != SummationType.INGREDIENTS)
                 {
-                    //child.IsSection = SumType != SummationType.ORES;
-                    //child.Section = DUData.SubpartSectionTitle;
-                    //if (Calculator.GetFromStoreByName(ParentId, realKey, out var xxx))
-                    //{
-                    //}
-
                     var y = Calculator.All.FirstOrDefault(x => x.Value.Name.Equals(realKey, StringComparison.InvariantCultureIgnoreCase)).Value;
                     if (y != null)
                     {
@@ -350,22 +338,6 @@ namespace DU_Industry_Tool
                         child.Section = DUData.SubpartSectionTitle;
                     }
                 }
-
-                // Set schematic cost for T2+ pures and all products
-                //if (drilldown && (SumType == SummationType.PURES || SumType == SummationType.PRODUCTS))
-                //{
-                //    if (Calculator.GetFromStoreWithSums(ParentId, out var calc) &&
-                //       (SumType == SummationType.PRODUCTS || child.Tier > 1))
-                //    {
-                //        var tmp = calc.Sums[(SummationType)SumType].FirstOrDefault(x =>
-                //                    x.Key.Equals(dataItem.Key, StringComparison.InvariantCultureIgnoreCase));
-                //        if (tmp.Key != null)
-                //        {
-                //            child.QtySchemata = tmp.Value.QtySchemata;
-                //            child.AmtSchemata = tmp.Value.AmtSchemata;
-                //        }
-                //    }
-                //}
                 children.Add(child);
             }
             return children;

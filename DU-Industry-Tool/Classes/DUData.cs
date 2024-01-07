@@ -142,12 +142,17 @@ namespace DU_Industry_Tool
             {
                 if (prodItem.Quantity < 1) continue;
 
-                if (!Calculator.CreateCloneByName(prodItem.Name, out var calc))
-                    continue;
+                // 2024.1.8 - individual production list item has to be calculated now to get the item price at cost.
+                // Before this wasn't available as the sum of all ingredients was calculated.
+                Calculator.Initialize();
+                Calculator.ProductQuantity = prodItem.Quantity;
+                var recipe = DUData.Recipes.FirstOrDefault(x => x.Value.Name.Equals(prodItem.Name, StringComparison.InvariantCultureIgnoreCase));
+                if (recipe.Value?.Name == null) continue;
+                Calculator.CalculateRecipe(recipe.Key, prodItem.Quantity, silent: true);
+                var calc = Calculator.Get(recipe.Key, Guid.Empty);
+
                 if (calc.Recipe.Ingredients?.Any() != true || calc.Recipe.Products?.Any() != true)
                     continue;
-
-                calc.GetTalents();
 
                 // Add items to the overall products list
                 var batchCount = 1m;
@@ -168,13 +173,15 @@ namespace DU_Industry_Tool
                         prod.Mass += prodItem.Quantity * (calc.Recipe.UnitMass ?? 0);
                         prod.Volume += prodItem.Quantity * (calc.Recipe.UnitVolume ?? 0);
                         // TODO check why BatchOutput is occasionally null here
-                        var batchOutput = calc.IsBatchmode ? (decimal)(calc.BatchOutput ?? 0) : prod.Quantity;
-                        if (calc.CalcSchematicFromQty(prod.SchemaType, prod.Quantity, batchOutput,
-                                out batchCount , out var minCost, out var _, out var _))
-                        {
-                            prod.SchemaQty = batchCount;
-                            prod.SchemaAmt = minCost;
-                        }
+                        //var batchOutput = calc.IsBatchmode ? (decimal)(calc.BatchOutput ?? 0) : prod.Quantity;
+                        //if (calc.CalcSchematicFromQty(prod.SchemaType, prod.Quantity, batchOutput,
+                        //        out batchCount , out var minCost, out var _, out var _))
+                        //{
+                        //    prod.SchemaQty = batchCount;
+                        //    prod.SchemaAmt = minCost;
+                        //}
+                        prod.SchemaAmt = calc.SchematicsCost;
+                        prod.Cost = calc.OreCost + calc.SchematicsCost;
                         if (calc.BatchTime == null)
                         {
                             calc.BatchTime = calc.Recipe.Time * (calc.EfficencyFactor ?? 1);
@@ -231,6 +238,8 @@ namespace DU_Industry_Tool
     /// </summary>
     public static class DUData
     {
+        public static IndustryManager IndyMgrInstance { get; set; }
+
         #region Global Data
         public const string IndyProductsTabTitle = "Industry Products";
         public static readonly List<string> SizeList = new List<string> { "XS", "S", "M", "L", "XL" };
@@ -827,6 +836,18 @@ namespace DU_Industry_Tool
         private static int TalentComparer(Talent x, Talent y)
         {
             return string.Compare(x.Name, y.Name, StringComparison.InvariantCultureIgnoreCase);
+        }
+
+        public static decimal GetOrePriceByKey(string key)
+        {
+            if (string.IsNullOrEmpty(key)) return 0;
+            return Ores?.FirstOrDefault(x => x.Key == key)?.Value ?? 0;
+        }
+
+        public static decimal GetOrePriceByName(string oreName)
+        {
+            if (string.IsNullOrEmpty(oreName)) return 0;
+            return Ores?.FirstOrDefault(x => x.Name == oreName)?.Value ?? 0;
         }
 
         public static void SaveOreValues()

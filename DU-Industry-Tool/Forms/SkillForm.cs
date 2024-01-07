@@ -46,7 +46,7 @@ namespace DU_Industry_Tool
                     Text = talent.Name,
                     AutoSize = false,
                     Location = new Point(4, 12),
-                    Size = new Size(250, 30),
+                    Size = new Size(380, 30),
                     Margin = new Padding(4, 4, 4, 0),
                     TabStop = false
                 };
@@ -55,7 +55,7 @@ namespace DU_Industry_Tool
                 var textbox = new KryptonNumericUpDown()
                 {
                     Text = talent.Value.ToString(),
-                    Location = new Point(258, 0),
+                    Location = new Point(390, 0),
                     Size = new Size(30, 32),
                     Minimum = 0,
                     Maximum = 5,

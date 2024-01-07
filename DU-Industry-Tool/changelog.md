@@ -1,5 +1,14 @@
 # Changelog
 
+## v2024.1.8
+
+- Talents form: finally resized it to fit long names so that these aren't truncated anymore
+- Ore values form: max. allowed value increased to 999K
+- Schematics form: added skill import button for du-craft.online website (via clipboard)
+- Schematics form: fix Export button location, wasn't anchored correctly
+- Export to Excel for calculations/production lists
+- Main form: cosmetic fixes for 100% vs. 125% Windows scaling
+
 ## v2024.1.7
 
 - Schematics: UI fixes due to DPI scaling

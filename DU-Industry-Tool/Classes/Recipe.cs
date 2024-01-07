@@ -273,6 +273,8 @@ namespace DU_Industry_Tool
         public decimal Mass { get; set; }
         [JsonIgnore]
         public decimal Volume { get; set; }
+        [JsonIgnore]
+        public decimal Cost { get; set; }
 
         public ProductDetail() {}
 

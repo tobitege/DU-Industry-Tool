@@ -62,7 +62,7 @@ namespace DU_Industry_Tool
             return calc;
         }
 
-        public static bool CreateCloneByName(string recipeName, out CalculatorClass result)
+        private static bool CreateCloneByName(string recipeName, out CalculatorClass result)
         {
             result = null;
             if (string.IsNullOrEmpty(recipeName) || !DUData.GetRecipeCloneByName(recipeName, out var rec))

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Windows.Forms;
 
 namespace DU_Industry_Tool
 {
@@ -131,5 +133,6 @@ namespace DU_Industry_Tool
             "Mowing the lawn...",
             "Come back later!",
         };
+
     }
 }

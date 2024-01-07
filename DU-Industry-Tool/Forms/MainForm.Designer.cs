@@ -117,10 +117,9 @@
             this.rbnTabTools,
             this.rbnTabThemes,
             this.rbnTabOptions});
-            this.kryptonRibbon.SelectedContext = null;
             this.kryptonRibbon.SelectedTab = this.rbnTabTools;
             this.kryptonRibbon.ShowMinimizeButton = false;
-            this.kryptonRibbon.Size = new System.Drawing.Size(1782, 150);
+            this.kryptonRibbon.Size = new System.Drawing.Size(1860, 136);
             this.kryptonRibbon.TabIndex = 0;
             // 
             // buttonUpdateMarketValues
@@ -245,7 +244,7 @@
             this.CbRecentLists.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.CbRecentLists.DropDownWidth = 200;
             this.CbRecentLists.FormattingEnabled = false;
-            this.CbRecentLists.ItemHeight = 22;
+            this.CbRecentLists.ItemHeight = 19;
             this.CbRecentLists.MinimumSize = new System.Drawing.Size(200, 0);
             this.CbRecentLists.Text = "";
             this.CbRecentLists.SelectionChangeCommitted += new System.EventHandler(this.CbRecentLists_SelectionChangeCommitted);
@@ -408,8 +407,9 @@
             this.kryptonDockableWorkspace.CompactFlags = Krypton.Workspace.CompactFlags.AtLeastOneVisibleCell;
             this.kryptonDockableWorkspace.ContainerBackStyle = Krypton.Toolkit.PaletteBackStyle.TabDock;
             this.kryptonDockableWorkspace.Dock = System.Windows.Forms.DockStyle.Left;
-            this.kryptonDockableWorkspace.Location = new System.Drawing.Point(0, 150);
-            this.kryptonDockableWorkspace.MinimumSize = new System.Drawing.Size(402, 383);
+            this.kryptonDockableWorkspace.Location = new System.Drawing.Point(0, 136);
+            this.kryptonDockableWorkspace.Margin = new System.Windows.Forms.Padding(4);
+            this.kryptonDockableWorkspace.MinimumSize = new System.Drawing.Size(420, 400);
             this.kryptonDockableWorkspace.Name = "kryptonDockableWorkspace";
             this.kryptonDockableWorkspace.PaletteMode = Krypton.Toolkit.PaletteMode.Office2010Blue;
             // 
@@ -421,7 +421,7 @@
             this.kryptonDockableWorkspace.Root.WorkspaceControl = this.kryptonDockableWorkspace;
             this.kryptonDockableWorkspace.SeparatorStyle = Krypton.Toolkit.SeparatorStyle.HighProfile;
             this.kryptonDockableWorkspace.ShowMaximizeButton = false;
-            this.kryptonDockableWorkspace.Size = new System.Drawing.Size(460, 805);
+            this.kryptonDockableWorkspace.Size = new System.Drawing.Size(468, 860);
             this.kryptonDockableWorkspace.SplitterWidth = 8;
             this.kryptonDockableWorkspace.TabIndex = 0;
             this.kryptonDockableWorkspace.TabStop = true;
@@ -434,9 +434,10 @@
             this.kryptonPage1.Controls.Add(this.searchPanel);
             this.kryptonPage1.Flags = 32;
             this.kryptonPage1.LastVisibleSet = true;
-            this.kryptonPage1.MinimumSize = new System.Drawing.Size(383, 431);
+            this.kryptonPage1.Margin = new System.Windows.Forms.Padding(4);
+            this.kryptonPage1.MinimumSize = new System.Drawing.Size(400, 450);
             this.kryptonPage1.Name = "kryptonPage1";
-            this.kryptonPage1.Size = new System.Drawing.Size(458, 771);
+            this.kryptonPage1.Size = new System.Drawing.Size(460, 829);
             this.kryptonPage1.Text = "Recipes Explorer";
             this.kryptonPage1.TextDescription = "";
             this.kryptonPage1.TextTitle = "";
@@ -447,10 +448,11 @@
             // 
             this.treeView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.treeView.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.treeView.Location = new System.Drawing.Point(0, 112);
-            this.treeView.MinimumSize = new System.Drawing.Size(383, 383);
+            this.treeView.Location = new System.Drawing.Point(0, 116);
+            this.treeView.Margin = new System.Windows.Forms.Padding(4);
+            this.treeView.MinimumSize = new System.Drawing.Size(399, 399);
             this.treeView.Name = "treeView";
-            this.treeView.Size = new System.Drawing.Size(458, 659);
+            this.treeView.Size = new System.Drawing.Size(460, 713);
             this.treeView.TabIndex = 3;
             // 
             // searchPanel
@@ -464,30 +466,36 @@
             this.searchPanel.Controls.Add(this.PreviousButton);
             this.searchPanel.Dock = System.Windows.Forms.DockStyle.Top;
             this.searchPanel.Location = new System.Drawing.Point(0, 0);
-            this.searchPanel.MinimumSize = new System.Drawing.Size(0, 77);
+            this.searchPanel.Margin = new System.Windows.Forms.Padding(4);
+            this.searchPanel.MinimumSize = new System.Drawing.Size(0, 80);
             this.searchPanel.Name = "searchPanel";
-            this.searchPanel.Size = new System.Drawing.Size(458, 112);
+            this.searchPanel.Size = new System.Drawing.Size(460, 116);
             this.searchPanel.TabIndex = 0;
             // 
             // lblQty
             // 
-            this.lblQty.Location = new System.Drawing.Point(283, 38);
+            this.lblQty.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblQty.Location = new System.Drawing.Point(282, 40);
+            this.lblQty.Margin = new System.Windows.Forms.Padding(4);
             this.lblQty.Name = "lblQty";
-            this.lblQty.Size = new System.Drawing.Size(47, 27);
+            this.lblQty.Size = new System.Drawing.Size(43, 24);
             this.lblQty.TabIndex = 5;
             this.lblQty.Values.Text = "Qty.:";
             // 
             // CbNanoOnly
             // 
-            this.CbNanoOnly.Location = new System.Drawing.Point(3, 82);
+            this.CbNanoOnly.Location = new System.Drawing.Point(4, 85);
+            this.CbNanoOnly.Margin = new System.Windows.Forms.Padding(4);
             this.CbNanoOnly.Name = "CbNanoOnly";
-            this.CbNanoOnly.Size = new System.Drawing.Size(179, 27);
+            this.CbNanoOnly.Size = new System.Drawing.Size(160, 24);
             this.CbNanoOnly.TabIndex = 4;
             this.CbNanoOnly.Values.Text = "filter nanocraftable?";
             this.CbNanoOnly.CheckedChanged += new System.EventHandler(this.CbNanoOnly_CheckedChanged);
             // 
             // SearchBox
             // 
+            this.SearchBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.SearchBox.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
             this.SearchBox.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
             this.SearchBox.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawVariable;
@@ -499,22 +507,24 @@
             this.SearchBox.MaxDropDownItems = 20;
             this.SearchBox.MaxLength = 40;
             this.SearchBox.Name = "SearchBox";
-            this.SearchBox.Size = new System.Drawing.Size(450, 28);
+            this.SearchBox.Size = new System.Drawing.Size(452, 25);
             this.SearchBox.TabIndex = 0;
             // 
             // SearchButton
             // 
             this.SearchButton.AutoSize = true;
             this.SearchButton.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.SearchButton.Location = new System.Drawing.Point(3, 37);
+            this.SearchButton.Location = new System.Drawing.Point(4, 39);
+            this.SearchButton.Margin = new System.Windows.Forms.Padding(4);
             this.SearchButton.Name = "SearchButton";
-            this.SearchButton.Size = new System.Drawing.Size(77, 32);
+            this.SearchButton.Size = new System.Drawing.Size(80, 34);
             this.SearchButton.TabIndex = 1;
             this.SearchButton.Values.Text = "Search";
             this.SearchButton.Click += new System.EventHandler(this.SearchButton_Click);
             // 
             // QuantityBox
             // 
+            this.QuantityBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.QuantityBox.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawVariable;
             this.QuantityBox.DropDownWidth = 60;
             this.QuantityBox.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -543,12 +553,12 @@
             "2000000",
             "5000000",
             "10000000"});
-            this.QuantityBox.Location = new System.Drawing.Point(330, 38);
+            this.QuantityBox.Location = new System.Drawing.Point(326, 40);
             this.QuantityBox.Margin = new System.Windows.Forms.Padding(4, 6, 0, 0);
             this.QuantityBox.MaxDropDownItems = 15;
             this.QuantityBox.MaxLength = 8;
             this.QuantityBox.Name = "QuantityBox";
-            this.QuantityBox.Size = new System.Drawing.Size(124, 28);
+            this.QuantityBox.Size = new System.Drawing.Size(130, 25);
             this.QuantityBox.TabIndex = 2;
             this.QuantityBox.Text = "10000000";
             this.QuantityBox.SelectionChangeCommitted += new System.EventHandler(this.QuantityBoxOnSelectionChangeCommitted);
@@ -556,12 +566,14 @@
             // 
             // PreviousButton
             // 
+            this.PreviousButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.PreviousButton.AutoSize = true;
             this.PreviousButton.Enabled = false;
             this.PreviousButton.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.PreviousButton.Location = new System.Drawing.Point(416, 74);
+            this.PreviousButton.Location = new System.Drawing.Point(416, 78);
+            this.PreviousButton.Margin = new System.Windows.Forms.Padding(4);
             this.PreviousButton.Name = "PreviousButton";
-            this.PreviousButton.Size = new System.Drawing.Size(38, 32);
+            this.PreviousButton.Size = new System.Drawing.Size(40, 34);
             this.PreviousButton.TabIndex = 3;
             this.PreviousButton.Values.Text = "<<";
             this.PreviousButton.Click += new System.EventHandler(this.PreviousButton_Click);
@@ -571,7 +583,9 @@
             this.kryptonWorkspaceCell1.AllowPageDrag = true;
             this.kryptonWorkspaceCell1.AllowPageReorder = false;
             this.kryptonWorkspaceCell1.AllowTabFocus = false;
-            this.kryptonWorkspaceCell1.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.kryptonWorkspaceCell1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.kryptonWorkspaceCell1.Button.ButtonDisplayLogic = Krypton.Navigator.ButtonDisplayLogic.None;
             this.kryptonWorkspaceCell1.Button.CloseButtonAction = Krypton.Navigator.CloseButtonAction.None;
             this.kryptonWorkspaceCell1.Button.CloseButtonDisplay = Krypton.Navigator.ButtonDisplay.Hide;
@@ -581,6 +595,7 @@
             this.kryptonWorkspaceCell1.Button.NextButtonDisplay = Krypton.Navigator.ButtonDisplay.Hide;
             this.kryptonWorkspaceCell1.Button.PreviousButtonAction = Krypton.Navigator.DirectionButtonAction.None;
             this.kryptonWorkspaceCell1.Button.PreviousButtonDisplay = Krypton.Navigator.ButtonDisplay.Hide;
+            this.kryptonWorkspaceCell1.Margin = new System.Windows.Forms.Padding(4);
             this.kryptonWorkspaceCell1.MaximumSize = new System.Drawing.Size(462, 2000);
             this.kryptonWorkspaceCell1.Name = "kryptonWorkspaceCell1";
             this.kryptonWorkspaceCell1.NavigatorMode = Krypton.Navigator.NavigatorMode.BarCheckButtonGroupOutside;
@@ -597,9 +612,10 @@
             this.kryptonNavigator1.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.kryptonNavigator1.Bar.BarMultiline = Krypton.Navigator.BarMultiline.Multiline;
             this.kryptonNavigator1.Bar.TabBorderStyle = Krypton.Toolkit.TabBorderStyle.RoundedEqualMedium;
-            this.kryptonNavigator1.Location = new System.Drawing.Point(464, 59);
+            this.kryptonNavigator1.Location = new System.Drawing.Point(489, 61);
+            this.kryptonNavigator1.Margin = new System.Windows.Forms.Padding(4);
             this.kryptonNavigator1.Name = "kryptonNavigator1";
-            this.kryptonNavigator1.Size = new System.Drawing.Size(1318, 896);
+            this.kryptonNavigator1.Size = new System.Drawing.Size(1097, 747);
             this.kryptonNavigator1.StateCommon.CheckButton.Content.Image.ImageH = Krypton.Toolkit.PaletteRelativeAlign.Center;
             this.kryptonNavigator1.StateCommon.CheckButton.Content.Image.ImageV = Krypton.Toolkit.PaletteRelativeAlign.Center;
             this.kryptonNavigator1.StateCommon.CheckButton.Content.ShortText.TextH = Krypton.Toolkit.PaletteRelativeAlign.Center;
@@ -627,16 +643,17 @@
             // MainForm
             // 
             this.AcceptButton = this.SearchButton;
-            this.AutoScaleDimensions = new System.Drawing.SizeF(115F, 115F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            this.ClientSize = new System.Drawing.Size(1782, 955);
+            this.ClientSize = new System.Drawing.Size(1860, 996);
             this.Controls.Add(this.kryptonNavigator1);
             this.Controls.Add(this.kryptonDockableWorkspace);
             this.Controls.Add(this.kryptonRibbon);
             this.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.KeyPreview = true;
-            this.MinimumSize = new System.Drawing.Size(1000, 768);
+            this.Margin = new System.Windows.Forms.Padding(4);
+            this.MinimumSize = new System.Drawing.Size(1042, 798);
             this.Name = "MainForm";
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Show;
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;

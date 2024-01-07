@@ -74,8 +74,13 @@ namespace DU_Industry_Tool
 
             LoadTree();
 
+            LoadAndRunProductionList(Properties.Settings.Default.LastProductionList);
+            DUData.IndyMgrInstance = _manager;
+            
             _startUp = false;
         }
+
+        public IndustryManager IndyManager => _manager;
 
         private void LoadTree()
         {
@@ -809,8 +814,6 @@ namespace DU_Industry_Tool
             catch (Exception)
             {
             }
-
-            LoadAndRunProductionList(Properties.Settings.Default.LastProductionList);
 
             DUData.SchemCraftingTalents[0] = Properties.Settings.Default.SchemCraftCost1;
             DUData.SchemCraftingTalents[1] = Properties.Settings.Default.SchemCraftCost2;

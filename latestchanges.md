@@ -1,5 +1,14 @@
 # Latest Changes
 
+## v2024.1.8
+
+- Talents form: finally resized it to fit long names so that these aren't truncated anymore
+- Ore values form: max. allowed value increased to 999K
+- Schematics form: added skill import button for du-craft.online website (via clipboard)
+- Schematics form: fix Export button location, wasn't anchored correctly
+- Export to Excel for calculations/production lists
+- Main form: cosmetic fixes for 100% vs. 125% Windows scaling
+
 ## v2024.1.7
 
 - Schematics: UI fixes due to DPI scaling
@@ -36,9 +45,3 @@ as a button to reset all.
 - Finally fixed ammo calculations (min. batch output size of 40)
 - Fixed some calculation form label placements
 - Changed versioning to year.month.release so it is clearer how old a version is
-
-## v1.4.4
-
-- Fixed some elements' names, like Maintenance Unit and some Modern Screens
-- added unit's mass and volume display
-- removed pre-1.0 changelog entries from changelog
