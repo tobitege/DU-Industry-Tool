@@ -9,6 +9,9 @@ using Newtonsoft.Json;
 
 namespace DU_Industry_Tool
 {
+    // DEV NOTE: be aware that any changes to properties must be
+    // reflected accordingly in any of the existing Clone() methods!
+
     public class ProductNameClass
     {
         public string Name { get; set; }
@@ -56,7 +59,7 @@ namespace DU_Industry_Tool
         [JsonIgnore]
         public bool IsProduct { get; protected set; }
         [JsonIgnore]
-        public bool IsFuel { get; protected set; }
+        protected bool IsFuel { get; set; }
         [JsonIgnore]
         public bool IsBatchmode => IsOre || IsPure || IsProduct || IsFuel || IsAmmo;
     }
@@ -83,14 +86,6 @@ namespace DU_Industry_Tool
         public string Size { get; set; }
         public string Industry { get; set; }
 
-        public object Clone()
-        {
-            // setup
-            var json = JsonConvert.SerializeObject(this);
-            // get
-            return JsonConvert.DeserializeObject<SchematicRecipe>(json);
-        }
-
         public SchematicRecipe(){}
 
         public SchematicRecipe(SchematicRecipe entry)
@@ -109,6 +104,45 @@ namespace DU_Industry_Tool
             Name = entry.Name;
             SchemaType = entry.SchemaType;
             Level = entry.Level;
+        }
+
+        public SchematicRecipe Clone()
+        {
+            var result = new SchematicRecipe
+            {
+                Key = Key,
+                Name = Name,
+                Level = Level,
+                Id = Id,
+                Time = Time,
+                GroupId = GroupId,
+                Node = null,
+                NqId = NqId,
+                SchemaType = SchemaType,
+                SchemaPrice = SchemaPrice,
+                UnitMass = UnitMass,
+                UnitVolume = UnitVolume,
+                Nanocraftable = Nanocraftable,
+                Size = Size,
+                Industry = Industry,
+                ParentGroupName = ParentGroupName,
+                IsAmmo = IsAmmo,
+                IsFuel = IsFuel,
+                IsOre = IsOre,
+                IsPart = IsPart,
+                IsPlasma = IsPlasma,
+                IsProduct = IsProduct,
+                IsPure = IsPure
+            };
+            foreach (var ingredient in Ingredients)
+            {
+                result.Ingredients.Add(ingredient.Clone());
+            }
+            foreach (var product in Products)
+            {
+                result.Products.Add(product.Clone());
+            }
+            return result;
         }
 
         private string ConvertName(string itemName)
@@ -164,7 +198,7 @@ namespace DU_Industry_Tool
             var rec = DUData.Recipes.FirstOrDefault(x =>
                 x.Key.Equals(recipeKey, StringComparison.CurrentCultureIgnoreCase));
             if (rec.Key == null) return null;
-            var result = rec.Value;
+            var result = rec.Value.Clone();
             result.Key = rec.Key;
             return result;
         }
@@ -175,7 +209,7 @@ namespace DU_Industry_Tool
             var rec = DUData.Recipes.FirstOrDefault(x =>
                 x.Value.Name.Equals(recipeName, StringComparison.CurrentCultureIgnoreCase));
             if (rec.Key == null) return null;
-            var result = rec.Value;
+            var result = rec.Value.Clone();
             result.Key = rec.Key;
             return result;
         }
@@ -201,7 +235,7 @@ namespace DU_Industry_Tool
         [JsonIgnore]
         public decimal OutputAdder { get; set; }
 
-        protected void ResetTalents()
+        private void ResetTalents()
         {
             InputMultiplier = 1;
             InputAdder = 0;
@@ -242,11 +276,19 @@ namespace DU_Industry_Tool
             {
                 BatchInput = (recipe.IsProduct ? 100 : 65) * inputMultiplier + inputAdder;
                 BatchOutput = (recipe.IsProduct ? 75 : 45) * outputMultiplier + outputAdder;
+
             }
-            if (recipe.Time > 0)
-            {
-                BatchTime = recipe.Time * (EfficencyFactor ?? 1);
-            }
+            if (recipe.Time < 1) return result;
+
+            BatchTime = recipe.Time * (EfficencyFactor ?? 1);
+            if (recipe.Level != 1) return result;
+
+            // Apply efficiency and for T1 the batch size formula
+            var time = (decimal)BatchTime;
+            var batches = (time > 180 ? Math.Floor(180 / time) : Math.Ceiling(180 / time));
+            BatchTime = Math.Round(time * Math.Max(1, batches), 0);
+            BatchInput *= batches;
+            BatchOutput *= batches;
             return result;
         }
     }
@@ -257,7 +299,6 @@ namespace DU_Industry_Tool
         public decimal Quantity { get; set; }
         [JsonIgnore]
         public ulong Id { get; set; }
-
         public string Type { get; set; }
         [JsonIgnore]
         public byte Level { get; set; }
@@ -275,7 +316,39 @@ namespace DU_Industry_Tool
         public decimal Volume { get; set; }
         [JsonIgnore]
         public decimal Cost { get; set; }
+        [JsonIgnore]
+        public decimal ItemPrice { get; set; }
+        [JsonIgnore]
+        public decimal Margin { get; set; }
+        [JsonIgnore]
+        public decimal Retail { get; set; }
+        [JsonIgnore]
+        public bool IsProdItem { get; set; }
 
+        public ProductDetail Clone()
+        {
+            var result = new ProductDetail
+            {
+                Name = this.Name,
+                Quantity = Quantity,
+                Id = Id,
+                Type = Type,
+                Level = Level,
+                SchemaType = SchemaType,
+                SchemaQty = SchemaQty,
+                SchemaAmt = SchemaAmt,
+                IsByproduct = IsByproduct,
+                Mass = Mass,
+                Volume = Volume,
+                Cost = Cost,
+                ItemPrice = ItemPrice,
+                Margin = Margin,
+                Retail = Retail,
+                IsProdItem = IsProdItem
+            };
+            return result;
+        }
+        
         public ProductDetail() {}
 
         public ProductDetail(SchematicRecipe entry)
@@ -285,7 +358,8 @@ namespace DU_Industry_Tool
             Level = entry.Level;
             SchemaType = entry.SchemaType;
             SchemaAmt = entry.SchemaPrice;
-            //ParentGroupName = entry.ParentGroupName;
+            Margin = 0m;
+            Retail = 0m;
         }
 
         public ProductDetail(ProductDetail entry)
@@ -306,6 +380,8 @@ namespace DU_Industry_Tool
             SchemaType = entry.SchematicType;
             SchemaAmt = entry.SchematicsCost; // TODO ??
             Level = entry.Tier;
+            Margin = entry.Margin;
+            Retail = entry.Retail;
         }
     }
 

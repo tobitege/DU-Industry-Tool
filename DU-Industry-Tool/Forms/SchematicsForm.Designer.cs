@@ -35,14 +35,7 @@
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
             this.schematicsGrid = new System.Windows.Forms.DataGridView();
-            this.KEY = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.SchematicName = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.BatchSize = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.BatchCost = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Quanta = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Qty = new Krypton.Toolkit.KryptonDataGridViewNumericUpDownColumn();
-            this.Sum = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.closeBtn = new Krypton.Toolkit.KryptonButton();
+            this.CloseBtn = new Krypton.Toolkit.KryptonButton();
             this.applyBtn = new Krypton.Toolkit.KryptonButton();
             this.exportKBtn = new Krypton.Toolkit.KryptonDropButton();
             this.exportMenu = new Krypton.Toolkit.KryptonContextMenu();
@@ -57,6 +50,11 @@
             this.BtnClear = new Krypton.Toolkit.KryptonButton();
             this.BtnLoad = new Krypton.Toolkit.KryptonButton();
             this.BtnSave = new Krypton.Toolkit.KryptonButton();
+            this.ApplyGrossMarginCB = new Krypton.Toolkit.KryptonCheckBox();
+            this.grossMarginEdit = new Krypton.Toolkit.KryptonNumericUpDown();
+            this.duCraftImportBtn = new Krypton.Toolkit.KryptonButton();
+            this.ApplyRoundingCB = new Krypton.Toolkit.KryptonCheckBox();
+            this.RoundToCmb = new Krypton.Toolkit.KryptonComboBox();
             this.tbSkill4 = new DU_Industry_Tool.ButtonRow();
             this.tbSkill3 = new DU_Industry_Tool.ButtonRow();
             this.tbSkill2 = new DU_Industry_Tool.ButtonRow();
@@ -72,10 +70,16 @@
             this.kLabel3 = new DU_Industry_Tool.KLabel();
             this.kLabel2 = new DU_Industry_Tool.KLabel();
             this.kLabel1 = new DU_Industry_Tool.KLabel();
-            this.applyGrossMargin = new Krypton.Toolkit.KryptonCheckBox();
-            this.grossMarginEdit = new Krypton.Toolkit.KryptonNumericUpDown();
-            this.duCraftImportBtn = new Krypton.Toolkit.KryptonButton();
+            this.kLabel6 = new DU_Industry_Tool.KLabel();
+            this.KEY = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.SchematicName = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.BatchSize = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.BatchCost = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Quanta = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Qty = new Krypton.Toolkit.KryptonDataGridViewNumericUpDownColumn();
+            this.Sum = new System.Windows.Forms.DataGridViewTextBoxColumn();
             ((System.ComponentModel.ISupportInitialize)(this.schematicsGrid)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.RoundToCmb)).BeginInit();
             this.SuspendLayout();
             // 
             // schematicsGrid
@@ -109,115 +113,21 @@
             this.schematicsGrid.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.CellSelect;
             this.schematicsGrid.Size = new System.Drawing.Size(858, 534);
             this.schematicsGrid.TabIndex = 10;
-            this.schematicsGrid.RowValidating += new System.Windows.Forms.DataGridViewCellCancelEventHandler(this.schematicsGrid_RowValidating);
+            this.schematicsGrid.CellValidated += new System.Windows.Forms.DataGridViewCellEventHandler(this.schematicsGrid_CellValidated);
             // 
-            // KEY
+            // CloseBtn
             // 
-            this.KEY.Frozen = true;
-            this.KEY.HeaderText = "KEY";
-            this.KEY.MinimumWidth = 6;
-            this.KEY.Name = "KEY";
-            this.KEY.ReadOnly = true;
-            this.KEY.Visible = false;
-            this.KEY.Width = 50;
-            // 
-            // SchematicName
-            // 
-            this.SchematicName.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
-            dataGridViewCellStyle1.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.SchematicName.DefaultCellStyle = dataGridViewCellStyle1;
-            this.SchematicName.HeaderText = "Schematic Name";
-            this.SchematicName.MinimumWidth = 200;
-            this.SchematicName.Name = "SchematicName";
-            this.SchematicName.ReadOnly = true;
-            this.SchematicName.Width = 200;
-            // 
-            // BatchSize
-            // 
-            this.BatchSize.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.DisplayedCells;
-            dataGridViewCellStyle2.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle2.Format = "N0";
-            dataGridViewCellStyle2.NullValue = null;
-            this.BatchSize.DefaultCellStyle = dataGridViewCellStyle2;
-            this.BatchSize.HeaderText = "Batch-Size";
-            this.BatchSize.MinimumWidth = 60;
-            this.BatchSize.Name = "BatchSize";
-            this.BatchSize.ReadOnly = true;
-            this.BatchSize.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
-            this.BatchSize.Width = 85;
-            // 
-            // BatchCost
-            // 
-            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
-            dataGridViewCellStyle3.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle3.Format = "N0";
-            dataGridViewCellStyle3.NullValue = null;
-            this.BatchCost.DefaultCellStyle = dataGridViewCellStyle3;
-            this.BatchCost.HeaderText = "q / Batch";
-            this.BatchCost.MinimumWidth = 125;
-            this.BatchCost.Name = "BatchCost";
-            this.BatchCost.ReadOnly = true;
-            this.BatchCost.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
-            this.BatchCost.Width = 125;
-            // 
-            // Quanta
-            // 
-            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
-            dataGridViewCellStyle4.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle4.Format = "N2";
-            dataGridViewCellStyle4.NullValue = null;
-            this.Quanta.DefaultCellStyle = dataGridViewCellStyle4;
-            this.Quanta.HeaderText = "q / x1";
-            this.Quanta.MinimumWidth = 100;
-            this.Quanta.Name = "Quanta";
-            this.Quanta.ReadOnly = true;
-            this.Quanta.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
-            this.Quanta.Width = 120;
-            // 
-            // Qty
-            // 
-            this.Qty.AllowDecimals = false;
-            this.Qty.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
-            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
-            dataGridViewCellStyle5.Format = "N0";
-            dataGridViewCellStyle5.NullValue = null;
-            this.Qty.DefaultCellStyle = dataGridViewCellStyle5;
-            this.Qty.HeaderText = "Qty.";
-            this.Qty.Maximum = new decimal(new int[] {
-            999999999,
-            0,
-            0,
-            0});
-            this.Qty.MinimumWidth = 70;
-            this.Qty.Name = "Qty";
-            this.Qty.Width = 70;
-            // 
-            // Sum
-            // 
-            this.Sum.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            dataGridViewCellStyle6.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
-            dataGridViewCellStyle6.Format = "N2";
-            dataGridViewCellStyle6.NullValue = null;
-            dataGridViewCellStyle6.Padding = new System.Windows.Forms.Padding(0, 2, 0, 0);
-            this.Sum.DefaultCellStyle = dataGridViewCellStyle6;
-            this.Sum.HeaderText = "Sum";
-            this.Sum.MinimumWidth = 120;
-            this.Sum.Name = "Sum";
-            this.Sum.ReadOnly = true;
-            // 
-            // closeBtn
-            // 
-            this.closeBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.closeBtn.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.closeBtn.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.closeBtn.Font = new System.Drawing.Font("Segoe UI Semibold", 10.01739F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.closeBtn.Location = new System.Drawing.Point(761, 848);
-            this.closeBtn.Margin = new System.Windows.Forms.Padding(4);
-            this.closeBtn.Name = "closeBtn";
-            this.closeBtn.Size = new System.Drawing.Size(100, 35);
-            this.closeBtn.TabIndex = 12;
-            this.closeBtn.Values.Text = "&Close";
-            this.closeBtn.Click += new System.EventHandler(this.closeBtn_Click);
+            this.CloseBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.CloseBtn.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.CloseBtn.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+            this.CloseBtn.Font = new System.Drawing.Font("Segoe UI Semibold", 10.01739F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.CloseBtn.Location = new System.Drawing.Point(761, 848);
+            this.CloseBtn.Margin = new System.Windows.Forms.Padding(4);
+            this.CloseBtn.Name = "CloseBtn";
+            this.CloseBtn.Size = new System.Drawing.Size(100, 35);
+            this.CloseBtn.TabIndex = 12;
+            this.CloseBtn.Values.Text = "&Close";
+            this.CloseBtn.Click += new System.EventHandler(this.CloseBtn_Click);
             // 
             // applyBtn
             // 
@@ -300,7 +210,7 @@
             // BtnClear
             // 
             this.BtnClear.KryptonCommand = this.kCmdClearList;
-            this.BtnClear.Location = new System.Drawing.Point(715, 230);
+            this.BtnClear.Location = new System.Drawing.Point(688, 230);
             this.BtnClear.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.BtnClear.Name = "BtnClear";
             this.BtnClear.Size = new System.Drawing.Size(36, 36);
@@ -319,7 +229,7 @@
             // BtnLoad
             // 
             this.BtnLoad.KryptonCommand = this.kCmdLoadList;
-            this.BtnLoad.Location = new System.Drawing.Point(634, 230);
+            this.BtnLoad.Location = new System.Drawing.Point(600, 230);
             this.BtnLoad.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.BtnLoad.Name = "BtnLoad";
             this.BtnLoad.Size = new System.Drawing.Size(36, 36);
@@ -338,7 +248,7 @@
             // BtnSave
             // 
             this.BtnSave.KryptonCommand = this.kCmdSaveList;
-            this.BtnSave.Location = new System.Drawing.Point(675, 230);
+            this.BtnSave.Location = new System.Drawing.Point(644, 230);
             this.BtnSave.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.BtnSave.Name = "BtnSave";
             this.BtnSave.Size = new System.Drawing.Size(36, 36);
@@ -353,6 +263,82 @@
             this.BtnSave.ToolTipValues.EnableToolTips = true;
             this.BtnSave.ToolTipValues.Heading = "Save";
             this.BtnSave.Values.Text = "";
+            // 
+            // ApplyGrossMarginCB
+            // 
+            this.ApplyGrossMarginCB.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.ApplyGrossMarginCB.Location = new System.Drawing.Point(600, 24);
+            this.ApplyGrossMarginCB.Name = "ApplyGrossMarginCB";
+            this.ApplyGrossMarginCB.Size = new System.Drawing.Size(192, 24);
+            this.ApplyGrossMarginCB.TabIndex = 31;
+            this.ApplyGrossMarginCB.ToolTipValues.Description = "% on top of single price before calculating sum";
+            this.ApplyGrossMarginCB.ToolTipValues.Heading = "Gross Margin %";
+            this.ApplyGrossMarginCB.Values.Text = "Apply Gross Margin (%)?";
+            this.ApplyGrossMarginCB.CheckStateChanged += new System.EventHandler(this.applyGrossMarginCB_CheckStateChanged);
+            // 
+            // grossMarginEdit
+            // 
+            this.grossMarginEdit.AllowDecimals = true;
+            this.grossMarginEdit.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.grossMarginEdit.DecimalPlaces = 2;
+            this.grossMarginEdit.Location = new System.Drawing.Point(620, 54);
+            this.grossMarginEdit.Maximum = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            this.grossMarginEdit.MinimumSize = new System.Drawing.Size(90, 0);
+            this.grossMarginEdit.Name = "grossMarginEdit";
+            this.grossMarginEdit.Size = new System.Drawing.Size(90, 26);
+            this.grossMarginEdit.TabIndex = 32;
+            // 
+            // duCraftImportBtn
+            // 
+            this.duCraftImportBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.duCraftImportBtn.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.duCraftImportBtn.Font = new System.Drawing.Font("Segoe UI Semibold", 10.01739F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.duCraftImportBtn.Location = new System.Drawing.Point(206, 848);
+            this.duCraftImportBtn.Margin = new System.Windows.Forms.Padding(4);
+            this.duCraftImportBtn.Name = "duCraftImportBtn";
+            this.duCraftImportBtn.Size = new System.Drawing.Size(147, 35);
+            this.duCraftImportBtn.TabIndex = 33;
+            this.duCraftImportBtn.ToolTipValues.Description = "Import skills from clipboard if copied from du-craft.online website";
+            this.duCraftImportBtn.ToolTipValues.Heading = "du-craft skills import";
+            this.duCraftImportBtn.Values.Text = "DU-Craft skills...";
+            this.duCraftImportBtn.Click += new System.EventHandler(this.duCraftImportBtn_Click);
+            // 
+            // ApplyRoundingCB
+            // 
+            this.ApplyRoundingCB.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.ApplyRoundingCB.Location = new System.Drawing.Point(600, 89);
+            this.ApplyRoundingCB.Name = "ApplyRoundingCB";
+            this.ApplyRoundingCB.Size = new System.Drawing.Size(209, 24);
+            this.ApplyRoundingCB.TabIndex = 34;
+            this.ApplyRoundingCB.ToolTipValues.Description = "% on top of single price before calculating sum";
+            this.ApplyRoundingCB.ToolTipValues.Heading = "Gross Margin %";
+            this.ApplyRoundingCB.Values.Text = "Round up sums to x digits?";
+            this.ApplyRoundingCB.CheckStateChanged += new System.EventHandler(this.ApplyRoundingCB_CheckStateChanged);
+            // 
+            // RoundToCmb
+            // 
+            this.RoundToCmb.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.RoundToCmb.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawVariable;
+            this.RoundToCmb.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.RoundToCmb.DropDownWidth = 170;
+            this.RoundToCmb.IntegralHeight = false;
+            this.RoundToCmb.Items.AddRange(new object[] {
+            "next 10",
+            "next 100",
+            "next 1 000",
+            "next 10 000",
+            "next 100 000",
+            "next 1 000 000"});
+            this.RoundToCmb.Location = new System.Drawing.Point(620, 121);
+            this.RoundToCmb.MaxLength = 3;
+            this.RoundToCmb.Name = "RoundToCmb";
+            this.RoundToCmb.Size = new System.Drawing.Size(120, 25);
+            this.RoundToCmb.StateCommon.ComboBox.Content.TextH = Krypton.Toolkit.PaletteRelativeAlign.Near;
+            this.RoundToCmb.TabIndex = 35;
             // 
             // tbSkill4
             // 
@@ -539,58 +525,124 @@
             this.kLabel1.Text = "Schematic Cost Optimization (-5% q)";
             this.kLabel1.Values.Text = "Schematic Cost Optimization (-5% q)";
             // 
-            // applyGrossMargin
+            // kLabel6
             // 
-            this.applyGrossMargin.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.applyGrossMargin.Location = new System.Drawing.Point(602, 24);
-            this.applyGrossMargin.Name = "applyGrossMargin";
-            this.applyGrossMargin.Size = new System.Drawing.Size(192, 24);
-            this.applyGrossMargin.TabIndex = 31;
-            this.applyGrossMargin.ToolTipValues.Description = "% on top of single price before calculating sum";
-            this.applyGrossMargin.ToolTipValues.Heading = "Gross Margin %";
-            this.applyGrossMargin.Values.Text = "Apply Gross Margin (%)?";
-            this.applyGrossMargin.Visible = false;
+            this.kLabel6.Location = new System.Drawing.Point(600, 162);
+            this.kLabel6.Margin = new System.Windows.Forms.Padding(4);
+            this.kLabel6.Name = "kLabel6";
+            this.kLabel6.Size = new System.Drawing.Size(239, 24);
+            this.kLabel6.TabIndex = 36;
+            this.kLabel6.TabStop = false;
+            this.kLabel6.Text = "Note: options are only used here!";
+            this.kLabel6.Values.Text = "Note: options are only used here!";
             // 
-            // grossMarginEdit
+            // KEY
             // 
-            this.grossMarginEdit.AllowDecimals = true;
-            this.grossMarginEdit.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.grossMarginEdit.DecimalPlaces = 2;
-            this.grossMarginEdit.Location = new System.Drawing.Point(625, 54);
-            this.grossMarginEdit.MinimumSize = new System.Drawing.Size(70, 0);
-            this.grossMarginEdit.Name = "grossMarginEdit";
-            this.grossMarginEdit.Size = new System.Drawing.Size(76, 26);
-            this.grossMarginEdit.TabIndex = 32;
-            this.grossMarginEdit.Value = new decimal(new int[] {
-            1234,
+            this.KEY.Frozen = true;
+            this.KEY.HeaderText = "KEY";
+            this.KEY.MinimumWidth = 6;
+            this.KEY.Name = "KEY";
+            this.KEY.ReadOnly = true;
+            this.KEY.Visible = false;
+            this.KEY.Width = 50;
+            // 
+            // SchematicName
+            // 
+            this.SchematicName.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.SchematicName.DefaultCellStyle = dataGridViewCellStyle1;
+            this.SchematicName.HeaderText = "Schematic Name";
+            this.SchematicName.MinimumWidth = 200;
+            this.SchematicName.Name = "SchematicName";
+            this.SchematicName.ReadOnly = true;
+            this.SchematicName.Width = 200;
+            // 
+            // BatchSize
+            // 
+            this.BatchSize.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.DisplayedCells;
+            dataGridViewCellStyle2.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle2.Format = "N0";
+            dataGridViewCellStyle2.NullValue = null;
+            this.BatchSize.DefaultCellStyle = dataGridViewCellStyle2;
+            this.BatchSize.HeaderText = "Batch-Size";
+            this.BatchSize.MinimumWidth = 60;
+            this.BatchSize.Name = "BatchSize";
+            this.BatchSize.ReadOnly = true;
+            this.BatchSize.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
+            this.BatchSize.Width = 85;
+            // 
+            // BatchCost
+            // 
+            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
+            dataGridViewCellStyle3.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle3.Format = "N0";
+            dataGridViewCellStyle3.NullValue = null;
+            this.BatchCost.DefaultCellStyle = dataGridViewCellStyle3;
+            this.BatchCost.HeaderText = "q / Batch";
+            this.BatchCost.MinimumWidth = 125;
+            this.BatchCost.Name = "BatchCost";
+            this.BatchCost.ReadOnly = true;
+            this.BatchCost.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
+            this.BatchCost.Width = 125;
+            // 
+            // Quanta
+            // 
+            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
+            dataGridViewCellStyle4.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle4.Format = "N2";
+            dataGridViewCellStyle4.NullValue = null;
+            this.Quanta.DefaultCellStyle = dataGridViewCellStyle4;
+            this.Quanta.HeaderText = "q / x1";
+            this.Quanta.MinimumWidth = 100;
+            this.Quanta.Name = "Quanta";
+            this.Quanta.ReadOnly = true;
+            this.Quanta.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
+            this.Quanta.Width = 120;
+            // 
+            // Qty
+            // 
+            this.Qty.AllowDecimals = false;
+            this.Qty.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
+            dataGridViewCellStyle5.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            dataGridViewCellStyle5.Format = "N0";
+            dataGridViewCellStyle5.NullValue = null;
+            this.Qty.DefaultCellStyle = dataGridViewCellStyle5;
+            this.Qty.HeaderText = "Qty.";
+            this.Qty.Maximum = new decimal(new int[] {
+            999999999,
             0,
             0,
-            131072});
-            this.grossMarginEdit.Visible = false;
+            0});
+            this.Qty.MinimumWidth = 70;
+            this.Qty.Name = "Qty";
+            this.Qty.Width = 70;
             // 
-            // duCraftImportBtn
+            // Sum
             // 
-            this.duCraftImportBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.duCraftImportBtn.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.duCraftImportBtn.Font = new System.Drawing.Font("Segoe UI Semibold", 10.01739F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.duCraftImportBtn.Location = new System.Drawing.Point(206, 848);
-            this.duCraftImportBtn.Margin = new System.Windows.Forms.Padding(4);
-            this.duCraftImportBtn.Name = "duCraftImportBtn";
-            this.duCraftImportBtn.Size = new System.Drawing.Size(147, 35);
-            this.duCraftImportBtn.TabIndex = 33;
-            this.duCraftImportBtn.ToolTipValues.Description = "Import skills from clipboard if copied from du-craft.online website";
-            this.duCraftImportBtn.ToolTipValues.Heading = "du-craft skills import";
-            this.duCraftImportBtn.Values.Text = "DU-Craft skills...";
-            this.duCraftImportBtn.Click += new System.EventHandler(this.duCraftImportBtn_Click);
+            this.Sum.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            dataGridViewCellStyle6.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
+            dataGridViewCellStyle6.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            dataGridViewCellStyle6.Format = "N2";
+            dataGridViewCellStyle6.NullValue = null;
+            dataGridViewCellStyle6.Padding = new System.Windows.Forms.Padding(0, 2, 0, 0);
+            this.Sum.DefaultCellStyle = dataGridViewCellStyle6;
+            this.Sum.HeaderText = "Sum";
+            this.Sum.MinimumWidth = 120;
+            this.Sum.Name = "Sum";
+            this.Sum.ReadOnly = true;
             // 
             // SchematicValueForm
             // 
             this.AcceptButton = this.applyBtn;
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
             this.ClientSize = new System.Drawing.Size(881, 892);
+            this.Controls.Add(this.kLabel6);
+            this.Controls.Add(this.RoundToCmb);
+            this.Controls.Add(this.ApplyRoundingCB);
             this.Controls.Add(this.duCraftImportBtn);
             this.Controls.Add(this.grossMarginEdit);
-            this.Controls.Add(this.applyGrossMargin);
+            this.Controls.Add(this.ApplyGrossMarginCB);
             this.Controls.Add(this.BtnSave);
             this.Controls.Add(this.BtnClear);
             this.Controls.Add(this.BtnLoad);
@@ -611,7 +663,7 @@
             this.Controls.Add(this.kLabel2);
             this.Controls.Add(this.kLabel1);
             this.Controls.Add(this.applyBtn);
-            this.Controls.Add(this.closeBtn);
+            this.Controls.Add(this.CloseBtn);
             this.Controls.Add(this.schematicsGrid);
             this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Margin = new System.Windows.Forms.Padding(4);
@@ -622,7 +674,9 @@
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Show;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Schematic crafting and details";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.SchematicValueForm_FormClosing);
             ((System.ComponentModel.ISupportInitialize)(this.schematicsGrid)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.RoundToCmb)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -631,7 +685,7 @@
         #endregion
 
         private System.Windows.Forms.DataGridView schematicsGrid;
-        private Krypton.Toolkit.KryptonButton closeBtn;
+        private Krypton.Toolkit.KryptonButton CloseBtn;
         private Krypton.Toolkit.KryptonButton applyBtn;
         private KLabel kLabel1;
         private KLabel kLabel2;
@@ -655,6 +709,18 @@
         private ButtonRow tbSkill2;
         private ButtonRow tbSkill3;
         private ButtonRow tbSkill4;
+        private Krypton.Toolkit.KryptonCommand kCmdLoadList;
+        private Krypton.Toolkit.KryptonCommand kCmdSaveList;
+        private Krypton.Toolkit.KryptonCommand kCmdClearList;
+        private Krypton.Toolkit.KryptonButton BtnClear;
+        private Krypton.Toolkit.KryptonButton BtnLoad;
+        private Krypton.Toolkit.KryptonButton BtnSave;
+        private Krypton.Toolkit.KryptonCheckBox ApplyGrossMarginCB;
+        private Krypton.Toolkit.KryptonNumericUpDown grossMarginEdit;
+        private Krypton.Toolkit.KryptonButton duCraftImportBtn;
+        private Krypton.Toolkit.KryptonCheckBox ApplyRoundingCB;
+        private Krypton.Toolkit.KryptonComboBox RoundToCmb;
+        private KLabel kLabel6;
         private System.Windows.Forms.DataGridViewTextBoxColumn KEY;
         private System.Windows.Forms.DataGridViewTextBoxColumn SchematicName;
         private System.Windows.Forms.DataGridViewTextBoxColumn BatchSize;
@@ -662,14 +728,5 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn Quanta;
         private Krypton.Toolkit.KryptonDataGridViewNumericUpDownColumn Qty;
         private System.Windows.Forms.DataGridViewTextBoxColumn Sum;
-        private Krypton.Toolkit.KryptonCommand kCmdLoadList;
-        private Krypton.Toolkit.KryptonCommand kCmdSaveList;
-        private Krypton.Toolkit.KryptonCommand kCmdClearList;
-        private Krypton.Toolkit.KryptonButton BtnClear;
-        private Krypton.Toolkit.KryptonButton BtnLoad;
-        private Krypton.Toolkit.KryptonButton BtnSave;
-        private Krypton.Toolkit.KryptonCheckBox applyGrossMargin;
-        private Krypton.Toolkit.KryptonNumericUpDown grossMarginEdit;
-        private Krypton.Toolkit.KryptonButton duCraftImportBtn;
     }
 }

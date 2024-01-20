@@ -80,6 +80,9 @@
   <ItemGroup>
     <Compile Include="Classes\DpiHelper.cs" />
     <Compile Include="Classes\DUCraftLoader.cs" />
+    <Compile Include="Classes\DUXLHelper.cs" />
+    <Compile Include="Classes\SearchHelper.cs" />
+    <Compile Include="Classes\SettingsMgr.cs" />
     <Compile Include="Controls\ButtonRow.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -89,7 +92,7 @@
     <Compile Include="Classes\Calculator2OutputClass.cs" />
     <Compile Include="Classes\CalculatorClass.cs" />
     <Compile Include="Classes\DUData.cs" />
-    <Compile Include="Classes\KLabel.cs" />
+    <Compile Include="Controls\KLabel.cs" />
     <Compile Include="Classes\RecipeCalculation.cs" />
     <Compile Include="Classes\Utils.cs" />
     <Compile Include="Controls\LabelRow.cs">
@@ -146,11 +149,11 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="Classes\Recipe.cs" />
-    <Compile Include="Forms\SchematicValueForm.cs">
+    <Compile Include="Forms\SchematicsForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Forms\SchematicValueForm.Designer.cs">
-      <DependentUpon>SchematicValueForm.cs</DependentUpon>
+    <Compile Include="Forms\SchematicsForm.Designer.cs">
+      <DependentUpon>SchematicsForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Forms\SkillForm.cs">
       <SubType>Form</SubType>
@@ -175,6 +178,7 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\OreValueForm.resx">
       <DependentUpon>OreValueForm.cs</DependentUpon>
@@ -187,8 +191,8 @@
       <SubType>Designer</SubType>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Include="Forms\SchematicValueForm.resx">
-      <DependentUpon>SchematicValueForm.cs</DependentUpon>
+    <EmbeddedResource Include="Forms\SchematicsForm.resx">
+      <DependentUpon>SchematicsForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\SkillForm.resx">
       <DependentUpon>SkillForm.cs</DependentUpon>
@@ -270,8 +274,11 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="AutoCompleteMenu-ScintillaNET">
+      <Version>2.1.1</Version>
+    </PackageReference>
     <PackageReference Include="ClosedXML">
-      <Version>0.101.0</Version>
+      <Version>0.102.2</Version>
     </PackageReference>
     <PackageReference Include="DocumentFormat.OpenXml">
       <Version>2.20.0</Version>
@@ -291,17 +298,17 @@
     <PackageReference Include="Microsoft.CSharp">
       <Version>4.7.0</Version>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Configuration">
+      <Version>8.0.0</Version>
+    </PackageReference>
     <PackageReference Include="Newtonsoft.Json">
       <Version>13.0.3</Version>
-    </PackageReference>
-    <PackageReference Include="PortableJsonSettingsProvider">
-      <Version>0.2.1</Version>
     </PackageReference>
     <PackageReference Include="System.IO.FileSystem.Primitives">
       <Version>4.3.0</Version>
     </PackageReference>
     <PackageReference Include="System.IO.Packaging">
-      <Version>7.0.0</Version>
+      <Version>8.0.0</Version>
     </PackageReference>
     <PackageReference Include="System.Runtime.Serialization.Primitives">
       <Version>4.3.0</Version>

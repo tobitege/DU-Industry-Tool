@@ -48,6 +48,7 @@
             this.BtnProdListClose = new Krypton.Ribbon.KryptonRibbonGroupButton();
             this.RibbonGroupProductionList3 = new Krypton.Ribbon.KryptonRibbonGroupLines();
             this.CbRecentLists = new Krypton.Ribbon.KryptonRibbonGroupComboBox();
+            this.BtnClearProdLists = new Krypton.Ribbon.KryptonRibbonGroupButton();
             this.RibbonGroupSetup = new Krypton.Ribbon.KryptonRibbonGroup();
             this.kryptonRibbonGroupTriple2 = new Krypton.Ribbon.KryptonRibbonGroupTriple();
             this.BtnTalents = new Krypton.Ribbon.KryptonRibbonGroupButton();
@@ -73,9 +74,10 @@
             this.kryptonPage1 = new Krypton.Navigator.KryptonPage();
             this.treeView = new System.Windows.Forms.TreeView();
             this.searchPanel = new Krypton.Toolkit.KryptonPanel();
+            this.LblSearchHint = new Krypton.Toolkit.KryptonLabel();
+            this.SearchBox = new System.Windows.Forms.TextBox();
             this.lblQty = new Krypton.Toolkit.KryptonLabel();
             this.CbNanoOnly = new Krypton.Toolkit.KryptonCheckBox();
-            this.SearchBox = new Krypton.Toolkit.KryptonComboBox();
             this.SearchButton = new Krypton.Toolkit.KryptonButton();
             this.QuantityBox = new Krypton.Toolkit.KryptonComboBox();
             this.PreviousButton = new Krypton.Toolkit.KryptonButton();
@@ -85,6 +87,7 @@
             this.kryptonDockingManager = new Krypton.Docking.KryptonDockingManager();
             this.kryptonManager = new Krypton.Toolkit.KryptonManager(this.components);
             this.kryptonRibbonGroupGallery1 = new Krypton.Ribbon.KryptonRibbonGroupGallery();
+            this.acMenu = new AutocompleteMenuNS.AutocompleteMenu();
             ((System.ComponentModel.ISupportInitialize)(this.kryptonRibbon)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.kryptonDockableWorkspace)).BeginInit();
             this.kryptonDockableWorkspace.SuspendLayout();
@@ -92,7 +95,6 @@
             this.kryptonPage1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.searchPanel)).BeginInit();
             this.searchPanel.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.SearchBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.QuantityBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.kryptonWorkspaceCell1)).BeginInit();
             this.kryptonWorkspaceCell1.SuspendLayout();
@@ -237,17 +239,26 @@
             // RibbonGroupProductionList3
             // 
             this.RibbonGroupProductionList3.Items.AddRange(new Krypton.Ribbon.KryptonRibbonGroupItem[] {
-            this.CbRecentLists});
+            this.CbRecentLists,
+            this.BtnClearProdLists});
+            this.RibbonGroupProductionList3.MinimumSize = Krypton.Ribbon.GroupItemSize.Large;
             // 
             // CbRecentLists
             // 
             this.CbRecentLists.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.CbRecentLists.DropDownWidth = 200;
+            this.CbRecentLists.DropDownWidth = 300;
             this.CbRecentLists.FormattingEnabled = false;
             this.CbRecentLists.ItemHeight = 19;
-            this.CbRecentLists.MinimumSize = new System.Drawing.Size(200, 0);
+            this.CbRecentLists.MinimumSize = new System.Drawing.Size(300, 0);
             this.CbRecentLists.Text = "";
             this.CbRecentLists.SelectionChangeCommitted += new System.EventHandler(this.CbRecentLists_SelectionChangeCommitted);
+            // 
+            // BtnClearProdLists
+            // 
+            this.BtnClearProdLists.ImageLarge = global::DU_Industry_Tool.Properties.Resources.gtk_stop;
+            this.BtnClearProdLists.ImageSmall = global::DU_Industry_Tool.Properties.Resources.gtk_stop;
+            this.BtnClearProdLists.TextLine1 = "Clear list";
+            this.BtnClearProdLists.Click += new System.EventHandler(this.BtnClearProdLists_Click);
             // 
             // RibbonGroupSetup
             // 
@@ -458,9 +469,10 @@
             // searchPanel
             // 
             this.searchPanel.AutoSize = true;
+            this.searchPanel.Controls.Add(this.LblSearchHint);
+            this.searchPanel.Controls.Add(this.SearchBox);
             this.searchPanel.Controls.Add(this.lblQty);
             this.searchPanel.Controls.Add(this.CbNanoOnly);
-            this.searchPanel.Controls.Add(this.SearchBox);
             this.searchPanel.Controls.Add(this.SearchButton);
             this.searchPanel.Controls.Add(this.QuantityBox);
             this.searchPanel.Controls.Add(this.PreviousButton);
@@ -472,10 +484,40 @@
             this.searchPanel.Size = new System.Drawing.Size(460, 116);
             this.searchPanel.TabIndex = 0;
             // 
+            // LblSearchHint
+            // 
+            this.LblSearchHint.LabelStyle = Krypton.Toolkit.LabelStyle.GroupBoxCaption;
+            this.LblSearchHint.Location = new System.Drawing.Point(87, 40);
+            this.LblSearchHint.Margin = new System.Windows.Forms.Padding(2);
+            this.LblSearchHint.Name = "LblSearchHint";
+            this.LblSearchHint.Size = new System.Drawing.Size(31, 31);
+            this.LblSearchHint.StateNormal.AdjacentGap = 2;
+            this.LblSearchHint.StateNormal.DrawFocus = Krypton.Toolkit.InheritBool.True;
+            this.LblSearchHint.StateNormal.ShortText.Font = new System.Drawing.Font("Segoe UI", 10.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.LblSearchHint.StateNormal.ShortText.Hint = Krypton.Toolkit.PaletteTextHint.AntiAlias;
+            this.LblSearchHint.TabIndex = 6;
+            this.LblSearchHint.ToolTipValues.Description = "Search like in DU, but you can also use * as wildcard! Use up/down keys to select" +
+    " an entry, then ENTER to start calculation.";
+            this.LblSearchHint.ToolTipValues.EnableToolTips = true;
+            this.LblSearchHint.ToolTipValues.Heading = "";
+            this.LblSearchHint.Values.Text = "?";
+            // 
+            // SearchBox
+            // 
+            this.SearchBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.acMenu.SetAutocompleteMenu(this.SearchBox, null);
+            this.SearchBox.Font = new System.Drawing.Font("Segoe UI", 10.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.SearchBox.Location = new System.Drawing.Point(4, 4);
+            this.SearchBox.Name = "SearchBox";
+            this.SearchBox.Size = new System.Drawing.Size(449, 31);
+            this.SearchBox.TabIndex = 0;
+            this.SearchBox.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.SearchBox_KeyPress);
+            // 
             // lblQty
             // 
             this.lblQty.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblQty.Location = new System.Drawing.Point(282, 40);
+            this.lblQty.Location = new System.Drawing.Point(282, 41);
             this.lblQty.Margin = new System.Windows.Forms.Padding(4);
             this.lblQty.Name = "lblQty";
             this.lblQty.Size = new System.Drawing.Size(43, 24);
@@ -492,32 +534,14 @@
             this.CbNanoOnly.Values.Text = "filter nanocraftable?";
             this.CbNanoOnly.CheckedChanged += new System.EventHandler(this.CbNanoOnly_CheckedChanged);
             // 
-            // SearchBox
-            // 
-            this.SearchBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.SearchBox.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
-            this.SearchBox.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
-            this.SearchBox.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawVariable;
-            this.SearchBox.DropDownHeight = 440;
-            this.SearchBox.DropDownWidth = 400;
-            this.SearchBox.IntegralHeight = false;
-            this.SearchBox.Location = new System.Drawing.Point(4, 4);
-            this.SearchBox.Margin = new System.Windows.Forms.Padding(4, 4, 0, 0);
-            this.SearchBox.MaxDropDownItems = 20;
-            this.SearchBox.MaxLength = 40;
-            this.SearchBox.Name = "SearchBox";
-            this.SearchBox.Size = new System.Drawing.Size(452, 25);
-            this.SearchBox.TabIndex = 0;
-            // 
             // SearchButton
             // 
             this.SearchButton.AutoSize = true;
             this.SearchButton.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.SearchButton.Location = new System.Drawing.Point(4, 39);
+            this.SearchButton.Location = new System.Drawing.Point(4, 40);
             this.SearchButton.Margin = new System.Windows.Forms.Padding(4);
             this.SearchButton.Name = "SearchButton";
-            this.SearchButton.Size = new System.Drawing.Size(80, 34);
+            this.SearchButton.Size = new System.Drawing.Size(77, 32);
             this.SearchButton.TabIndex = 1;
             this.SearchButton.Values.Text = "Search";
             this.SearchButton.Click += new System.EventHandler(this.SearchButton_Click);
@@ -640,9 +664,22 @@
             // 
             this.kryptonRibbonGroupGallery1.ImageList = null;
             // 
+            // acMenu
+            // 
+            this.acMenu.AllowsTabKey = true;
+            this.acMenu.AppearInterval = 400;
+            this.acMenu.Colors = ((AutocompleteMenuNS.Colors)(resources.GetObject("acMenu.Colors")));
+            this.acMenu.Font = new System.Drawing.Font("Segoe UI", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.acMenu.ImageList = null;
+            this.acMenu.Items = new string[0];
+            this.acMenu.LeftPadding = 2;
+            this.acMenu.MaximumSize = new System.Drawing.Size(400, 500);
+            this.acMenu.SearchPattern = ".*";
+            this.acMenu.TargetControlWrapper = null;
+            this.acMenu.Selected += new System.EventHandler<AutocompleteMenuNS.SelectedEventArgs>(this.acMenu_Selected);
+            // 
             // MainForm
             // 
-            this.AcceptButton = this.SearchButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1860, 996);
@@ -671,7 +708,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.searchPanel)).EndInit();
             this.searchPanel.ResumeLayout(false);
             this.searchPanel.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.SearchBox)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.QuantityBox)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.kryptonWorkspaceCell1)).EndInit();
             this.kryptonWorkspaceCell1.ResumeLayout(false);
@@ -703,7 +739,6 @@
         private Krypton.Navigator.KryptonPage kryptonPage1;
         private System.Windows.Forms.TreeView treeView;
         private Krypton.Toolkit.KryptonPanel searchPanel;
-        private Krypton.Toolkit.KryptonComboBox SearchBox;
         private Krypton.Toolkit.KryptonButton SearchButton;
         private Krypton.Toolkit.KryptonButton PreviousButton;
         private Krypton.Toolkit.KryptonComboBox QuantityBox;
@@ -739,5 +774,9 @@
         private Krypton.Toolkit.KryptonCheckBox CbNanoOnly;
         private Krypton.Ribbon.KryptonRibbonGroupCheckBox CbFullSchematicQty;
         private Krypton.Toolkit.KryptonLabel lblQty;
+        private System.Windows.Forms.TextBox SearchBox;
+        private AutocompleteMenuNS.AutocompleteMenu acMenu;
+        private Krypton.Toolkit.KryptonLabel LblSearchHint;
+        private Krypton.Ribbon.KryptonRibbonGroupButton BtnClearProdLists;
     }
 }

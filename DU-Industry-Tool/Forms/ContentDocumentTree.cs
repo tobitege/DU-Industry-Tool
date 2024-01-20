@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using ClosedXML.Excel;
+using DU_Helpers;
 using DU_Industry_Tool.Interfaces;
 using Krypton.Toolkit;
 using Color = System.Drawing.Color;
@@ -18,7 +20,17 @@ namespace DU_Industry_Tool
         private bool expand = false;
         private byte[] treeListViewViewState;
         private float fontSize;
+        private bool loading = false;
+        private List<string> _applicableTalents;
+        private string industry;
 
+        dynamic XRow = new ExpandoObject();
+        private char XRetailCol = 'B'; // for excel export
+        private int XRetailColIdx = 2; // for excel export
+        private int XRetailRow = 4; // for excel export
+        private int XMarginRow = 0; // for excel export
+        public int NumLabelWidth { get; set; } // for automatic numeric labels' width
+        
         private Random _rand;
 
         public bool IsProductionList { get; set; }
@@ -34,12 +46,60 @@ namespace DU_Industry_Tool
         public ContentDocumentTree()
         {
             InitializeComponent();
-            HideAll();
             fontSize = Font.Size;
+
+            // Load settings from global SettingsMrg for every new tab as defaults
+            SettingsMgr.LoadSettings();
+            loading = true;
+            try
+            {
+                ApplyGrossMarginCB.Checked = SettingsMgr.GetBool(SettingsEnum.ProdListApplyMargin);
+                grossMarginEdit.Value = Utils.ClampDec(SettingsMgr.GetDecimal(SettingsEnum.ProdListGrossMargin), 0, 1000);
+                ApplyRoundingCB.Checked = SettingsMgr.GetBool(SettingsEnum.ProdListApplyRounding);
+                RoundToCmb.SelectedIndex = DigitsToRoundCmbIndex(SettingsMgr.GetInt(SettingsEnum.ProdListRoundDigits));
+            }
+            finally
+            {
+                loading = false;
+            }
+            HideAll();
+
+            NumLabelWidth = Utils.CalculateDesiredWidth(this, lblCostValue.Font, 10);
+            foreach (Control control in HeaderGroup.Panel.Controls)
+            {
+                if (!(control is KLabel kLabel)) continue;
+                if (control.Name.EndsWith("Value") && control.Left < 200)
+                {
+                    kLabel.AutoSize = false;
+                    kLabel.Width = NumLabelWidth;
+                    kLabel.StateNormal.ShortText.TextH = PaletteRelativeAlign.Far;
+                    continue;
+                }
+                if (control.Name.EndsWith("Suffix") && control.Left > 200)
+                {
+                    kLabel.Left = 100 + NumLabelWidth;
+                }
+            }
+            LblCostSuffix.Width = lblIndustryValue.Left - LblCostSuffix.Left - 8;
+        }
+
+        private void FetchOptionsFromForm()
+        {
+            // Fetch options
+            CalcOptions.MarginPct = grossMarginEdit.Value;
+            CalcOptions.ApplyMargin = ApplyGrossMarginCB.Checked && (CalcOptions.MarginPct > 0.00m);
+            CalcOptions.ApplyRnd = ApplyRoundingCB.Checked;
+            CalcOptions.RndDigits = RoundCmbIndexToDigits(RoundToCmb.SelectedIndex);
         }
 
         public void HideAll()
         {
+            FetchOptionsFromForm();
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new MethodInvoker(HideAll));
+                return;
+            }
             // This can be called repeatedly for recalculation,
             // thus all the resetting of controls!
             _rand = new Random(DateTime.Now.Millisecond);
@@ -51,10 +111,23 @@ namespace DU_Industry_Tool
             BtnSaveState.Visible = false;
             BtnToggleNodes.Visible = false;
             BtnRecalc.Visible = false;
+            BtnExport.Visible = false;
+            BtnSaveOptions.Visible = false;
+            ApplyGrossMarginCB.Visible = false;
+            grossMarginEdit.Visible = false;
+            ApplyRoundingCB.Visible = false;
+            RoundToCmb.Visible = false;
             lblCostForBatch.Hide();
             lblCostValue.Hide();
-            lblBasicCost.Hide();
-            lblBasicCostValue.Hide();
+            LblCostSuffix.Hide("");
+            lblOreCost.Hide();
+            lblOreCostValue.Hide();
+            LblOreCostSuffix.Hide();
+            LblSchemCostSuffix.Hide();
+            lblSchematicsCostValue.Hide();
+            lblSchematicsCost.Hide();
+            lblMargin.Hide();
+            lblMarginValue.Hide();
             lblCostSingle.Hide();
             lblCostSingleValue.Hide();
             lblNano.Hide();
@@ -72,14 +145,159 @@ namespace DU_Industry_Tool
             lblPerIndustry.Hide("Per Industry:");
             lblPerIndustryValue.Tag = null;
             lblPerIndustryValue.Hide("");
-            lblIndustry.Hide();
             lblIndustryValue.Hide();
             lblBatches.Hide();
             lblBatchesValue.Hide();
+            LblOptSaved.Stop();
+            this.Refresh();
         }
+
+        #region results display helpers
+        
+        private void SetLabelTextAndVisibility(Control label, string text = null, bool isVisible = true, EventHandler clickEvent = null)
+        {
+            if (text != null) label.Text = text;
+            label.Visible = isVisible;
+            label.Click += clickEvent;
+        }
+
+        private void SetLabelTooltip(KryptonLabel label, string tip = null, bool isEnabled = true)
+        {
+            label.ToolTipValues.Description = tip ?? "";
+            label.ToolTipValues.EnableToolTips = isEnabled;
+        }
+
+        private void SetLinkLabel(Control label, string text, string tag, EventHandler handler)
+        {
+            label.Text = text;
+            label.Tag = tag;
+            label.Click += handler;
+        }
+
+        private void SetPicureAndVisibility(PictureBox box, string imgName, ImageList imgList)
+        {
+            box.Visible = imgList.Images.ContainsKey(imgName);
+            if (box.Visible)
+            {
+                box.Image = imgList.Images[imgName];
+            }
+        }
+
+        private void FillUnitDetails(SchematicRecipe recipe)
+        {
+            // Fill some labels with info about the recipe
+            var tmpM = Utils.ReadableDecimal(recipe.UnitMass, 'M', "mass: ");
+            var tmpV = Utils.ReadableDecimal(recipe.UnitVolume, 'L', "volume: ");
+            if (tmpM == "" && tmpV == "") return;
+            var sep = tmpM != "" && tmpV != "" ? " ; " : "";
+            lblUnitData.Text = (IsProductionList ? "Total " : "Unit ") + $"{tmpM}{sep}{tmpV}";
+        }
+
+        private void ShowNanocraftable(SchematicRecipe recipe)
+        {
+            // Show green symbol when being nanocraftable
+            if (!recipe.Nanocraftable) return;
+            lblNano.Show();
+            pictureNano.Show();
+            pictureNano.Image = Properties.Resources.Green_Ball;
+        }
+        
+        private bool ShowOreOrPlasma(ref CalculatorClass calc, ref decimal newQty,
+                                     ref decimal time, ref decimal batches)
+        {
+            // Show green symbol when being nanocraftable
+            if (!calc.IsOre && !calc.IsPlasma) return false;
+            if (calc.IsPlasma)
+            {
+                var extractor = SchematicRecipe.GetByName("Relic Plasma Extractor l");
+                if (extractor != null)
+                {
+                    SetLabelTextAndVisibility(lblIndustryValue, extractor.Name, true, LblIndustryValue_Click);
+                }
+            }
+            else
+            {
+                // Show ore image if it exists (several are missing like Limestone, Malachite...)
+                SetPicureAndVisibility(OrePicture, $"ore_{Recipe.Name}.png".ToLower(), OreImageList);
+            }
+
+            var ore = DUData.Ores.FirstOrDefault(x => x.Key == Recipe.Key);
+            if (ore == null)
+            {
+                lblCostValue.Text = "Ore price not found!";
+                return false;
+            }
+            var item = new ProductDetail { Cost = calc.OreCost, Quantity = calc.Quantity, };
+            Calculator.CalcRetail(item, ApplyGrossMarginCB.Checked, grossMarginEdit.Value, ApplyRoundingCB.Checked, RoundCmbIndexToDigits(RoundToCmb.SelectedIndex));
+            calc.Margin = item.Margin;
+            calc.Retail = item.Retail;
+            SetLabelTextAndVisibility(LblOreCostSuffix, $"({ore.Value:N2} q/L)");
+
+            // Get pure's data and transfer data to main calc object
+            var pureKey = ore.Key.Substring(0, ore.Key.Length - 3) + "Pure";
+            if (!Calculator.CreateByKey(pureKey, out var calcP))
+            {
+                lblCostValue.Text = "Ore-data processing error!!!";
+                return false;
+            }
+
+            _applicableTalents = calcP.GetTalents();
+            calc.CopyBaseValuesFrom(calcP);
+            industry = calcP.Recipe.Industry;
+            calc.Recipe.Industry = industry;
+            var ingrec = Calculator.GetIngredientRecipes(pureKey, calc.Quantity, true);
+            newQty = ingrec[0].Quantity;
+            if (calc.IsOre && calc.BatchTime != null)
+            {
+                // Fit as many batches into 3 minutes as possible.
+                // If batch time is less than 3 minutes, we must use Ceiling instead of Floor!
+                time = (decimal)calc.BatchTime;
+                batches = calc.Tier > 1 ? 1 : (time > 180 ? Math.Max(1, Math.Floor(180 / time)) : Math.Ceiling(180 / time));
+                calc.BatchTime = Math.Round(time * batches, 0);
+                calc.BatchInput *= batches;
+                calc.BatchOutput *= batches;
+            }
+
+            if (calc.SchematicType != null && calcP.CalcSchematicFromQty(calc.SchematicType, newQty, (decimal)(calc.BatchOutput ?? newQty),
+                    out batches, out var minCost, out var _, out var _))
+            {
+                // store values in main calc!
+                calc.AddSchema(calcP.SchematicType, batches, minCost);
+                calc.AddSchematicCost(minCost);
+            }
+            time = calc.BatchTime ?? time;
+            LblPure.Show();
+            SetLabelTextAndVisibility(LblPureValue, $"{newQty:N2} L");
+            return true;
+        }
+
+        private void SetupTalentsGrid()
+        {
+            GridTalents.Rows.Clear();
+            try
+            {
+                if (_applicableTalents?.Any() != true) return;
+                foreach (var talent in _applicableTalents.Select(talentKey =>
+                             DUData.Talents.FirstOrDefault(x => x.Name == talentKey))
+                             .Where(talent => talent != null))
+                {
+                    GridTalents.Rows.Add(CreateTalentsRow(talent));
+                    GridTalents.Rows[GridTalents.Rows.Count - 1].Height = 26;
+                }
+                GridTalents.CellEndEdit += GridTalentsOnCellEndEdit;
+            }
+            finally
+            {
+                GridTalents.Visible = GridTalents.RowCount > 0;
+            }
+        }
+
+        #endregion
 
         public void SetCalcResult(CalculatorClass calc)
         {
+            var optionsOn = ApplyGrossMarginCB.Checked || ApplyRoundingCB.Checked;
+
             // important: in case of repeat calculations, "remove" event handlers
             lblIndustryValue.Click -= LblIndustryValue_Click;
             lblPerIndustryValue.Click -= LblPerIndustryValue_Click;
@@ -87,7 +305,9 @@ namespace DU_Industry_Tool
 
             Calc = calc;
             Recipe = Calc?.Recipe;
-            if (Recipe == null) return;
+            if (Recipe == null || Calc == null) return;
+            Calc.Mass = Recipe.UnitMass ?? 0m;
+            Calc.Volume = Recipe.UnitVolume ?? 0m;
 
             if (!calc.IsOre && !calc.IsPlasma)
             {
@@ -98,162 +318,120 @@ namespace DU_Industry_Tool
             }
 
             Quantity = calc.Quantity;
-            kryptonHeaderGroup1.ValuesPrimary.Heading = Recipe.Name + (IsProductionList ? "" : $" (T{Recipe.Level})");
+            HeaderGroup.ValuesPrimary.Heading = Recipe.Name + (IsProductionList ? "" : $" (T{Recipe.Level})");
 
-            // Fill some labels with info about the recipe
-            var tmp = Recipe.UnitMass > 0 ? $"mass: {Recipe.UnitMass:N2} " : "";
-            tmp += Recipe.UnitVolume > 0 ? $"volume: {Recipe.UnitVolume:N2} " : "";
-            if (tmp != "")
-            {
-                lblUnitData.Text = "Unit " + tmp;
-            }
+            FillUnitDetails(Recipe);
 
-            // Show green symbol when being nanocraftable
-            if (Recipe.Nanocraftable)
-            {
-                lblNano.Show();
-                pictureNano.Show();
-                pictureNano.Image = Properties.Resources.Green_Ball;
-            }
+            ShowNanocraftable(Recipe);
 
-            // Show ore image if it exists (several are missing like Limestone, Malachite...)
-            if (calc.IsOre)
-            {
-                var oreImg = $"ore_{Recipe.Name}.png".ToLower();
-                OrePicture.Visible = OreImageList.Images.ContainsKey(oreImg);
-                if (OrePicture.Visible)
-                {
-                    OrePicture.Image = OreImageList.Images[oreImg];
-                }
-            }
-
-            List<string> applicableTalents;
             var time = calc.Recipe.Time * (calc.EfficencyFactor ?? 1);
             var newQty = calc.Quantity;
-
-            // IF ore, then we basically display values from its Pure (except plasma)
-            // to have any useful information for it :)
-            Ore ore = null;
             var batches = 1m;
             var industry = calc.Recipe.Industry;
 
-            if (calc.IsOre || calc.IsPlasma)
+            // IF ore, then we basically display values from its Pure (except plasma)
+            // to have any useful information for it :)
+            if (!ShowOreOrPlasma(ref calc, ref newQty, ref time, ref batches))
             {
-                if (calc.IsPlasma)
-                {
-                    var extractor = SchematicRecipe.GetByName("Relic Plasma Extractor l");
-                    if (extractor != null)
-                    {
-                        lblIndustryValue.Text = extractor.Name;
-                        lblIndustry.Show();
-                        lblIndustryValue.Click += LblIndustryValue_Click;
-                    }
-                }
-
-                ore = DUData.Ores.FirstOrDefault(x => x.Key == Recipe.Key);
-                if (ore == null)
-                {
-                    lblCostValue.Text = "Ore price not found!";
-                    return;
-                }
-                calc.OreCost = ore.Value;
-
-                // Get pure's data and transfer data to main calc object
-                var pureKey = ore.Key.Substring(0, ore.Key.Length-3)+"Pure";
-                if (Calculator.CreateByKey(pureKey, out var calcP))
-                {
-                    applicableTalents = calcP.GetTalents();
-                    calc.CopyBaseValuesFrom(calcP);
-                    calc.Recipe.Industry = calcP.Recipe.Industry;
-                    industry = calcP.Recipe.Industry;
-                    var ingrec = Calculator.GetIngredientRecipes(pureKey, calc.Quantity, true);
-                    newQty = ingrec[0].Quantity;
-                    if (calcP.CalcSchematicFromQty(calc.SchematicType, newQty, (decimal)(calc.BatchOutput ?? newQty),
-                            out batches , out var minCost, out var _, out var _))
-                    {
-                        // store values in main calc!
-                        calc.AddSchema(calcP.SchematicType, batches, minCost);
-                        calc.AddSchematicCost(minCost);
-                    }
-                    time = calc.BatchTime ?? time;
-
-                    LblPure.Show();
-                    LblPureValue.Text = $"{newQty:N2} L";
-                }
-                else
-                {
-                    lblCostValue.Text = "Ore-data processing error!!!";
-                    return;
-                }
-            }
-            else
-            {
-                applicableTalents = calc.GetTalents();
+                _applicableTalents = calc.GetTalents();
             }
 
             LblHint.Hide();
 
-            lblCostForBatch.Show();
+            SetLabelTextAndVisibility(lblCostForBatch, (optionsOn ? "Retail price:" : "Total cost:"));
+
             var batchQ = calc.Quantity;
-            var fullCost = calc.OreCost + calc.SchematicsCost;
+            var fullCost = calc.Retail;
+            var netCost = (calc.IsOre ? calc.Quantity : 1) * calc.OreCost + calc.SchematicsCost;
+
             // Ammo override: ammunition has special batch size of 40.
             // We take the requested amount as # of ammo rounds to be calculated
             // and determine the minimum of batches to be produced
             if (calc.IsAmmo && calc.BatchOutput > 0)
             {
-                // TODO: full batch (Ceiling) or fractional batch??
-                batchQ = batchQ / (decimal)(calc.BatchOutput ?? 40);
+                batchQ /= (calc.BatchOutput ?? 40);
             }
 
-            lblCostValue.Text = fullCost.ToString("N2") + " q ";
-            if (calc.IsBatchmode)
+            SetLabelTextAndVisibility(lblCostValue, $"{fullCost:N2} q");
+            SetLabelTextAndVisibility(LblCostSuffix, "", ApplyGrossMarginCB.Checked || ApplyRoundingCB.Checked);
+            if (ApplyGrossMarginCB.Checked)
             {
-                if (calc.IsAmmo)
+                LblCostSuffix.Text = "incl. margin";
+            }
+            if (ApplyRoundingCB.Checked)
+            {
+                LblCostSuffix.Text += "; rounded";
+            }
+
+            if (!IsProductionList)
+            {
+                if (calc.IsBatchmode)
                 {
-                    lblCostValue.Text += $"({batchQ:N2} batches)";
+                    if (calc.IsAmmo)
+                    {
+                        LblCostSuffix.Text += $" ({batchQ:N2} batches)";
+                    }
+                    else
+                    {
+                        LblCostSuffix.Text += $" (per {batchQ:N2} L)";
+                    }
                 }
                 else
                 {
-                    lblCostValue.Text += $"(x{batchQ:N2} / L)";
+                    LblCostSuffix.Text += $" (per {batchQ:N0})";
                 }
             }
-            lblBasicCost.Show();
-            lblBasicCostValue.Text = $"{calc.OreCost:N2} q";
-            if (calc.IsBatchmode && !calc.IsAmmo)
+
+            SetLabelTextAndVisibility(lblMargin, null);//, ApplyGrossMarginCB.Checked);
+            SetLabelTextAndVisibility(lblMarginValue, $"{calc.Margin:N2} q");//, ApplyGrossMarginCB.Checked);
+
+            SetLabelTextAndVisibility(lblOreCost, calc.IsPlasma ? "Plasma:" : "Ore:");
+            SetLabelTextAndVisibility(lblOreCostValue, $"{calc.OreCost:N2} q");
+            if (!calc.IsPlasma && !calc.IsOre)
             {
-                lblBasicCostValue.Text += " / L";
+                SetLabelTextAndVisibility(LblOreCostSuffix, $"{(calc.OreCost / calc.Retail * 100):N2} %");
             }
 
-            if (calc.Quantity > 1)
+            if (!calc.IsPlasma && !calc.IsOre)
             {
-                lblCostSingle.Show();
-                lblCostSingleValue.Show();
-                lblCostSingleValue.Text = (fullCost / calc.Quantity).ToString("N2") + " q ";
+                SetLabelTextAndVisibility(lblSchematicsCost);
+                SetLabelTextAndVisibility(lblSchematicsCostValue, $"{calc.SchematicsCost:N2} q");
+                if (calc.SchematicsCost > 0.00m)
+                {
+                    SetLabelTextAndVisibility(LblSchemCostSuffix, $"{(calc.SchematicsCost / calc.Retail * 100):N2} %");
+                }
+            }
+
+            if (IsProductionList && optionsOn)
+            {
+                SetLabelTextAndVisibility(lblCostSingle, "Net cost:");
+                SetLabelTextAndVisibility(lblCostSingleValue, $"{netCost:N2} q");
+            }
+            else
+            if (!calc.IsOre && !calc.IsPlasma && calc.Quantity > 1)
+            {
+                SetLabelTextAndVisibility(lblCostSingle, "Cost for 1:");
+                SetLabelTextAndVisibility(lblCostSingleValue, (netCost / calc.Quantity).ToString("N2") + " q");
+                SetLabelTooltip(lblCostSingleValue, 
+                    "Retail price: " + (Calc.Retail / calc.Quantity).ToString("N2") + " q",
+                    ApplyGrossMarginCB.Checked || ApplyRoundingCB.Checked);
             }
 
             // Prepare talents grid and only show Recalculate button if any exist
-            GridTalents.Rows.Clear();
-            if (applicableTalents?.Any() == true)
-            {
-                foreach (var talent in applicableTalents.Select(talentKey =>
-                             DUData.Talents.FirstOrDefault(x => x.Name == talentKey))
-                             .Where(talent => talent != null))
-                {
-                    GridTalents.Rows.Add(CreateTalentsRow(talent));
-                    GridTalents.Rows[GridTalents.Rows.Count - 1].Height = 26;
-                }
-                GridTalents.CellEndEdit += GridTalentsOnCellEndEdit;
-            }
+            SetupTalentsGrid();
 
-            GridTalents.Visible = GridTalents.RowCount > 0;
-            BtnRecalc.Visible = GridTalents.Visible;
+            BtnExport.Visible = treeListView.Items?.Count > 0;
+            BtnRecalc.Visible = true;
+            ApplyGrossMarginCB.Visible = BtnRecalc.Visible;
+            grossMarginEdit.Visible = BtnRecalc.Visible;
+            ApplyRoundingCB.Visible = BtnRecalc.Visible;
+            RoundToCmb.Visible = BtnRecalc.Visible;
+            BtnSaveOptions.Visible = BtnRecalc.Visible;
 
             // Show industry if applicable
             if (!IsProductionList && !string.IsNullOrEmpty(industry))
             {
-                lblIndustry.Show();
-                lblIndustryValue.Text = industry;
-                lblIndustryValue.Click += LblIndustryValue_Click;
+                SetLabelTextAndVisibility(lblIndustryValue, industry, clickEvent: LblIndustryValue_Click);
             }
 
             // Only with a given time we can show any production/batch times etc.
@@ -272,9 +450,9 @@ namespace DU_Industry_Tool
                 var amtS = $"{amt:N3}";
                 if (amtS.EndsWith(".000")) amtS = amtS.Substring(0, amtS.Length - 4);
                 if (amtS.EndsWith(".00")) amtS = amtS.Substring(0, amtS.Length - 3);
-                lblPerIndustryValue.Text = $" {amtS} / day";
-                lblPerIndustryValue.Tag = Recipe.Key + "#" + Math.Ceiling(amt);
-                lblPerIndustryValue.Click += LblPerIndustryValue_Click;
+
+                SetLinkLabel(lblPerIndustryValue, $" {amtS} / day", Recipe.Key + "#" + Math.Ceiling(amt), LblPerIndustryValue_Click);
+
                 lblCraftTime.Show();
                 if (IsProductionList) lblPerIndustry.Text = "Production rate:";
                 lblPerIndustry.Show();
@@ -282,67 +460,51 @@ namespace DU_Industry_Tool
             }
 
             // Do not round these!
-            var batchInputVol = (calc.IsProduct ? 100 : 65) * calc.InputMultiplier  + calc.InputAdder;
-            var batchOutputVol = (calc.IsProduct ? 75 : 45) * calc.OutputMultiplier + calc.OutputAdder;
-
-            lblDefaultCraftTime.Values.Text = "Default refin. time:";
-            if (calc.IsAmmo)
+            var batchInputVol = (calc.IsProduct ? 100 : (calc.IsAmmo ? 1  : 65)) * calc.InputMultiplier  + calc.InputAdder;
+            var batchOutputVol = (calc.IsProduct ? 75 : (calc.IsAmmo ? 40 : 45)) * calc.OutputMultiplier + calc.OutputAdder;
+            if (calc.IsOre && calc.BatchTime != null)
             {
-                batchInputVol = calc.BatchInput ?? 1;
-                batchOutputVol = calc.BatchOutput ?? 40;
-            }
-            if (calc.IsPart || calc.IsProduct || calc.IsAmmo)
-            {
-                lblDefaultCraftTime.Values.Text = "Default prod. time: ";
-            }
-            if (calc.IsOre && calc.Tier == 1)
-            {
-                // Fit as many batches into 3 minutes as possible
-                // In that case we must use Ceiling instead of Floor!
-                batches = (int)(time > 180 ? Math.Ceiling(180 / time) : Math.Floor(180 / time));
-                time = Math.Round(time * Math.Max(1, batches), 0);
+                batchInputVol  = (decimal)(calc.BatchInput ?? batchInputVol);
+                batchOutputVol = (decimal)(calc.BatchOutput ?? batchOutputVol);
             }
 
-            lblDefaultCraftTimeValue.Values.Text = Utils.GetReadableTime(time);
-            lblDefaultCraftTimeValue.Show();
-            lblDefaultCraftTime.Show();
+            SetLabelTextAndVisibility(lblDefaultCraftTimeValue, Utils.GetReadableTime(time));
+            SetLabelTextAndVisibility(lblDefaultCraftTime,
+                (calc.IsPart || calc.IsProduct || calc.IsAmmo)
+                ? "Default prod. time: " : "Default refin. time:");
 
             // display some batch-based numbers
-            var batchVol = Math.Max(1, (calc.IsOre ? batchInputVol : batchOutputVol));
+            var batchVol = Math.Max(1, batchOutputVol);
             if (newQty >= 1 && batchInputVol > 0 && batchOutputVol > 0)
             {
                 var batchCnt = (int)Math.Floor((calc.IsOre ? calc.Quantity : newQty) / batchVol);
-                if (batchCnt == 0)
+                SetLabelTextAndVisibility(lblCraftTime, batchCnt == 0 ? "0 batches (volume < input volume)" : "Production time");
+                if (batchCnt > 0)
                 {
-                    lblCraftTime.Text = "0 batches (volume < input volume)";
-                }
-                else
-                {
-                    var overflow = (calc.IsOre ? calc.Quantity : newQty) - (batchCnt * batchVol);
-                    lblCraftTimeValue.Text = Utils.GetReadableTime(time * batchCnt);
-                    lblBatchesValue.Text = $"{batchCnt:N0} full batches";
-                    lblBatchesValue.Show();
+                    SetLabelTextAndVisibility(lblCraftTimeValue, Utils.GetReadableTime(time * batchCnt));
+                    SetLabelTextAndVisibility(lblBatchesValue, $"{batchCnt:N0} full batches");
                     lblBatches.Show();
+                    var overflow = (calc.IsOre ? calc.Quantity : newQty) - (batchCnt * batchVol);
                     if (overflow > 0)
                     {
                         lblCraftTimeInfoValue.Text = (calc.IsOre ? "Unrefined:" : "Not produced:") + $" {overflow:N2}";
                     }
-                    if (calc.IsBatchmode && !calc.IsOre)
+                    if (calc.IsBatchmode)
                     {
-                        LblPure.Text = calc.IsPure ? "Pure output:" : (calc.IsProduct ? "Product output:" : "Output:");
-                        LblPureValue.Text = $"{batchCnt * batchVol:N2}";
+                        SetLabelTextAndVisibility(LblPure, calc.IsProduct ? "Product output:" : "Pure output:");
+                        SetLabelTextAndVisibility(LblPureValue, $"{batchCnt * batchVol:N2} L");
                     }
                 }
-                lblCraftTime.Show();
             }
 
-            var batchesPerDay = Math.Floor(86400 / (decimal)(calc.BatchTime ?? 86400));
             LblBatchSize.Show();
+            SetLabelTextAndVisibility(LblBatchSizeValue, $"{batchInputVol:N2} in / {batchOutputVol:N2} out");
+
             lblPerIndustry.Show();
-            LblBatchSizeValue.Text = $"{batchInputVol:N2} in / {batchOutputVol:N2} out";
-            lblPerIndustryValue.Text = $"{batchesPerDay:N0} batches / day";
-            lblPerIndustryValue.Tag = calc.Key + "#" + Math.Ceiling(batchesPerDay*batchVol);
-            lblPerIndustryValue.Click += LblPerIndustryValue_Click;
+            var batchesPerDay = Math.Floor(86400 / (decimal)(calc.BatchTime ?? 86400));
+            SetLinkLabel(lblPerIndustryValue, $"{batchesPerDay:N0} batches / day",
+                calc.Key + "#" + Math.Ceiling(batchesPerDay*batchVol),
+                LblPerIndustryValue_Click);
         }
 
         private void SetupGrid(CalculatorClass calc)
@@ -357,7 +519,7 @@ namespace DU_Industry_Tool
             ButtonRestoreState_Click(null, null);
 
             treeListView.BringToFront();
-            kryptonHeaderGroup1.ValuesPrimary.Heading = calc.Name;
+            HeaderGroup.ValuesPrimary.Heading = calc.Name;
 
             try
             {
@@ -367,15 +529,12 @@ namespace DU_Industry_Tool
 
                 olvColumnSection.AspectGetter = x =>
                 {
-                    if (x is RecipeCalculation t)
-                    {
-                        if ((t.IsSection && t.Section == DUData.SubpartSectionTitle) ||
-                            (!t.IsSection && t.Section == DUData.ProductionListTitle) ||
-                            (!t.IsSection && t.Section == DUData.SchematicsTitle))
-                            return t.Entry ?? "";
-                        return t.Section;
-                    }
-                    return "";
+                    if (!(x is RecipeCalculation t)) return "";
+                    if (( t.IsSection && t.Section == DUData.SubpartSectionTitle) ||
+                        (!t.IsSection && t.Section == DUData.ProductionListTitle) ||
+                        (!t.IsSection && t.Section == DUData.SchematicsTitle))
+                        return t.Entry ?? "";
+                    return t.Section;
                 };
 
                 olvColumnSection.ImageGetter = x => x is RecipeCalculation t &&
@@ -383,24 +542,28 @@ namespace DU_Industry_Tool
 
                 olvColumnEntry.AspectGetter = x =>
                 {
-                    if (x is RecipeCalculation t)
-                    {
-                        if (!t.IsSection && (t.Section == DUData.ProductionListTitle || t.Section == DUData.SchematicsTitle))
-                            return "";
-                        return !t.IsSection && t.Entry != t.Section ? t.Entry : "";
-                    }
-                    return "";
+                    if (!(x is RecipeCalculation t)) return "";
+                    if (!t.IsSection && (t.Section == DUData.ProductionListTitle || t.Section == DUData.SchematicsTitle))
+                        return "";
+                    return !t.IsSection && t.Entry != t.Section ? t.Entry : "";
                 };
 
-                olvColumnQty.AspectGetter = x => (x is RecipeCalculation t && t.Qty > 0 ? $"{t.Qty:N3}" : "");
-                olvColumnAmt.AspectGetter = x => (x is RecipeCalculation t && t.Amt > 0 ? $"{t.Amt:N3}" : "");
+                olvColumnQty.AspectGetter = x => (x is RecipeCalculation t && t.Qty > 0 ? $"{t.Qty:N2}" : "");
+                olvColumnAmt.AspectGetter = x =>
+                {
+                    if (!(x is RecipeCalculation t) || t.Amt <= 0) return "";
+                    return t.IsProdItem ? $"{t.Amt + t.AmtSchemata:N2}" : $"{t.Amt:N2}";
+                };
+                olvColumnMargin.AspectGetter = x => (x is RecipeCalculation t && t.Margin > 0 ? $"{t.Margin:N2}" : "");
+                olvColumnRetail.AspectGetter = x => (x is RecipeCalculation t && t.Retail > 0 ? $"{t.Retail:N2}" : "");
+
                 olvColumnMass.AspectGetter = x => (x is RecipeCalculation t && t.Mass > 0 ? $"{t.Mass:N3}" : "");
                 olvColumnVol.AspectGetter = x => (x is RecipeCalculation t && t.Vol > 0 ? $"{t.Vol:N3}" : "");
 
                 olvColumnSchemataQ.AspectGetter = x => (x is RecipeCalculation t && t.QtySchemata > 0 
-                    ? (DUData.FullSchematicQuantities ? $"{t.QtySchemata:N0}" : $"{t.QtySchemata:N3}") 
+                    ? (DUData.FullSchematicQuantities ? $"{t.QtySchemata:N0}" : $"{t.QtySchemata:N2}") 
                     : "");
-                olvColumnSchemataA.AspectGetter = x => (x is RecipeCalculation t && t.AmtSchemata > 0 ? $"{t.AmtSchemata:N3}" : "");
+                olvColumnSchemataA.AspectGetter = x => (x is RecipeCalculation t && t.AmtSchemata > 0 ? $"{t.AmtSchemata:N2}" : "");
 
                 olvColumnTier.AspectGetter = x => (x is RecipeCalculation t && t.Tier > 0 ? $"{t.Tier}" : "");
 
@@ -467,7 +630,7 @@ namespace DU_Industry_Tool
         {
             if (ItemClick != null && treeListView.SelectedObject is RecipeCalculation r)
             {
-                if (!DUData.SectionNames.Contains(r.Section))
+                if (r.Entry != DUData.ProductionListTitle && !DUData.SectionNames.Contains(r.Section))
                 {
                     ItemClick.Invoke(sender, e);
                     return;
@@ -481,12 +644,23 @@ namespace DU_Industry_Tool
 
         private void BtnRecalc_Click(object sender, EventArgs e)
         {
-            if (IsProductionList)
+            if (!BtnRecalc.Enabled) return;
+            BtnRecalc.Enabled = false;
+            try
             {
-                RecalcProductionListClick?.Invoke(sender, e);
-                return;
+                HideAll();
+                if (IsProductionList)
+                {
+                    RecalcProductionListClick?.Invoke(sender, e);
+                    return;
+                }
+                if (Calc == null) return;
+                LinkClick?.Invoke(sender, new LinkClickedEventArgs(Calc.Key + $"#{Calc.Quantity:N2}"));
             }
-            LinkClick?.Invoke(sender, new LinkClickedEventArgs(Calc.Key + $"#{Calc.Quantity:N2}"));
+            finally
+            {
+                BtnRecalc.Enabled = true;
+            }
         }
 
         private void BtnToggleNodes_Click(object sender, EventArgs e)
@@ -576,322 +750,575 @@ namespace DU_Industry_Tool
             }
         }
 
-        private readonly string exl_int_format = "#,##0";
-        private readonly string exl_num_format = "#,##0.00";
-        
-        private void exportProdListSection(IXLWorksheet worksheet, ref int i, ref int ix)
+        private void BtnSaveOptions_Click(object sender, EventArgs e)
+        {
+            SaveOptions();
+        }
+
+        /// <summary>
+        /// Depends on items of RoundToCmb entries!
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        private int RoundCmbIndexToDigits(int index)
+        {
+            return index < RoundToCmb.Items.Count - 1 ? index + 1 : RoundToCmb.Items.Count - 1;
+        }
+
+        /// <summary>
+        /// Depends on items of RoundToCmb entries!
+        /// </summary>
+        /// <param name="digits"></param>
+        /// <returns></returns>
+        private int DigitsToRoundCmbIndex(int digits)
+        {
+            if (digits > RoundToCmb.Items.Count - 1)
+            {
+                digits = RoundToCmb.Items.Count;
+            }
+            return digits > 0 ? digits - 1 : 0;
+        }
+
+        /// <summary>
+        /// Save options of current tab into global settings store, thus becoming
+        /// default values for when the next tab is opened.
+        /// </summary>
+        private void SaveOptions()
+        {
+            if (loading) return;
+            SettingsMgr.UpdateSettings(SettingsEnum.ProdListApplyMargin, ApplyGrossMarginCB.Checked);
+            SettingsMgr.UpdateSettings(SettingsEnum.ProdListGrossMargin, grossMarginEdit.Value);
+            SettingsMgr.UpdateSettings(SettingsEnum.ProdListApplyRounding, ApplyRoundingCB.Checked);
+            SettingsMgr.UpdateSettings(SettingsEnum.ProdListRoundDigits, RoundCmbIndexToDigits(RoundToCmb.SelectedIndex));
+            SettingsMgr.SaveSettings();
+            LblOptSaved.FadeOut();
+        }
+
+        #region Excel export
+
+        private void exportGetItem(int row)
+        {
+            
+            if (row > treeListView.Items.Count-1)
+                throw new ArgumentOutOfRangeException(nameof(row), "exportGetItem(): invalid index value");
+
+            if (!IsProductionList)
+            {
+                XRow.Section = row >= 0 ? "Ores" : Calc.Name;
+                XRow.Entry = "";
+                XRow.Tier = $"{Calc.Tier:N0}";
+                XRow.Qty = $"{Calc.Quantity:N2}";
+                XRow.Amt = $"{Calc.OreCost + Calc.SchematicsCost:N2}";
+                XRow.SchemataQ = "0.00";// Calc.;
+                XRow.SchemataA = $"{Calc.SchematicsCost:N2}";
+                XRow.Mass = $"{Calc.Mass:N2}";
+                XRow.Vol = $"{Calc.Volume:N2}";
+                XRow.Filler = "";
+                XRow.Margin = $"{Calc.Margin:N2}";
+                XRow.Retail = $"{Calc.Retail:N2}";
+                return;
+            }
+
+            var r = treeListView.Items[row];
+            XRow.Section = r.SubItems[olvColumnSection.Index].Text;
+            XRow.Entry = r.SubItems[olvColumnEntry.Index].Text;
+            XRow.Tier = r.SubItems[olvColumnTier.Index].Text;
+            XRow.Qty = r.SubItems[olvColumnQty.Index].Text;
+            XRow.Amt = r.SubItems[olvColumnAmt.Index].Text;
+            XRow.SchemataQ = r.SubItems[olvColumnSchemataQ.Index].Text;
+            XRow.SchemataA = r.SubItems[olvColumnSchemataA.Index].Text;
+            XRow.Mass = r.SubItems[olvColumnMass.Index].Text;
+            XRow.Vol = r.SubItems[olvColumnVol.Index].Text;
+            XRow.Filler = r.SubItems[olvColumnFiller.Index].Text;
+            XRow.Margin = r.SubItems[olvColumnMargin.Index].Text;
+            XRow.Retail = r.SubItems[olvColumnRetail.Index].Text;
+        }
+
+        private void exportHeader(IXLWorksheet ws, ref int ix, string title)
         {
             try
             {
-                i++;
-                ix += 2;
-                worksheet.Cell(ix, 1).Value = "Item";
-                worksheet.Cell(ix, 2).Value = "Quantity";
-                worksheet.Cell(ix, 3).Value = "Item cost (q)";
-                worksheet.Cell(ix, 4).Value = "Total (q)";
-                worksheet.Cell(ix, 5).Value = "contained schematics (q)";
-                worksheet.Cell(ix, 6).Value = "Mass (t)";
-                worksheet.Cell(ix, 7).Value = "Volume (KL)";
-                worksheet.Row(ix).CellsUsed().Style.Font.SetBold();
-                var range = worksheet.Range($"B{ix}:G{ix}");
-                range.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-                ix++;
-                var prodListStart = ix;
-                while (i < treeListView.Items.Count)
-                {
-                    var r = treeListView.Items[i];
-                    var section = r.SubItems[olvColumnSection.Index].Text;
+                // the XRetail* vars point to cell of gross order total and need to be adapted
+                // if below layout ever changes!
+                XRetailColIdx = 2;
+                XRetailCol = Utils.LetterByIndex(XRetailColIdx);
 
-                    // we return when next section is reached
+                ws.CellSet(ix, 1, title, 5, true);
+
+                if (expOptInclMargins.Checked && CalcOptions.ApplyMargin)
+                {
+                    // output net costs and the applied margin value
+                    ix++;
+                    ws.CellSet(ix, XRetailColIdx - 1, "Net total:");
+                    ws.CellSet(ix, XRetailColIdx, Math.Round(Calc.OreCost + Calc.SchematicsCost, 2));
+                    ix++;
+                    ws.CellSet(ix, XRetailColIdx - 1, $"Margin ({CalcOptions.MarginPct:N2} %):");
+                    ws.XR1C1(ix, XRetailColIdx, $"={XRetailCol}{ix + 1}-{XRetailCol}{ix - 1}");
+                    ws.CellSet(ix, XRetailColIdx + 1, CalcOptions.MarginPct);
+                    XMarginRow = ix;
+                }
+                ix++;
+                ws.CellSet(ix, XRetailColIdx - 1, "Order total:");
+                ws.CellSet(ix, XRetailColIdx, Calc.Retail);
+                if (CalcOptions.ApplyRnd)
+                {
+                    ws.CellSet(ix, XRetailColIdx + 1, "(rounded up)");
+                }
+                ws.XCellFmtDec(ix, XRetailColIdx);
+                XRetailRow = ix; // important, needed in detail section(s)
+
+                ws.XRangeBold(1, 1, ix, 2);
+                ws.XRangeFmtDec(2, 2, ix, 3);
+
+                ix += 2;
+                if (IsProductionList)
+                {
+                    ws.CellSet(ix, 1, "Item");
+                }
+                ws.CellSet(ix, 2, "Quantity");
+                var col = 2;
+                if (expOptInclMargins.Checked && CalcOptions.ApplyMargin)
+                {
+                    ws.Cell(ix, ++col).Value = "Ore cost per 1 (q)";
+                    ws.Cell(ix, ++col).Value = "Schematics per 1 (q)";
+                    ws.Cell(ix, ++col).Value = "Schema. %";
+                    ws.Cell(ix, ++col).Value = "per 1 Total (q)";
+                    ws.Cell(ix, ++col).Value = "Cost total (q)";
+                    ws.Cell(ix, ++col).Value = "Margin (q)";
+                    ws.Cell(ix, ++col).Value = "Retail (q)";
+                }
+                else
+                {
+                    ws.Cell(ix, ++col).Value = "Item price (q)";
+                    ws.Cell(ix, ++col).Value = "Total (q)";
+                }
+                ws.Cell(ix, ++col).Value = "Mass (t)";
+                ws.Cell(ix, ++col).Value = "Volume (KL)";
+                ws.XRangeBold(ix, 1, ix, col);
+                ws.XRangeRight(ix, 2, ix, col);
+            }
+            catch(Exception ex)
+            {
+                KryptonMessageBox.Show("Export header error, please report to developer.\r\n" + ex.Message,
+                    "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void exportProdItems(IXLWorksheet ws, ref int i, ref int ix, int maxItems)
+        {
+            try
+            {
+                // the XRetail* vars point to cell of gross order total and need to be adapted
+                // if below layout ever changes!
+                XRetailColIdx = 2;
+                XRetailCol = Utils.LetterByIndex(XRetailColIdx);
+
+                if (IsProductionList)
+                {
+                    i++; // skip to first item
+                }
+                char letter = 'A';
+                var col = 1;
+                ix++;
+                var pStart = ix;
+                while (!IsProductionList || i < maxItems)
+                {
+                    // fetch data for current row
+                    exportGetItem(i);
+
+                    var section = (string)XRow.Section;
+
+                    // Summation row on section change
                     if (section == "Ores")
                     {
-                        // leave "i" on current row
-                        worksheet.Cell(ix, 4).FormulaA1 = $"=SUM(D{prodListStart}:D{ix - 1})"; // Total
-                        worksheet.Cell(ix, 5).FormulaA1 = $"=SUM(E{prodListStart}:E{ix - 1})"; // Total schematics
-                        worksheet.Cell(ix, 6).FormulaA1 = $"=SUM(F{prodListStart}:F{ix - 1})"; // Mass
-                        worksheet.Cell(ix, 7).FormulaA1 = $"=SUM(G{prodListStart}:G{ix - 1})"; // Volume
-                        range = worksheet.Range($"B{prodListStart}:B{ix}");
-                        range.Style.NumberFormat.Format = exl_int_format;
-                        range = worksheet.Range($"C{prodListStart}:G{ix}");
-                        range.Style.NumberFormat.Format = exl_num_format;
-                        worksheet.Row(ix).CellsUsed().Style.Font.SetBold();
+                        // leave "i" unchanged!
+                        col = 2;
+                        if (expOptInclMargins.Checked && CalcOptions.ApplyMargin)
+                        {
+                            ws.XSetCellSum(ref ix, ref col, pStart, ref letter); // Ore cost
+                            ws.XSetCellSum(ref ix, ref col, pStart, ref letter); // Schematics cost
+                            col++; // Skip schematic %
+                            ws.XSetCellSum(ref ix, ref col, pStart, ref letter); // x1 total
+                            ws.XSetCellSum(ref ix, ref col, pStart, ref letter); // Line total
+                            ws.Cell(XMarginRow - 1, 2).FormulaA1 = $"={letter}{ix}"; // Cost total
+                            ws.XSetCellSum(ref ix, ref col, pStart, ref letter); // Line margin
+                            ws.Cell(XMarginRow, 2).FormulaA1 = $"={letter}{ix}"; // Update margin total
+                        }
+                        else
+                        {
+                            col++;
+                        }
+
+                        ws.XSetCellSum(ref ix, ref col, pStart, ref letter); // Retail/Total
+
+                        // Update order GROSS total, depending on margins and rounding options
+                        if (!expOptInclMargins.Checked)
+                        {
+                            ws.CellSet(XRetailRow, XRetailColIdx, Calc.Retail);
+                        }
+                        else
+                        if (expOptInclMargins.Checked && CalcOptions.ApplyMargin)
+                        {
+                            ws.XA1(XRetailRow, XRetailColIdx, CalcOptions.ApplyRnd
+                                ? $"=ROUNDUP({XRetailCol}{XRetailRow - 2}+{XRetailCol}{XRetailRow - 1}, -{CalcOptions.RndDigits})"
+                                : $"={letter}{ix}");
+
+                        }
+                        else
+                        {
+                            ws.XA1(XRetailRow, XRetailColIdx, CalcOptions.ApplyRnd
+                                ? $"=ROUNDUP({letter}{ix}, -{CalcOptions.RndDigits})"
+                                : $"={letter}{ix}");
+                        }
+
+                        ws.XSetCellSum(ref ix, ref col, pStart, ref letter); // Mass
+                        ws.XSetCellSum(ref ix, ref col, pStart, ref letter); // Volume
+
+                        ws.XRangeFmtInt(pStart, XRetailCol, ix, XRetailCol);
+                        ws.XRangeFmtDec(pStart, 3, ix, col);
+                        ws.XRangeBold(ix, 1, ix, col);
                         return;
                     }
 
-                    worksheet.Cell(ix, 1).Value = section;
-                    var qty = 0m;
-                    if (!string.IsNullOrEmpty(r.SubItems[olvColumnQty.Index].Text))
+                    col = 1;
+                    if (IsProductionList) // only prod. list needs section name
                     {
-                        qty = decimal.Parse(r.SubItems[olvColumnQty.Index].Text);
-                        worksheet.Cell(ix, 2).Value = qty;
+                        ws.CellSet(ix, col, section);
                     }
-                    if (qty > 0 && !string.IsNullOrEmpty(r.SubItems[olvColumnAmt.Index].Text))
+                    col++;
+                    if (decimal.TryParse((string)XRow.Qty, out var qty))
                     {
-                        var total = decimal.Parse(r.SubItems[olvColumnAmt.Index].Text);
-                        var itemCost = Math.Round(total / qty, 2, MidpointRounding.AwayFromZero);
-                        worksheet.Cell(ix, 3).Value = itemCost;
-                        worksheet.Cell(ix, 4).FormulaR1C1 = "=(R[0]C[-2]*R[0]C[-1])";
+                        ws.CellSet(ix, col, qty);
                     }
-                    if (!string.IsNullOrEmpty(r.SubItems[olvColumnSchemataA.Index].Text))
+                    else
                     {
-                        worksheet.Cell(ix, 5).Value = decimal.Parse(r.SubItems[olvColumnSchemataA.Index].Text);
+                        // this should not happen :P
+                        i++;
+                        continue;
                     }
-                    if (!string.IsNullOrEmpty(r.SubItems[olvColumnMass.Index].Text))
+
+                    if (expOptInclMargins.Checked && CalcOptions.ApplyMargin)
                     {
-                        worksheet.Cell(ix, 6).Value = decimal.Parse(r.SubItems[olvColumnMass.Index].Text);
+                        var schemCostSingle = 0m;
+                        if (decimal.TryParse((string)XRow.SchemataA, out var schemCost))
+                        {
+                            schemCostSingle = Math.Round(schemCost / qty, 2);
+                        }
+                        if (qty > 0 && decimal.TryParse((string)XRow.Amt, out var total))
+                        {
+                            var oreCost = Math.Round((total - schemCost) / qty, 2);//, MidpointRounding.AwayFromZero);
+                            ws.CellSet(ix, ++col, oreCost); // Ore cost per 1
+                            col++;
+                            // Schematics cost per 1
+                            ws.CellSet(ix, col, schemCostSingle);
+                            // schematics cost as percentage per 1 item
+                            ws.XR1C1(ix, ++col, "=R[0]C[-1]/(R[0]C[-2]+R[0]C[-1])*100");
+                            // Item cost per 1
+                            ws.XR1C1(ix, ++col, "=R[0]C[-3]+R[0]C[-2]");
+                            // Line Item total (cost x qty)
+                            ws.XR1C1(ix, ++col, "=R[0]C[-5]*R[0]C[-1]");
+                            // Margin for line total
+                            letter = Utils.LetterByIndex(col);
+                            ws.XR1C1(ix, ++col, $"=(C{XMarginRow}/100*{letter}{ix})");
+                        }
+                        else
+                        {
+                            col += 5;
+                        }
                     }
-                    if (!string.IsNullOrEmpty(r.SubItems[olvColumnVol.Index].Text))
+
+                    // Line total retail price
+                    if (qty > 0 && decimal.TryParse((string)XRow.Retail, out var retail))
                     {
-                        worksheet.Cell(ix, 7).Value = decimal.Parse(r.SubItems[olvColumnVol.Index].Text);
+                        if (expOptInclMargins.Checked && CalcOptions.ApplyMargin)
+                        {
+                            ws.XR1C1(ix, ++col, "=R[0]C[-2]+R[0]C[-1]");
+                        }
+                        else
+                        {
+                            // avoid rounding errors by re-calculating the retail price
+                            var itemPrice = Math.Round(retail / qty, 2);
+                            ws.CellSet(ix, ++col, itemPrice); // Item price
+                            ws.XR1C1(ix, ++col, "=R[0]C[-2]*R[0]C[-1]");
+                        }
+                    }
+                    else
+                    {
+                        col++;
+                    }
+
+                    if (!string.IsNullOrEmpty((string)XRow.Mass))
+                    {
+                        ws.CellSet(ix, ++col, decimal.Parse((string)XRow.Mass));
+                    }
+                    if (!string.IsNullOrEmpty((string)XRow.Vol))
+                    {
+                        ws.CellSet(ix, ++col, decimal.Parse((string)XRow.Vol));
                     }
                     ix++;
                     i++;
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                KryptonMessageBox.Show("Export prod. list error, please report to developer.\r\n" + ex.Message,
+                    "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
-        private void exportOresPuresSection(IXLWorksheet worksheet, string currSection, string nextSection, ref int i, ref int ix, bool orePrice, bool schems)
+        private bool exportDetailSection(IXLWorksheet ws, string currSection, string nextSection,
+                                         ref int i, ref int ix, bool orePrice, bool schems)
         {
             try
             {
+                var isParts = currSection == "Parts";
+                var isSchemSection = currSection == "Schematics";
+
                 ix += 2;
-                worksheet.Cell(ix, 1).Value = currSection;
-                worksheet.Cell(ix, 2).Value = "Quantity (L)";
+                var col = 1;
+                ws.CellSet(ix, col, currSection);
+                col++;
+                if (!isSchemSection)
+                {
+                    ws.CellSet(ix, col, "Quantity" + (isParts ? "" : " (L)"));
+                }
                 if (orePrice)
                 {
-                    worksheet.Cell(ix, 3).Value = "q / L";
-                    worksheet.Cell(ix, 4).Value = "Amount (q)";
-                    worksheet.Cell(ix, 6).Value = "Mass (t)";
-                    worksheet.Cell(ix, 7).Value = "Volume (KL)";
+                    ws.CellInc(ix, ref col, "q / L");
+                    ws.CellInc(ix, ref col, "Amount (q)");
+                    col++;
+                    ws.CellInc(ix, ref col, "Mass (t)");
+                    ws.CellInc(ix, ref col, "Volume (KL)");
                 }
                 if (schems)
                 {
-                    worksheet.Cell(ix, 5).Value = "Schema qty.";
-                    worksheet.Cell(ix, 6).Value = "Schema cost (q)";
-                    worksheet.Cell(ix, 7).Value = "Schema type";
+                    col = 4;
+                    if (expOptInclMargins.Checked)
+                    {
+                        if (isSchemSection)
+                        {
+                            ws.CellSet(ix, col, "Schema. %", comment: "Base value for the % is the full total.");
+                            col++;
+                        }
+                        ws.CellInc(ix, ref col, "Schema. cost (q)");
+                        ws.CellInc(ix, ref col, "Schematic " + (isSchemSection ? "info" : "type")); // should be 7 by now
+                    }
+                    else
+                    {
+                        ws.CellInc(ix, ref col, "Schema. qty.");
+                    }
                 }
-                worksheet.Row(ix).CellsUsed().Style.Font.SetBold();
-                var range = worksheet.Range($"B{ix}:G{ix}");
-                range.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                ws.XRangeBold(ix, 1, ix, col);
+                ws.XRangeRight(ix, 2, ix, col);
+
+                i++;
                 ix++;
                 var dataStart = ix;
-                i++;
                 while (i < treeListView.Items.Count)
                 {
                     var r = treeListView.Items[i];
                     var section = r.SubItems[olvColumnSection.Index].Text;
 
                     // we return when next section is reached
-                    if (section == nextSection)
+                    if (section == nextSection || (i == treeListView.Items.Count-1))
                     {
                         // leave "i" on current row
+                        var decFmtEnd = 6; // default: "F"
+                        col = 1;
+                        var letter = 'A';
+                        // note: XSetCellSum() 1st increases col by 1 and sets letter accordingly
                         if (orePrice)
                         {
-                            worksheet.Cell(ix, 2).FormulaA1 = $"=SUM(B{dataStart}:B{ix - 1})"; // L ore
-                            worksheet.Cell(ix, 4).FormulaA1 = $"=SUM(D{dataStart}:D{ix - 1})"; // Amount
-                            worksheet.Cell(ix, 6).FormulaA1 = $"=SUM(F{dataStart}:F{ix - 1})"; // Mass
-                            worksheet.Cell(ix, 7).FormulaA1 = $"=SUM(G{dataStart}:G{ix - 1})"; // Volume
+                            ws.XSetCellSum(ref ix, ref col, dataStart, ref letter); // ore in L
+                            col++; // skip "C"
+                            ws.XSetCellSum(ref ix, ref col, dataStart, ref letter); // Amount
+                            col++; // skip "E"
+                            ws.XSetCellSum(ref ix, ref col, dataStart, ref letter); // Mass
+                            ws.XSetCellSum(ref ix, ref col, dataStart, ref letter); // Volume
+                            decFmtEnd = col; // with ores we go to 7 / "G";
                         }
-                        if (schems)
+                        if (expOptInclMargins.Checked)
                         {
-                            worksheet.Cell(ix, 6).FormulaA1 = $"=SUM(F{dataStart}:F{ix - 1})"; // Schema Amount
+                            if (isSchemSection)
+                            {
+                                col = 3;
+                                ws.XSetCellSum(ref ix, ref col, dataStart, ref letter); // Schema %
+                            }
+                            if (schems)
+                            {
+                                col = 5;
+                                ws.XSetCellSum(ref ix, ref col, dataStart, ref letter); // Schema Amount
+                            }
                         }
-                        range = worksheet.Range($"B{dataStart}:G{ix}");
-                        range.Style.NumberFormat.Format = exl_num_format;
-                        worksheet.Row(ix).CellsUsed().Style.Font.SetBold();
-                        return;
+                        var decFmtStart = isParts ? 3 : 2; // "C" : "B"
+                        if (isParts) // Parts are integers
+                        {
+                            ws.XRangeFmtInt(dataStart, 2, ix, 2);
+                        }
+                        ws.XRangeFmtDec(dataStart, decFmtStart, ix, decFmtEnd);
+                        ws.XRangeBold(ix, decFmtStart, ix, decFmtEnd);
+                        return true;
                     }
 
-                    worksheet.Cell(ix, 1).Value = section;
+                    ws.Cell(ix, 1).Value = section;
                     decimal.TryParse(r.SubItems[olvColumnQty.Index].Text, out var qty);
-                    worksheet.Cell(ix, 2).Value = Math.Round(qty, 2, MidpointRounding.AwayFromZero);
+                    if (!isSchemSection)
+                    {
+                        ws.CellSet(ix, 2, Math.Round(qty, 2, MidpointRounding.AwayFromZero));
+                    }
                     if (orePrice)
                     {
-                        worksheet.Cell(ix, 3).Value = DUData.GetOrePriceByName(section);
-                        worksheet.Cell(ix, 4).FormulaR1C1 = "=(R[0]C[-2]*R[0]C[-1])";
+                        ws.CellSet(ix, 3, DUData.GetOrePriceByName(section));
+                        ws.Cell(ix, 4).FormulaR1C1 = "=(R[0]C[-2]*R[0]C[-1])";
                         var rec = DUData.Recipes.FirstOrDefault(x => x.Value.Name == section);
                         if (rec.Value?.UnitMass != null)
                         {
-                            worksheet.Cell(ix, 6).Value = (qty * rec.Value.UnitMass) / 1000;
+                            ws.CellSet(ix, 6, (qty * rec.Value.UnitMass) / 1000);
                         }
                         if (rec.Value?.UnitVolume != null)
                         {
-                            worksheet.Cell(ix, 7).Value = (qty * rec.Value.UnitVolume) / 1000;
+                            ws.CellSet(ix, 7, (qty * rec.Value.UnitVolume) / 1000);
                         }
                     }
 
                     if (schems && decimal.TryParse(r.SubItems[olvColumnSchemataQ.Index].Text, out qty))
                     {
-                        worksheet.Cell(ix, 5).Value = qty;
-                        if (decimal.TryParse(r.SubItems[olvColumnSchemataA.Index].Text, out qty))
+                        ws.CellSet(ix, 5, qty);
+                        if (expOptInclMargins.Checked)
                         {
-                            worksheet.Cell(ix, 6).Value = qty;
-                        }
-                        if (!string.IsNullOrEmpty(r.SubItems[olvColumnFiller.Index].Text))
-                        {
-                            worksheet.Cell(ix, 7).Value = r.SubItems[olvColumnFiller.Index].Text;
+                            if (decimal.TryParse(r.SubItems[olvColumnSchemataA.Index].Text, out var sAmt))
+                            {
+                                ws.CellSet(ix, 6, sAmt);
+                                if (isSchemSection)
+                                {
+                                    // display % of schematics cost for full order/calculation
+                                    ws.Cell(ix, 4).FormulaA1 = $"=F{ix}/B{XRetailRow}*100";
+                                }
+                            }
+                            // schematics' info, like copy time
+                            if (!string.IsNullOrEmpty(r.SubItems[olvColumnFiller.Index].Text))
+                            {
+                                ws.CellSet(ix, 7, r.SubItems[olvColumnFiller.Index].Text);
+                                if (isSchemSection)
+                                {
+                                    ws.XMergeCells(ix, 7, 5);
+                                }
+                            }
                         }
                     }
                     ix++;
                     i++;
                 }
+                return true;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                KryptonMessageBox.Show("Export detail section error, please report to developer.\r\n" + ex.Message,
+                    "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            return false;
         }
 
         private void exportBtn_Click(object sender, EventArgs e)
         {
             if (treeListView.Items.Count == 0) return;
 
-            var dlg = new SaveFileDialog
-            {
-                AddExtension = true,
-                CheckPathExists = true,
-                DefaultExt = ".xlsx",
-                Filter = @"XLSX|*.xlsx|All files|*.*",
-                FilterIndex = 1,
-                Title = @"Export",
-                InitialDirectory = "",
-                ShowHelp = false,
-                SupportMultiDottedExtensions = true,
-                CheckFileExists = false,
-                OverwritePrompt = false
-            };
+            XMarginRow = 0;
+            var fname = $"{Calc.Name} (x{Calc.Quantity:N0})";
+            var prodListName = "";
             if (IsProductionList)
             {
                 var mgr = DUData.IndyMgrInstance;
-                dlg.FileName = DUData.ProductionListTitle;
-                dlg.FileName += mgr.Databindings.ListLoaded ? " - " + Path.ChangeExtension(mgr.Databindings.GetFilename(), "") : ".";
+                prodListName = mgr.Databindings.ListLoaded ? Path.GetFileNameWithoutExtension(mgr.Databindings.GetFilename()) : "";
+                fname = DUData.ProductionListTitle + (mgr.Databindings.ListLoaded ? $" - {prodListName}" : "");
             }
-            else
-            {
-                dlg.FileName = $"Calculation {Calc.Name} (x{Calc.Quantity}).";
-            }
-            dlg.FileName += "xlsx";
-            if (dlg.ShowDialog() != DialogResult.OK) return;
+            var title = Path.GetFileNameWithoutExtension(fname);
+            fname = Utils.PromptSave("Export "+ title, fname, true);
+            if (fname == null) return;
 
-            if (File.Exists(dlg.FileName) &&
-                (KryptonMessageBox.Show(@"Overwrite existing file?", @"Overwrite",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes))
-            {
-                return;
-            }
+            FetchOptionsFromForm();
 
             using (var workbook = new XLWorkbook())
             {
-                var worksheet = workbook.Worksheets.Add("Calculation");
-                var ix = 1;
-
-                worksheet.Cell(ix, 1).Value = IsProductionList ? DUData.ProductionListTitle : "Item calculation";
-                worksheet.Row(ix).CellsUsed().Style.Font.SetBold();
-
-                if (!IsProductionList)
-                {
-                    ix += 2;
-                    worksheet.Cell(ix, 1).Value = "Item";
-                    worksheet.Cell(ix, 2).Value = "Amount (q)";
-                    worksheet.Cell(ix, 3).Value = "Quantity";
-                    worksheet.Cell(ix, 4).Value = "Total (q)";
-                    worksheet.Row(ix).CellsUsed().Style.Font.SetBold();
-
-                    ix++;
-                    worksheet.Cell(ix, 1).Value = kryptonHeaderGroup1.ValuesPrimary.Heading;
-                    var total = Math.Round(Calc.OreCost + Calc.SchematicsCost, 2);
-                    worksheet.Cell(ix, 2).Value = Calc.Quantity == 1 ? total : Math.Round(total / Calc.Quantity, 2);
-                    worksheet.Cell(ix, 3).Value = Calc.Quantity;
-                    worksheet.Cell(ix, 4).Value = total;
-
-                    ix += 2;
-                    worksheet.Cell(ix, 1).Value = "Item details";
-                    worksheet.Row(ix).CellsUsed().Style.Font.SetBold();
-                }
-
-                var schemSection = false;
-                var prodListEndIdx = 1;
+                var ws = workbook.Worksheets.Add(title.Length > 31 ? title.Substring(0,31) : title);
+                var partsEnd = 1;
                 try
                 {
                     var i = 0;
+                    var ix = 1; // start output in this row
+
+                    exportHeader(ws, ref ix, title);
+
+                    // If NOT production list, but single-item calculation:
+                    // run once the ProdList* method to achieve the same output
+                    if (!IsProductionList)
+                    {
+                        i = -1;
+                        exportProdItems(ws, ref i, ref ix, treeListView.Items.Count);
+                        i = 0; // Reset
+                    }
+
                     while (i < treeListView.Items.Count)
                     {
                         var r = treeListView.Items[i];
                         var section = r.SubItems[olvColumnSection.Index].Text;
 
-                        if (section == DUData.ProductionListTitle)
+                        if (IsProductionList && section == DUData.ProductionListTitle)
                         {
-                            exportProdListSection(worksheet, ref i, ref ix);
-
+                            exportProdItems(ws, ref i, ref ix, treeListView.Items.Count);
+                            if (!expOptInclSubSections.Checked)
+                            {
+                                break;
+                            }
                             ix += 2;
-                            worksheet.Cell(ix, 1).Value = "Below are totals for full order!";
-                            worksheet.Row(ix).CellsUsed().Style.Font.SetBold();
-                            prodListEndIdx = ix+1;
+                            ws.Cell(ix, 1).Value = "Below are totals for full order!";
+                            ws.Row(ix).CellsUsed().Style.Font.SetBold();
                             continue;
                         }
-                        
-                        if (section == "Ores")
+                        if (!expOptInclSubSections.Checked)
                         {
-                            if (!IsProductionList) prodListEndIdx = ix;
-                            exportOresPuresSection(worksheet, section, "Pures", ref i, ref ix, true, false);
-                            continue;
+                            break;
                         }
-                        
-                        if (section == "Pures")
+                        switch (section)
                         {
-                            exportOresPuresSection(worksheet, section, "Products", ref i, ref ix, false, true);
-                            continue;
-                        }
-                        
-                        if ((schemSection || (r.SubItems.Count == 10 && !string.IsNullOrEmpty(r.SubItems[3].Text))))
-                        {
-                            ix++;
-                            worksheet.Cell(ix, 1).Value = r.SubItems[0].Text;
-                            if (!string.IsNullOrEmpty(r.SubItems[olvColumnQty.Index].Text))
-                            {
-                                worksheet.Cell(ix, 2).Value = decimal.Parse(r.SubItems[olvColumnQty.Index].Text);
-                            }
-                            if (!string.IsNullOrEmpty(r.SubItems[olvColumnAmt.Index].Text))
-                            {
-                                worksheet.Cell(ix, 3).Value = decimal.Parse(r.SubItems[olvColumnAmt.Index].Text);
-                            }
-                            if (!string.IsNullOrEmpty(r.SubItems[olvColumnSchemataQ.Index].Text))
-                            {
-                                worksheet.Cell(ix, 5).Value = decimal.Parse(r.SubItems[olvColumnSchemataQ.Index].Text);
-                            }
-                            if (!string.IsNullOrEmpty(r.SubItems[olvColumnSchemataA.Index].Text))
-                            {
-                                worksheet.Cell(ix, 6).Value = decimal.Parse(r.SubItems[olvColumnSchemataA.Index].Text);
-                            }
-                            if (!string.IsNullOrEmpty(r.SubItems[olvColumnFiller.Index].Text))
-                            {
-                                worksheet.Cell(ix, 7).Value = r.SubItems[olvColumnFiller.Index].Text;
-                            }
-                        }
-                        else
-                        {
-                            ix += 2;
-                            worksheet.Cell(ix, 1).Value = section;
-                            worksheet.Row(ix).CellsUsed().Style.Font.SetBold();
-                            if (section == "Schematics")
-                            {
-                                schemSection = true;
-                            }
+                            case "Ores":
+                                if (!exportDetailSection(ws, section, "Pures", ref i, ref ix, true, false))
+                                    return;
+                                continue;
+                            case "Pures":
+                                if (!exportDetailSection(ws, section, "Products", ref i, ref ix, false, expOptInclMargins.Checked))
+                                    return;
+                                continue;
+                            case "Products":
+                                if (!exportDetailSection(ws, section, "Parts", ref i, ref ix, false, expOptInclMargins.Checked))
+                                    return;
+                                continue;
+                            case "Parts":
+                                if (!exportDetailSection(ws, section, "Schematics", ref i, ref ix, false, false))
+                                    return;
+                                partsEnd = ix; // don't adjust schematics
+                                continue;
+                            case "Schematics":
+                                if (!exportDetailSection(ws, section, "", ref i, ref ix, false, true))
+                                    return;
+                                break;
                         }
                         i++;
                     }
-                    var range = worksheet.Range($"B{prodListEndIdx}:G{ix}");
-                    range.Style.NumberFormat.Format = exl_num_format;
-                    worksheet.ColumnsUsed().AdjustToContents(1, 50);
-                    workbook.SaveAs(dlg.FileName);
+                    ws.ColumnsUsed().AdjustToContents(1, expOptInclSubSections.Checked ? partsEnd : ix);
+                    workbook.SaveAs(fname);
 
                     KryptonMessageBox.Show("Data successfully exported to file.", "Success",
                         MessageBoxButtons.OK, KryptonMessageBoxIcon.INFORMATION);
                 }
                 catch (Exception ex)
                 {
-                    KryptonMessageBox.Show(@"Could not save calculation!" + Environment.NewLine + ex.Message,
-                        @"ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    KryptonMessageBox.Show("Could not save calculation!\r\n" + ex.Message,
+                        "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
+
+        #endregion
     }
 }

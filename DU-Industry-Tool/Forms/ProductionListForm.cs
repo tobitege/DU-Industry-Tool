@@ -1,18 +1,19 @@
 ﻿using System;
 using System.ComponentModel;
-using System.IO;
+using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using AutocompleteMenuNS;
+using DU_Helpers;
 using Krypton.Toolkit;
 
 namespace DU_Industry_Tool
 {
     public partial class ProductionListForm : KryptonForm
     {
-        private bool _changed;
+        private bool _changed = false;
         private string _loadedFile;
         private IndustryManager Manager { get; }
-        public KryptonComboBox RecipeNames => ComboRecipeNames;
 
         public ProductionListForm(IndustryManager manager)
         {
@@ -31,10 +32,7 @@ namespace DU_Industry_Tool
                 };
             }
             dgvProductionList.DataSource = Manager.Databindings.ProductionBindingList;
-            Column1.Items.AddRange(DUData.RecipeNames.ToArray());
-            // wth! AutoComplete popup stays empty no matter what source :(
-            //Column1.AutoCompleteCustomSource.AddRange(Manager.RecipeNames.ToArray());
-            //Column1.AutoCompleteSource = AutoCompleteSource.ListItems;
+            dgvProductionList.KeyDown += DgvProductionListOnKeyDown;
 
             // manually assign click events due to designer occasionally loosing them :(
             BtnAdd.Click += BtnAddOnClick;
@@ -42,32 +40,52 @@ namespace DU_Industry_Tool
             BtnLoad.Click += BtnLoad_Click;
             BtnSave.Click += BtnSave_Click;
             BtnClear.Click += BtnClear_Click;
+            BtnRemoveEntry.Click += BtnRemove_Click;
+
+            acMenu.MaximumSize = new Size(recipeSearchBox.Size.Width, 400);
+            acMenu.SetAutocompleteMenu(recipeSearchBox, acMenu);
+
+            recipeSearchBox.TextChanged += recipeSearchBoxOnTextChanged;
+            recipeSearchBox.KeyDown += recipeSearchBoxOnKeyDown;
+        }
+
+        private void RemoveGridEntry()
+        {
+            if (dgvProductionList.CurrentRow == null) return;
+            Manager.Databindings.ProductionBindingList.RemoveAt(dgvProductionList.CurrentRow.Index);
+            _changed = true;
+        }
+
+        private void DgvProductionListOnKeyDown(object sender, KeyEventArgs e)
+        {
+            if (!(e.Control && e.KeyCode == Keys.Delete)) return;
+            RemoveGridEntry();
         }
 
         private void BtnAddOnClick(object sender, EventArgs e)
         {
             // make sure the entered text is actually existing in the recipes list
-            if (string.IsNullOrEmpty(ComboRecipeNames.Text) ||
+            if (string.IsNullOrEmpty(recipeSearchBox.Text) ||
                 NumUpDownQuantity.Value <= 0 ||
-                !DUData.RecipeNames.Any(x => x.Equals(ComboRecipeNames.Text, StringComparison.CurrentCultureIgnoreCase)))
+                !DUData.RecipeNames.Any(x => x.Equals(recipeSearchBox.Text, StringComparison.CurrentCultureIgnoreCase)))
             {
                 return;
             }
             // Add new recipe, otherwise increase quantity of existing recipe
             try
             {
-                var item = Manager.Databindings.ProductionBindingList.FirstOrDefault(x => x.Name.Equals(ComboRecipeNames.Text, StringComparison.CurrentCultureIgnoreCase));
+                var item = Manager.Databindings.ProductionBindingList.FirstOrDefault(x => x.Name.Equals(recipeSearchBox.Text, StringComparison.CurrentCultureIgnoreCase));
                 if (item == null)
                 {
                     Manager.Databindings.ProductionBindingList.Add(new ProductionItem
                     {
-                        Name = ComboRecipeNames.Text,
+                        Name = recipeSearchBox.Text,
                         Quantity = NumUpDownQuantity.Value
                     });
                     _changed = true;
                     return;
                 }
-                item.Name = ComboRecipeNames.Text;
+                item.Name = recipeSearchBox.Text;
                 item.Quantity += NumUpDownQuantity.Value;
             }
             finally
@@ -78,17 +96,29 @@ namespace DU_Industry_Tool
 
         private void BtnCalculateOnClick(object sender, EventArgs e)
         {
-            if (_changed &&
-                KryptonMessageBox.Show(@"Proceed with calculation? Answer No to be able to save the production list!",
-                    @"Proceed with Calculation?", MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Information) != DialogResult.Yes)
-                return;
+            if (_changed)
+            {
+                if (KryptonMessageBox.Show("Proceed with calculation? Answer 'No' to be able to save the production list!",
+                        "Proceed with Calculation?", MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Information) != DialogResult.Yes)
+                {
+                    return;
+                }
+            }
             this.DialogResult = DialogResult.OK;
         }
 
         private void BtnLoad_Click(object sender, EventArgs e)
         {
-            LoadList(Manager);
+            dgvProductionList.DataSource = null;
+            try
+            {
+                LoadList(Manager);
+            }
+            finally
+            {
+                dgvProductionList.DataSource = Manager.Databindings.ProductionBindingList;
+            }
             UpdateFileDisplay();
             dgvProductionList.Invalidate(true);
             _changed = false;
@@ -110,7 +140,7 @@ namespace DU_Industry_Tool
 
         private void BtnClear_Click(object sender, EventArgs e)
         {
-            if (KryptonMessageBox.Show(@"Really clear the list now?", @"Clear List", MessageBoxButtons.YesNo,
+            if (KryptonMessageBox.Show("Really clear the list now?", "Clear List", MessageBoxButtons.YesNo,
                     MessageBoxIcon.Warning) != DialogResult.Yes)
                 return;
             Manager.Databindings.ProductionBindingList.Clear();
@@ -120,100 +150,86 @@ namespace DU_Industry_Tool
             _changed = false;
         }
 
-        // ################################################
+        private void BtnRemove_Click(object sender, EventArgs e)
+        {
+            RemoveGridEntry();
+        }
 
+        #region list load/save
+        
         public static bool LoadList(IndustryManager manager)
         {
-            var lastDir = Properties.Settings.Default.ProdListDirectory;
-            if (string.IsNullOrEmpty(lastDir) || !Directory.Exists(lastDir))
-            {
-                lastDir = Application.StartupPath;
-            }
-            Properties.Settings.Default.Save();
-
-            var dlg = new OpenFileDialog
-            {
-                CheckFileExists = true,
-                CheckPathExists = true,
-                DefaultExt = ".json",
-                FileName = manager.Databindings.GetFilename(),
-                Filter = @"JSON|*.json|All files|*.*",
-                FilterIndex = 1,
-                Title = @"Load Production List",
-                InitialDirectory = lastDir,
-                ShowHelp = false,
-                SupportMultiDottedExtensions = true,
-            };
-            if (dlg.ShowDialog() != DialogResult.OK) return false;
-            if (!File.Exists(dlg.FileName))
-            {
-                KryptonMessageBox.Show(@"File does not exist!", @"Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return false;
-            }
-
-            Properties.Settings.Default.ProdListDirectory = Path.GetDirectoryName(dlg.FileName);
-            Properties.Settings.Default.Save();
-
+            var fname = Utils.PromptOpen("Load Production List");
+            if (fname == null) return false;
+            
             try
             {
-                manager.Databindings.Load(dlg.FileName);
+                manager.Databindings.Load(fname);
                 return true;
             }
             catch (Exception ex)
             {
-                KryptonMessageBox.Show(@"Could not load Production List: "+ Environment.NewLine+ex.Message,
-                    @"ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                KryptonMessageBox.Show("Could not load file:" + Environment.NewLine + ex.Message,
+                    "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             return false;
         }
 
         public static bool SaveList(IndustryManager manager)
         {
-            var lastDir = Properties.Settings.Default.ProdListDirectory;
-            if (string.IsNullOrEmpty(lastDir) || !Directory.Exists(lastDir))
-            {
-                lastDir = Application.StartupPath;
-            }
-            Properties.Settings.Default.Save();
+            var fname = Utils.PromptSave("Save Production List", manager.Databindings.GetFilename());
+            if (fname == null) return false;
 
-            var dlg = new SaveFileDialog
-            {
-                AddExtension = true,
-                CheckPathExists = true,
-                FileName = manager.Databindings.GetFilename(),
-                DefaultExt = ".json",
-                Filter = @"JSON|*.json|All files|*.*",
-                FilterIndex = 1,
-                Title = @"Save Production List",
-                InitialDirectory = lastDir,
-                ShowHelp = false,
-                SupportMultiDottedExtensions = true,
-                CheckFileExists = false,
-                OverwritePrompt = false
-            };
-            if (dlg.ShowDialog() != DialogResult.OK) return false;
-
-            if (File.Exists(dlg.FileName) &&
-                (KryptonMessageBox.Show(@"Overwrite existing file?", @"Overwrite",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes))
-            {
-                return false;
-            }
-
-            Properties.Settings.Default.ProdListDirectory = Path.GetDirectoryName(dlg.FileName);
-            Properties.Settings.Default.Save();
             try
             {
-                manager.Databindings.Save(dlg.FileName);
+                manager.Databindings.Save(fname);
                 return true;
             }
             catch (Exception ex)
             {
-                KryptonMessageBox.Show(@"Could not save production list! "+Environment.NewLine+ex.Message,
-                    @"ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                KryptonMessageBox.Show("Could not save file!" + Environment.NewLine + ex.Message,
+                    "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             return false;
         }
+        
+        #endregion
+
+        #region search autocomplete
+        
+        private bool _changing = false;
+        private void recipeSearchBoxOnKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Escape && !acMenu.Visible)
+            {
+                if (sender is TextBox tb) tb.Clear();
+            }
+        }
+
+        private void recipeSearchBoxOnTextChanged(object sender, EventArgs e)
+        {
+            if (_changing || !(sender is TextBox tb)) return;
+            _changing = true;
+            try
+            {
+                if (tb.Text.Length < SearchHelper.MinimumSearchLength) return;
+                var matchingItems = SearchHelper.SearchItems(tb.Text);
+                acMenu.SetAutocompleteItems(matchingItems.Select(item => new RecipeAutocompleteItem(item)).ToList());
+            }
+            finally
+            {
+                _changing = false;
+            }
+        }
+
+        private void acMenu_Selected(object sender, SelectedEventArgs e)
+        {
+            if (!string.IsNullOrEmpty(e?.Item?.Text))
+            {
+                recipeSearchBox.Text = e.Item.Text;
+            }
+        }
+        
+        #endregion
     }
 }

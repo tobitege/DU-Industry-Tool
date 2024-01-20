@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Windows.Forms;
+using DU_Helpers;
 
 namespace DU_Industry_Tool
 {
@@ -13,6 +16,14 @@ namespace DU_Industry_Tool
         public decimal? QtySchemata { get; set; }
         public decimal? AmtSchemata { get; set; }
         public string SchematicType { get; set; }
+    }
+
+    public static class CalcOptions
+    {
+        public static decimal MarginPct = 0m;
+        public static bool ApplyMargin = false;
+        public static bool ApplyRnd = false;
+        public static int RndDigits = 0;
     }
 
     public static class Calculator
@@ -28,9 +39,13 @@ namespace DU_Industry_Tool
         // can be used by e.g. the skills form for highlighting
         public static List<string> ApplicableTalents { get; private set; }
 
-        public static void Initialize()
+        public static void ResetRecipeName()
         {
             _currentRecipe = "";
+        }
+
+        public static void Initialize()
+        {
             ProductQuantity = 1;
             if (ApplicableTalents == null)
                 ApplicableTalents = new List<string>();
@@ -116,6 +131,11 @@ namespace DU_Industry_Tool
             return calc != null;
         }
 
+        /// <summary>
+        /// Collect() is the final summation run on either the single calculation item
+        /// or a production list (and its elements)
+        /// </summary>
+        /// <param name="calc"></param>
         private static void Collect(CalculatorClass calc)
         {
             // Summarize all categories over all ingredients
@@ -123,7 +143,7 @@ namespace DU_Industry_Tool
             {
                 if (entry.Value.Key != calc.Key)
                 {
-                    for (var sumType = 0; sumType <= (int)SummationType.INGREDIENTS; sumType++)
+                    for (var sumType = 0; sumType < (int)SummationType.INGREDIENTS; sumType++)
                     {
                         var sum = entry.Value.Get((SummationType)sumType);
                         if (sum?.Keys.Any() != true) continue;
@@ -146,7 +166,7 @@ namespace DU_Industry_Tool
                 }
             }
 
-            calc.Recipe = DUData.Recipes[calc.Key];
+            calc.Recipe = DUData.Recipes[calc.Key].Clone();
 
             var prodMode = DUData.ProductionListMode && calc.Key == DUData.CompoundName &&
                            calc.RecipeExists && calc.Recipe?.Products?.Any() == true;
@@ -191,22 +211,61 @@ namespace DU_Industry_Tool
             calc.OreCost = calc.TotalOreCost();
             calc.Collected = true;
 
-            // Process main item's schematic - if applicable
-            if (prodMode || string.IsNullOrEmpty(calc.SchematicType)) return;
-            var batches = ProductQuantity;
-            if (calc.IsBatchmode && calc.BatchOutput > 0)
+            var marginPct = CalcOptions.MarginPct;
+            var applyMargin = CalcOptions.ApplyMargin && marginPct > 0.00m;
+            var applyRnd = CalcOptions.ApplyRnd;
+            var rndDigi = CalcOptions.RndDigits;
+
+            if (prodMode)
             {
-                batches = Math.Round(ProductQuantity / (decimal)calc.BatchOutput, 3);
-                if (DUData.FullSchematicQuantities)
+                // Recalculate retail price and margin, reducing potential rounding errors
+                for (int i = 0; i < calc.Recipe.Products.Count; i++)
                 {
-                    batches = Math.Ceiling(batches);
+                    var prodItem = calc.Recipe.Products[i];
+                    CalcRetail(prodItem, applyMargin, marginPct, applyRnd, rndDigi);
+                    calc.Recipe.Products[i] = prodItem;
+                }
+
+                calc.IsProdItem = true;
+                calc.OreCost = calc.Recipe.Products.Sum(x => Math.Round(x.Cost, 2, MidpointRounding.AwayFromZero));
+                calc.SchematicsCost = calc.Recipe.Products.Sum(x => Math.Round(x.SchemaAmt, 2, MidpointRounding.AwayFromZero));
+
+                calc.Margin = calc.Recipe.Products.Sum(x => Math.Round(x.Margin, 2, MidpointRounding.AwayFromZero));
+                calc.Retail = calc.OreCost + calc.SchematicsCost + calc.Margin;
+                return;
+            }
+
+            // Process main item's schematic (if exists and not in prod list mode)
+            if (!string.IsNullOrEmpty(calc.SchematicType))
+            {
+                var batches = ProductQuantity;
+                if (calc.IsBatchmode && calc.BatchOutput > 0)
+                {
+                    batches = Math.Round(ProductQuantity / (decimal)calc.BatchOutput, 2);
+                    if (DUData.FullSchematicQuantities)
+                    {
+                        batches = Math.Ceiling(batches);
+                    }
+                }
+                if (CalcSchematic(calc.SchematicType, batches, out var minCost, out _, out _))
+                {
+                    calc.AddSchema(calc.SchematicType, batches, minCost);
+                    calc.AddSchematicCost(minCost);
                 }
             }
-            if (CalcSchematic(calc.SchematicType, batches, out var minCost, out _, out _))
+
+            // Recalculate retail sum and margin, fixing potential rounding errors
+            var item = new ProductDetail
             {
-                calc.AddSchema(calc.SchematicType, batches, minCost);
-                calc.AddSchematicCost(minCost);
-            }
+                Cost = calc.OreCost,
+                SchemaAmt = calc.SchematicsCost,
+                Quantity = calc.Quantity,
+                Margin = 0m,
+                Retail = 0m
+            };
+            CalcRetail(item, applyMargin, marginPct, applyRnd, rndDigi);
+            calc.Margin = item.Margin;
+            calc.Retail = item.Retail;
         }
 
         /// <summary>
@@ -228,10 +287,10 @@ namespace DU_Industry_Tool
                 return false;
             }
 
-            minCost = Math.Round(schemata.Cost * qtySchematic, 3); // cost is a breakdown to x1 schematic
+            minCost = Math.Round(schemata.Cost * qtySchematic, 2); // cost is a breakdown to x1 schematic
             // number of copy jobs that need to be started to cover all needed schematics,
             // (which depends on the batch size of a copy, e.g. 10 per copy process):
-            qtyCopies = qtySchematic / Math.Max(1, Math.Round((decimal)schemata.BatchSize, 3));
+            qtyCopies = qtySchematic / Math.Max(1, Math.Round((decimal)schemata.BatchSize, 2));
             
             if (DUData.FullSchematicQuantities)
             {
@@ -239,7 +298,7 @@ namespace DU_Industry_Tool
             }
             
             // copyCost is the single schematic cost multiplied by batch size and the number of copies:
-            copyCost = Math.Round(schemata.Cost * schemata.BatchSize * qtyCopies);
+            copyCost = Math.Round(schemata.Cost * schemata.BatchSize * qtyCopies, 2);
             return true;
         }
 
@@ -266,7 +325,7 @@ namespace DU_Industry_Tool
                 tmp.Quantity = val.Qty;
                 tmp.GetTalents();
                 if (tmp.BatchOutput == null) continue;// happens (on purpose)
-                tmp.Quantity = Math.Round(tmp.Quantity / (decimal)tmp.BatchOutput, 3);
+                tmp.Quantity = Math.Round(tmp.Quantity / (decimal)tmp.BatchOutput, 2);
                 if (DUData.FullSchematicQuantities)
                 {
                     tmp.Quantity = (int)Math.Ceiling(tmp.Quantity);
@@ -301,10 +360,10 @@ namespace DU_Industry_Tool
         /// </para>
         /// </remarks>
         public static decimal CalculateRecipe(string key, decimal amount = 0, string level = "",
-            int depth = 0, Guid? parent = null, bool silent = false)
+            int depth = 0, Guid? parent = null, bool silent = true)
         {
             // Hints:
-            // - only for ores the cost is being accumulated, other stages only accumulate quantities!
+            // - cost is *only* being being accumulated for ores, other types only accumulate by quantity!
             // - Catalysts are NOT calculated due to their positive return ratio, i.e.
             //   they usually return in a higher amount than they're used for (with talents)
             // - Plasma as ingredient is assumed to be 1 L for all recipes.
@@ -336,13 +395,19 @@ namespace DU_Industry_Tool
             var product = recipe.Products?.FirstOrDefault();
 
             var calc = Get(key, parent ?? Guid.Empty);
+            calc.Parent = parent ?? Guid.Empty;
             calc.OreCost = 0;
             calc.Quantity = amount;
+            calc.Margin = 0;
+            calc.Retail = 0;
+            calc.SchematicsCost = 0m;
             calc.SchematicType = recipe.SchemaType;
             calc.SetParent(parent ?? Guid.Empty); // empty for depth 0
             calc.Recipe = recipe;
+            calc.CopyRecipeValuesFrom(recipe);
             calc.GetTalents();
 
+            // product is null for ores!
             var productQty = product?.Quantity ?? amount;
 
             // Ammo override: ammunition has special batch size of 40 like "magazine size".
@@ -350,7 +415,7 @@ namespace DU_Industry_Tool
             // and determine the minimum of batches to be produced
             if (depth == 0 && calc.IsAmmo)
             {
-                productQty = Math.Round(amount / (decimal)(calc.BatchOutput ?? 40), 3);
+                productQty = Math.Round(amount / (decimal)(calc.BatchOutput ?? 40), 2);
                 amount = productQty;
             }
             var curLevel = level;
@@ -364,7 +429,7 @@ namespace DU_Industry_Tool
                 var ore = DUData.Ores.FirstOrDefault(o => o.Key == recipe.Key);
                 if (ore != null)
                 {
-                    cost = Math.Round(amount * ore.Value, 3);
+                    cost = Math.Round(amount * ore.Value, 2);
                 }
                 calc.OreCost = cost;
                 return cost;
@@ -382,15 +447,15 @@ namespace DU_Industry_Tool
 
                 decimal qty;
                 decimal cost;
-                var ingName   = ingredient.Name;
-                var ingKey    = ingName;
+                var ingName = ingredient.Name;
+                var ingKey = ingName;
                 if (!myRecipe.IsPlasma)
                 {
                     // prefix ingredient key with tier
                     ingKey = "T" + (myRecipe.Level < 2 ? "1" : myRecipe.Level.ToString()) + " " + ingKey;
                 }
 
-                var factor = 1M;
+                var factor = 1m;
                 if (myRecipe.IsOre || myRecipe.IsPure || myRecipe.IsProduct)
                 {
                     factor = (productQty * calc.OutputMultiplier + calc.OutputAdder) /
@@ -413,7 +478,8 @@ namespace DU_Industry_Tool
                     else
                         // assumption: Plasma qty always 1
                         qty = myRecipe.IsPlasma ? 1 : (amount / factor);
-                    cost = Math.Round(qty * DUData.Ores.First(o => o.Key == ingredient.Type).Value, 3);
+                    qty = Math.Round(qty, 2);
+                    cost = Math.Round(qty * DUData.Ores.First(o => o.Key == ingredient.Type).Value, 2);
                     // Only for ores we accumulate the cost within "calc"!
                     calc2.OreCost = cost;
                     calc2.Quantity = qty;
@@ -425,6 +491,11 @@ namespace DU_Industry_Tool
                 qty = amount;
                 if (myRecipe.IsPart || myRecipe.IsProduct || myRecipe.IsPure)
                 {
+                    if (depth == 0)
+                    {
+                        qty = Math.Round(ingredient.Quantity * amount, 2);
+                    }
+                    else
                     if (myRecipe.IsPart)
                     {
                         qty *= ingredient.Quantity;
@@ -435,7 +506,13 @@ namespace DU_Industry_Tool
                         qty /= factor;
                         ingName = (myRecipe.IsProduct ? "  " : " ") + ingKey;
                     }
+                    qty = Math.Round(qty, 2);
                     calc.Add(SummationType.INGREDIENTS, ingName, qty, 0);
+                }
+                // Keep these 3 as ingredients, but now don't add to ores/costs
+                if (myRecipe.IsProduct && (ingKey.Contains("Catalyst") || ingKey.Contains("Hydrogen") || ingKey.Contains("Oxygen")))
+                {
+                    continue;
                 }
                 cost = CalculateRecipe(ingredient.Type, qty, level, depth + 1, parent: calc.Id, silent: silent);
                 Debug.WriteLineIf(!silent && cost > 0, $"{curLevel}     = {cost:N2}q");
@@ -447,14 +524,17 @@ namespace DU_Industry_Tool
                 }
                 if (myRecipe.IsProduct)
                 {
-                    var excl = ingKey.Contains("Catalyst") || ingKey.Contains("Hydrogen") || ingKey.Contains("Oxygen");
-                    if (!excl)
-                    {
-                        calc.Add(SummationType.PRODUCTS, ingKey, qty, cost);
-                    }
+                    calc.Add(SummationType.PRODUCTS, ingKey, qty, cost);
                     continue;
                 }
-                calc.Add(SummationType.PURES, ingKey, qty, cost);
+                if (myRecipe.IsPure)
+                {
+                    calc.Add(SummationType.PURES, ingKey, qty, cost);
+                }
+                else
+                {
+                    Debug.WriteLineIf(!silent, myRecipe.Name);
+                }
             }
 
             // once the top-level recipe is done, do a collection run
@@ -595,40 +675,48 @@ namespace DU_Industry_Tool
                         }
                         entry.CopyBaseValuesFrom(calc);
                     }
-                    //entry.SchematicType = calc.Recipe.SchemaType;
                     factor = (productQty * calc.OutputMultiplier + calc.OutputAdder) /
                              (ingredient.Quantity * calc.InputMultiplier + calc.InputAdder);
-                    entry.Quantity = Math.Round(quantity * factor, 3);
-                    //if (!calc.IsOre)
-                    //{
-                    //    entry.BatchInput  = ingredient.Quantity * calc.InputMultiplier;
-                    //    entry.BatchOutput = productQty * calc.OutputMultiplier;
-                    //    if (calc.Recipe.Time > 0)
-                    //    {
-                    //        entry.BatchTime = calc.Recipe.Time * calc.EfficencyFactor;
-                    //    }
-                    //}
+                    entry.Quantity = Math.Round(quantity * factor, 2);
                 }
                 else
                 {
                     factor = (ingredient.Quantity * calc.InputMultiplier + calc.InputAdder) /
                              (productQty * calc.OutputMultiplier + calc.OutputAdder);
-                    entry.Quantity = quantity * factor;
+                    entry.Quantity = Math.Round(quantity * factor, 2);
                 }
 
                 results.Add(entry);
-
-                if (entry.Recipe.Ingredients.Count > 0)
-                {
-                    //results.AddRange(GetIngredientRecipes(ingredient.Type, entry.Quantity, reverse));
-                }
             }
-
             return results;
         }
+
+        public static void CalcRetail(ProductDetail item,
+                                      bool applyMargin = false, decimal marginPct = 0m,
+                                      bool applyRounding = false, int roundingDigits = 1)
+        {
+            item.Margin = 0;
+            item.Retail = 0;
+            if (item.Quantity == 0) return;
+            item.Cost = Math.Round(item.Cost / item.Quantity, 2) * item.Quantity;
+            item.SchemaAmt = Math.Round(item.SchemaAmt / item.Quantity, 2) * item.Quantity;
+            var totalCostWithoutMargin = item.Cost + item.SchemaAmt;
+            item.Retail = totalCostWithoutMargin;
+            if (applyMargin)
+            {
+                item.Retail = Math.Round(totalCostWithoutMargin * (1 + marginPct / 100), 2, MidpointRounding.AwayFromZero);
+            }
+            if (applyRounding)
+            {
+                item.Retail = Utils.RoundUp(item.Retail, -roundingDigits);
+            }
+            item.Margin = item.Retail - totalCostWithoutMargin;
+        }
+
     }
 
-    public class CalculatorClass : RecipeBase
+    // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
+    public class CalculatorClass : RecipeBase, INotifyPropertyChanged
     {
         private SchematicRecipe _recipe;
 
@@ -636,20 +724,27 @@ namespace DU_Industry_Tool
         public SortedDictionary<string, Tuple<decimal, decimal>> SumSchemClass { get; private set; }
 
         public Guid Id { get; private set; }
-        public Guid Parent { get; private set; }
+        public Guid Parent { get; set; }
         public SortedDictionary<Guid, CalculatorClass> Nodes;
 
         public string Key { get; }
         public byte Tier { get; set; }
-        public decimal OreCost { get; set; }
+
         public decimal Volume { get; set; }
         public decimal Mass { get; set; }
+
+        public bool IsProdItem { get; set; }
         public bool Collected { get; set; }
 
-        public decimal SchematicsCost { get; protected set; }
         public string SchematicType { get; set; }
 
         public bool RecipeExists => Recipe != null;
+
+        // costs
+        public decimal OreCost { get; set; }
+        public decimal SchematicsCost { get; set; }
+        public decimal Margin { get; set; } // Margin = Retail - OreCost + SchematicCost (in Quanta)
+        public decimal Retail { get; set; } // Retail = (OreCost + SchematicCost) * (1 + margin/100) (in Quanta)
 
         public SchematicRecipe Recipe
         {
@@ -670,7 +765,7 @@ namespace DU_Industry_Tool
             }
         }
 
-        public CalculatorClass()
+        private CalculatorClass()
         {
             Id = Guid.NewGuid();
             Sums = new Dictionary<SummationType, SortedDictionary<string, CalcEntry>>();
@@ -678,15 +773,15 @@ namespace DU_Industry_Tool
             SumSchemClass = new SortedDictionary<string, Tuple<decimal, decimal>>();
         }
 
-        public CalculatorClass(string key) : this()
-        {
-            Key = key;
-            Recipe = DUData.Recipes.FirstOrDefault(x => x.Key.Equals(key, StringComparison.InvariantCultureIgnoreCase)).Value;
-            Name = Recipe?.Name;
-            ParentGroupName = Recipe?.ParentGroupName;
-            SchematicType = Recipe?.SchemaType;
-            SchematicsCost = Recipe?.SchemaPrice ?? 0;
-        }
+        //public CalculatorClass(string key) : this()
+        //{
+        //    Key = key;
+        //    Recipe = DUData.Recipes.FirstOrDefault(x => x.Key.Equals(key, StringComparison.InvariantCultureIgnoreCase)).Value;
+        //    Name = Recipe?.Name;
+        //    ParentGroupName = Recipe?.ParentGroupName;
+        //    SchematicType = Recipe?.SchemaType;
+        //    SchematicsCost = Recipe?.SchemaPrice ?? 0;
+        //}
 
         public CalculatorClass(SchematicRecipe recipe) : this()
         {
@@ -711,6 +806,16 @@ namespace DU_Industry_Tool
             BatchOutput = entry.BatchOutput;
             BatchInput = entry.BatchInput;
             BatchTime = entry.BatchTime;
+        }
+
+        public void CopyRecipeValuesFrom(ProductNameClass entry)
+        {
+            IsOre = entry.IsOre;
+            IsAmmo = entry.IsAmmo;
+            IsPlasma = entry.IsPlasma;
+            IsPart = entry.IsPart;
+            IsPure = entry.IsPure;
+            IsProduct = entry.IsProduct;
         }
 
         public void SetParent(Guid parent)
@@ -753,7 +858,7 @@ namespace DU_Industry_Tool
         }
 
         public void Add(SummationType sumType, string key, decimal quantity, decimal amount,
-            string schematicType=null, decimal? schemaQty=null, decimal? schemaAmt=null)
+                        string schematicType=null, decimal? schemaQty=null, decimal? schemaAmt=null)
         {
             if (!Sums.ContainsKey(sumType))
             {
@@ -764,8 +869,8 @@ namespace DU_Industry_Tool
             if (Sums[sumType].ContainsKey(key))
             {
                 tmp = Sums[sumType][key];
-                tmp.Qty += quantity;
-                tmp.Amt += amount;
+                tmp.Qty += Math.Round(quantity, 2);
+                tmp.Amt += Math.Round(amount, 2);
                 if (schemaQty > 0) tmp.QtySchemata += schemaQty;
                 if (schemaAmt > 0) tmp.AmtSchemata += schemaAmt;
                 if (schematicType != null) tmp.SchematicType = schematicType;
@@ -773,8 +878,8 @@ namespace DU_Industry_Tool
             }
             else
             {
-                tmp.Qty = quantity;
-                tmp.Amt = amount;
+                tmp.Qty = Math.Round(quantity, 2);
+                tmp.Amt = Math.Round(amount, 2);
                 tmp.QtySchemata = schemaQty;
                 tmp.AmtSchemata = schemaAmt;
                 tmp.SchematicType = schematicType;
@@ -793,7 +898,11 @@ namespace DU_Industry_Tool
 
         public decimal TotalOreCost()
         {
-            return Sums?.ContainsKey(SummationType.ORES) == true ? Sums[SummationType.ORES].Sum(x => x.Value.Amt) : 0;
+            if (Sums != null && Sums.TryGetValue(SummationType.ORES, out var ores))
+            {
+                return ores.Sum(x => Math.Round(x.Value.Amt, 2));
+            }
+            return 0;
         }
 
         public List<string> GetTalents()
@@ -809,7 +918,7 @@ namespace DU_Industry_Tool
             copyCost = 0M;
             qtyCopies = 0;
             batches = 0;
-            if (string.IsNullOrEmpty(schematicType))
+            if (string.IsNullOrEmpty(schematicType)) // e.g. for T1 ore
             {
                 return false;
             }
@@ -820,6 +929,50 @@ namespace DU_Industry_Tool
             }
             batches = DUData.FullSchematicQuantities ? (int)Math.Ceiling(qty) : Math.Round(qty, 3);
             return Calculator.CalcSchematic(schematicType, batches, out minCost, out copyCost, out qtyCopies);
+        }
+
+        #region INotifyPropertyChanged
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+        #endregion
+    }
+
+    // TODO use databinding in results output
+    public class BindableCalculatorClass : INotifyPropertyChanged
+    {
+        private CalculatorClass _calculator;
+        public CalculatorClass Calculator
+        {
+            get => _calculator;
+            set
+            {
+                if (_calculator != value)
+                {
+                    if (_calculator != null)
+                    {
+                        _calculator.PropertyChanged -= Calculator_PropertyChanged;
+                    }
+                    _calculator = value;
+                    if (_calculator != null)
+                    {
+                        _calculator.PropertyChanged += Calculator_PropertyChanged;
+                    }
+                    OnPropertyChanged();
+                }
+            }
+        }
+        private void Calculator_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            // Forward the PropertyChanged event
+            OnPropertyChanged(nameof(Calculator));
+        }
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

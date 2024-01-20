@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Windows.Forms;
-using Bluegrams.Application;
 
 namespace DU_Industry_Tool
 {
@@ -15,9 +14,6 @@ namespace DU_Industry_Tool
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             //Application.SetHighDpiMode(HighDpiMode.SystemAware);
-            PortableJsonSettingsProvider.SettingsFileName = "DU-Industry-Tool.usersettings.json";
-            PortableSettingsProviderBase.SettingsDirectory = Application.StartupPath;
-            PortableJsonSettingsProvider.ApplyProvider(Properties.Settings.Default);
             Application.Run(new MainForm());
         }
     }

@@ -10,6 +10,7 @@ using System.Windows;
 using System.Windows.Forms;
 using BrightIdeasSoftware;
 using ClosedXML.Excel;
+using DU_Helpers;
 using DU_Industry_Tool.Interfaces;
 using Krypton.Navigator;
 using Krypton.Ribbon;
@@ -29,6 +30,7 @@ namespace DU_Industry_Tool
         private readonly List<string> _breadcrumbs = new List<string>();
         private bool _navUpdating;
         private decimal _overrideQty;
+        private List<string> sortedRecipes;
 
         public MainForm()
         {
@@ -55,8 +57,14 @@ namespace DU_Industry_Tool
 
             OnMainformResize(sender, e);
 
-            Properties.Settings.Default.Reload();
-            ApplySettings();
+            // load settings before IndustryManager
+            if (SettingsMgr.LoadSettings())
+            {
+                SettingsMgr.SaveSettings();
+                ApplySettings();
+            }
+
+            Utils.ScalingFactor = CurrentAutoScaleDimensions.Width / 96;
 
             _manager = new IndustryManager();
             _market = new MarketManager();
@@ -69,13 +77,26 @@ namespace DU_Industry_Tool
             kryptonNavigator1.Dock = DockStyle.Fill;
             OnMainformResize(null, null);
 
+            DUData.IndyMgrInstance = _manager;
+
+            SearchHelper.NoResultsIfEmpty = false;
+            SearchHelper.SearchableItems = DUData.RecipeNames.ToList();
+            SearchHelper.MinimumSearchLength = 2;
+
+            acMenu.SetAutocompleteMenu(SearchBox, acMenu);
+            acMenu.SearchPattern = ".*";
+            SearchBox.TextChanged += SearchBoxOnTextChanged;
+            SearchBox.KeyDown += SearchBoxOnKeyDown;
+
             _manager.Databindings.ProductionListChanged += ProductionListUpdates;
             ProductionListUpdates(null);
 
             LoadTree();
 
-            LoadAndRunProductionList(Properties.Settings.Default.LastProductionList);
-            DUData.IndyMgrInstance = _manager;
+            if (CbStartupProdList.Checked)
+            {
+                LoadAndRunProductionList(SettingsMgr.GetStr(SettingsEnum.LastProductionList));
+            }
             
             _startUp = false;
         }
@@ -91,7 +112,7 @@ namespace DU_Industry_Tool
         private void LoadTreeData()
         {
             treeView.AfterSelect -= Treeview_AfterSelect;
-            var sortedRecipes = new List<string>();
+            sortedRecipes = new List<string>();
             treeView.BeginUpdate();
             treeView.Nodes.Clear();
             foreach(var group in DUData.Groupnames)
@@ -116,7 +137,6 @@ namespace DU_Industry_Tool
             }
             treeView.EndUpdate();
             sortedRecipes.Sort();
-            sortedRecipes.ForEach(x => SearchBox.Items.Add(x));
             treeView.AfterSelect += Treeview_AfterSelect;
             CbNanoOnly.Text = $"filter nanocraftable?     ({sortedRecipes.Count})";
         }
@@ -188,13 +208,14 @@ namespace DU_Industry_Tool
             }
 
             // ***** Primary Calculation *****
+            Calculator.ResetRecipeName();
             Calculator.Initialize();
             Calculator.ProductQuantity = cnt;
             Calculator.CalculateRecipe(recipe.Key, cnt, silent: true);
             var calc = Calculator.Get(recipe.Key, Guid.Empty);
             _overrideQty = 0; // must be reset here!
 
-            // Pass data on towards newly created tab
+            // Pass data on to newly created tab
             if (DUData.ProductionListMode)
             {
                 newDoc.IsProductionList = true;
@@ -262,12 +283,12 @@ namespace DU_Industry_Tool
                 return;
             }
             // Remove " (B)" byproduct marker
-            var search = (string.IsNullOrEmpty(r.Entry) ? r.Section : r.Entry);
-            search = search.TrimLast(DUData.ByproductMarker);
-            if (!DUData.IsIgnorableTitle(search))
+            var search = (string.IsNullOrEmpty(r.Entry) ? r.Section : r.Entry).TrimLastStr(DUData.ByproductMarker);
+            if (DUData.IsIgnorableTitle(search))
             {
-                SearchBox.Text = search;
+                return;
             }
+            SearchBox.Text = search;
             _overrideQty = r.Qty;
             SearchForRecipe(search);
         }
@@ -386,9 +407,15 @@ namespace DU_Industry_Tool
 
         private void QuantityBox_KeyPress(object sender, KeyPressEventArgs e)
         {
-            if (!char.IsDigit(e.KeyChar) && ((Keys)e.KeyChar != Keys.Back) && ((Keys)e.KeyChar != Keys.Enter) && ((Keys)e.KeyChar != Keys.Tab))
+            if (!char.IsDigit(e.KeyChar) && ((Keys)e.KeyChar != Keys.Back) &&
+                ((Keys)e.KeyChar != Keys.Enter) && ((Keys)e.KeyChar != Keys.Tab))
             {
                 e.Handled = true;
+                return;
+            }
+            if ((Keys)e.KeyChar == Keys.Enter)
+            {
+                SearchForRecipe(SearchBox.Text);
             }
         }
 
@@ -611,6 +638,7 @@ namespace DU_Industry_Tool
                 foreach(var recipe in recipes)
                 {
                     worksheet.Cell(row, 1).Value = recipe.Name;
+                    Calculator.ResetRecipeName();
                     Calculator.Initialize();
                     Calculator.ProductQuantity = cnt;
                     var costToMake = Calculator.CalculateRecipe(recipe.Key, cnt, silent: true);
@@ -720,11 +748,19 @@ namespace DU_Industry_Tool
         private void MainForm_KeyUp(object sender, KeyEventArgs e)
         {
             if (!e.Control) return;
-            // ReSharper disable once SwitchStatementMissingSomeEnumCasesNoDefault
+            // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
             switch (e.KeyCode)
             {
+                case Keys.F: // Set focus to the SearchBox
+                    SearchBox.Focus();
+                    e.Handled = true;
+                    break;
                 case Keys.O: // Open a production list from file
                     RbnBtnProductionListLoad_Click(RbnBtnProductionListLoad, e);
+                    e.Handled = true;
+                    break;
+                case Keys.Q: // Focus quantity box
+                    if (QuantityBox.CanFocus) QuantityBox.Focus();
                     e.Handled = true;
                     break;
                 case Keys.S: // Save current production list to file
@@ -757,19 +793,21 @@ namespace DU_Industry_Tool
 
             var Default = new Rect(new System.Windows.Point(200, 200),
                                    new System.Windows.Size(1500, 900));
-            var LastLeftTop = Properties.Settings.Default.LastLeftTop;
-            var lastSize = Properties.Settings.Default.LastSize;
+            var LastLeftTop = new Point(SettingsMgr.GetInt(SettingsEnum.LastLeftPos),
+                                        SettingsMgr.GetInt(SettingsEnum.LastTopPos));
+            var lastSize = new Point(SettingsMgr.GetInt(SettingsEnum.LastWidth),
+                                     SettingsMgr.GetInt(SettingsEnum.LastHeight));
 
             // get the screen to display the window
             var screen = Screen.FromPoint(new Point((int)Default.Left, (int)Default.Top));
 
             // is bottom position out of screen for more than 1/3 Height of Window?
-            if (LastLeftTop.Y + (lastSize.Height / 3) > screen.WorkingArea.Height)
-                LastLeftTop.Y = screen.WorkingArea.Height - lastSize.Height;
+            if (LastLeftTop.Y + (lastSize.Y / 3) > screen.WorkingArea.Height)
+                LastLeftTop.Y = screen.WorkingArea.Height - lastSize.Y;
 
             // is right position out of screen for more than 1/2 Width of Window?
-            if (LastLeftTop.X + (lastSize.Width / 2) > screen.WorkingArea.Width)
-                LastLeftTop.X = screen.WorkingArea.Width - lastSize.Width;
+            if (LastLeftTop.X + (lastSize.X / 2) > screen.WorkingArea.Width)
+                LastLeftTop.X = screen.WorkingArea.Width - lastSize.X;
 
             // is top position out of screen?
             if (LastLeftTop.Y < screen.WorkingArea.Top)
@@ -781,18 +819,24 @@ namespace DU_Industry_Tool
 
             this.Left = LastLeftTop.X;
             this.Top = LastLeftTop.Y;
-            this.Width = lastSize.Width > 500 ? lastSize.Width : 1500;
-            this.Height = lastSize.Height > 500 ? lastSize.Height : 900;
+            this.Width = lastSize.X > 500 ? lastSize.X : 1500;
+            this.Height = lastSize.Y > 500 ? lastSize.Y : 900;
         }
 
         private void ApplySettings()
         {
-            CbRestoreWindow.Checked = Properties.Settings.Default.RestoreWindow;
-            CbStartupProdList.Checked = Properties.Settings.Default.LaunchProdList;
-            CbFullSchematicQty.Checked = Properties.Settings.Default.FullSchematicQuantities;
-            if (Properties.Settings.Default.ThemeId >= 0)
+            CalcOptions.ApplyMargin = SettingsMgr.GetBool(SettingsEnum.ProdListApplyMargin);
+            CalcOptions.MarginPct = Utils.ClampDec(SettingsMgr.GetDecimal(SettingsEnum.ProdListGrossMargin), 0, 1000);
+            CalcOptions.ApplyRnd = SettingsMgr.GetBool(SettingsEnum.ProdListApplyRounding);
+            CalcOptions.RndDigits = SettingsMgr.GetInt(SettingsEnum.ProdListRoundDigits);
+ 
+            CbRestoreWindow.Checked = SettingsMgr.GetBool(SettingsEnum.RestoreWindow);
+            CbStartupProdList.Checked = SettingsMgr.GetBool(SettingsEnum.LaunchProdList);
+            CbFullSchematicQty.Checked = SettingsMgr.GetBool(SettingsEnum.FullSchematicQuantities);
+            var themeId = SettingsMgr.GetInt(SettingsEnum.ThemeId);
+            if (themeId > 0)
             {
-                kryptonManager.GlobalPaletteMode = (PaletteModeManager)Properties.Settings.Default.ThemeId;
+                kryptonManager.GlobalPaletteMode = (PaletteModeManager)themeId;
             }
 
             if (!_startUp) return;
@@ -802,45 +846,53 @@ namespace DU_Industry_Tool
                 SetWindowSettingsIntoScreenArea();
             }
 
+            DUData.SchemCraftingTalents[0] = SettingsMgr.GetInt(SettingsEnum.SchemCraftCost1);
+            DUData.SchemCraftingTalents[1] = SettingsMgr.GetInt(SettingsEnum.SchemCraftCost2);
+            DUData.SchemCraftingTalents[2] = SettingsMgr.GetInt(SettingsEnum.SchemCraftOutput1);
+            DUData.SchemCraftingTalents[3] = SettingsMgr.GetInt(SettingsEnum.SchemCraftOutput2);
+
             try
             {
-                var recentsList = JsonConvert.DeserializeObject<string[]>(Properties.Settings.Default.RecentProdLists);
+                var recentsList = JsonConvert.DeserializeObject<string[]>((string)SettingsMgr.Settings["RecentProdLists"]);
                 if (recentsList != null)
                 {
                     CbRecentLists.Items.Clear();
                     CbRecentLists.Items.AddRange(recentsList);
                 }
             }
-            catch (Exception)
-            {
-            }
-
-            DUData.SchemCraftingTalents[0] = Properties.Settings.Default.SchemCraftCost1;
-            DUData.SchemCraftingTalents[1] = Properties.Settings.Default.SchemCraftCost2;
-            DUData.SchemCraftingTalents[2] = Properties.Settings.Default.SchemCraftOutput1;
-            DUData.SchemCraftingTalents[3] = Properties.Settings.Default.SchemCraftOutput2;
+            catch (Exception) { }
         }
 
         private void SaveSettings()
         {
             if (_startUp) return;
-            var recentsList = JsonConvert.SerializeObject(CbRecentLists.Items);
-            Properties.Settings.Default.RecentProdLists = recentsList;
-            Properties.Settings.Default.LastLeftTop = new System.Drawing.Point(Left, Top);
-            Properties.Settings.Default.LastSize = new System.Drawing.Size(Width, Height);
-            Properties.Settings.Default.LaunchProdList = CbStartupProdList.Checked;
-            Properties.Settings.Default.RestoreWindow = CbRestoreWindow.Checked;
-            Properties.Settings.Default.ThemeId = (int)kryptonManager.GlobalPaletteMode;
-            Properties.Settings.Default.FullSchematicQuantities = DUData.FullSchematicQuantities;
-            Properties.Settings.Default.SchemCraftCost1 = DUData.SchemCraftingTalents[0];
-            Properties.Settings.Default.SchemCraftCost2 = DUData.SchemCraftingTalents[1];
-            Properties.Settings.Default.SchemCraftOutput1 = DUData.SchemCraftingTalents[2];
-            Properties.Settings.Default.SchemCraftOutput2 = DUData.SchemCraftingTalents[3];
-            Properties.Settings.Default.Save();
+            // LastProductionList is updated in prod.list related events!
+            SettingsMgr.UpdateSettings(SettingsEnum.LastLeftPos, Left);
+            SettingsMgr.UpdateSettings(SettingsEnum.LastTopPos, Top);
+            SettingsMgr.UpdateSettings(SettingsEnum.LastHeight, Height);
+            SettingsMgr.UpdateSettings(SettingsEnum.LastWidth, Width);
+            SettingsMgr.UpdateSettings(SettingsEnum.LaunchProdList, CbStartupProdList.Checked);
+            SettingsMgr.UpdateSettings(SettingsEnum.RestoreWindow, CbRestoreWindow.Checked);
+            SettingsMgr.UpdateSettings(SettingsEnum.ThemeId, (int)kryptonManager.GlobalPaletteMode);
+
+            SettingsMgr.UpdateSettings(SettingsEnum.FullSchematicQuantities, DUData.FullSchematicQuantities);
+            SettingsMgr.UpdateSettings(SettingsEnum.SchemCraftCost1, DUData.SchemCraftingTalents[0]);
+            SettingsMgr.UpdateSettings(SettingsEnum.SchemCraftCost2, DUData.SchemCraftingTalents[1]);
+            SettingsMgr.UpdateSettings(SettingsEnum.SchemCraftOutput1, DUData.SchemCraftingTalents[2]);
+            SettingsMgr.UpdateSettings(SettingsEnum.SchemCraftOutput2, DUData.SchemCraftingTalents[3]);
+
+            SettingsMgr.UpdateSettings(SettingsEnum.RecentProdLists, JsonConvert.SerializeObject(CbRecentLists.Items));
+            SettingsMgr.SaveSettings();
         }
 
         private void CbRestoreWindow_CheckedChanged(object sender, EventArgs e)
         {
+            SaveSettings();
+        }
+
+        private void CbFullSchematicQty_CheckedChanged(object sender, EventArgs e)
+        {
+            DUData.FullSchematicQuantities = CbFullSchematicQty.Checked;
             SaveSettings();
         }
 
@@ -871,7 +923,6 @@ namespace DU_Industry_Tool
             {
                 if (oldPage.Controls[0] is IContentDocument xDoc)
                 {
-                    xDoc.HideAll();
                     kryptonNavigator1.SelectedPage = oldPage;
                     return xDoc;
                 }
@@ -921,10 +972,9 @@ namespace DU_Industry_Tool
             {
                 ProductionListClose();
             }
-            if (kryptonNavigator1.Pages.Count == 0)
-            {
-                Calculator.Initialize();
-            }
+            if (kryptonNavigator1.Pages.Count > 0) return;
+            Calculator.ResetRecipeName();
+            Calculator.Initialize();
         }
 
         private void KryptonNavigator1OnSelectedPageChanged(object sender, EventArgs e)
@@ -942,8 +992,9 @@ namespace DU_Industry_Tool
         private KryptonPage GetProductionPage(bool remove = false)
         {
             var page = kryptonNavigator1.Pages.FirstOrDefault(x => x.Text == DUData.ProductionListTitle);
-            if (!remove) return page;
+            if (!remove || page == null) return page;
             kryptonNavigator1.Pages.Remove(page);
+            _manager.Databindings.Remove(page.Text);
             return null;
         }
 
@@ -1028,51 +1079,17 @@ namespace DU_Industry_Tool
 
         private void RbnBtnProductionList_Click(object sender, EventArgs e)
         {
-            var form = new ProductionListForm(_manager);
-
-            foreach (var entry in DUData.RecipeNames)
+            using (var form = new ProductionListForm(_manager))
             {
-                form.RecipeNames.Items.Add(entry);
+                if (form.ShowDialog(this) == DialogResult.Cancel) return;
             }
-            var result = form.ShowDialog(this);
-            if (result == DialogResult.Cancel) return;
             ProcessProductionList();
-        }
-
-        private void LoadAndRunProductionList(string filename)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(filename) || !File.Exists(filename))
-                    return;
-                if (!_manager.Databindings.Load(filename) || !_manager.Databindings.ListLoaded)
-                    return;
-                StoreLatestList(filename);
-                ProcessProductionList();
-            }
-            catch (Exception)
-            {
-                // ignore
-            }
-        }
-
-        private void StoreLatestList(string filename)
-        {
-            if (string.IsNullOrEmpty(filename) || !File.Exists(filename)) return;
-            Properties.Settings.Default.LastProductionList = filename;
-            SaveSettings();
-            if (!CbRecentLists.Items.Contains(filename))
-            {
-                CbRecentLists.Items.Insert(0, filename);
-                CbRecentLists.SelectedIndex = 0;
-                return;
-            }
-            CbRecentLists.SelectedIndex = CbRecentLists.Items.IndexOf(filename);
         }
 
         private void CbRecentLists_SelectionChangeCommitted(object sender, EventArgs e)
         {
             if (!(sender is KryptonRibbonGroupComboBox cb)) return;
+            SearchBox.Focus();
             LoadAndRunProductionList(cb.Text);
         }
 
@@ -1091,11 +1108,60 @@ namespace DU_Industry_Tool
 
         private void RbnBtnProductionListSave_Click(object sender, EventArgs e)
         {
+            if (!_manager.Databindings.HasData && !_manager.Databindings.ListLoaded) return;
             if (!ProductionListForm.SaveList(_manager)) return;
             StoreLatestList(_manager.Databindings.Filepath);
-            KryptonMessageBox.Show(@"Production List saved to:"+Environment.NewLine+
-                                   _manager.Databindings.Filepath, @"Success",
+            KryptonMessageBox.Show("Production list saved to:"+Environment.NewLine+
+                _manager.Databindings.Filepath, "Success",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void BtnProdListAdd_Click(object sender, EventArgs e)
+        {
+            if (kryptonNavigator1.SelectedPage == null) return;
+            if (DUData.IsIgnorableTitle(kryptonNavigator1.SelectedPage.Text)) return;
+            if (kryptonNavigator1.SelectedPage.Controls[0] is IContentDocument doc)
+            {
+                var isNew = !_manager.Databindings.HasData && !_manager.Databindings.ListLoaded;
+                _manager.Databindings.Add(kryptonNavigator1.SelectedPage.Text, doc.Quantity);
+                if (!isNew) return;
+                ProcessProductionList();
+            }
+        }
+
+        private void BtnProdListRemove_Click(object sender, EventArgs e)
+        {
+            if (kryptonNavigator1.SelectedPage == null) return;
+            _manager.Databindings.Remove(kryptonNavigator1.SelectedPage.Text);
+        }
+
+        private void BtnProdListClose_Click(object sender, EventArgs e)
+        {
+            if (KryptonMessageBox.Show("Really close current production list?",
+                "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+            {
+                GetProductionPage(true);
+            }
+        }
+
+        private void BtnClearProdLists_Click(object sender, EventArgs e)
+        {
+            if (CbRecentLists.Items.Count == 0 ||
+                KryptonMessageBox.Show("Really clear list of recent production lists?",
+                "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+            {
+                return;
+            }
+            CbRecentLists.Items.Clear();
+            CbRecentLists.SelectedIndex = -1;
+            CbRecentLists.Text = "";
+            SettingsMgr.UpdateSettings(SettingsEnum.LastProductionList, "");
+            SettingsMgr.SaveSettings();
+        }
+
+        private void ProductionListRecalc_Click(object sender, EventArgs e)
+        {
+            ProcessProductionList();
         }
 
         private void ProcessProductionList()
@@ -1104,15 +1170,16 @@ namespace DU_Industry_Tool
             // all items' ingredients and the items as products.
             BeginInvoke((MethodInvoker)delegate()
             {
-                if (!_manager.Databindings.PrepareProductListRecipe())
-                {
-                    KryptonMessageBox.Show("Production List could not be prepared!", "Failure");
-                    return;
-                }
-
-                DUData.ProductionListMode = true;
                 try
                 {
+                    Calculator.Initialize();
+                    if (!_manager.Databindings.PrepareProductListRecipe())
+                    {
+                        KryptonMessageBox.Show("Production List could not be prepared!", "Failure");
+                        return;
+                    }
+
+                    DUData.ProductionListMode = true;
                     SelectRecipe(new TreeNode
                     {
                         Text = DUData.ProductionListTitle,
@@ -1126,42 +1193,13 @@ namespace DU_Industry_Tool
             });
         }
 
-        private void ProductionListRecalc_Click(object sender, EventArgs e)
-        {
-            ProcessProductionList();
-        }
-
-        private void BtnProdListAdd_Click(object sender, EventArgs e)
-        {
-            if (DUData.IsIgnorableTitle(kryptonNavigator1.SelectedPage?.Text)) return;
-            if (kryptonNavigator1.SelectedPage.Controls[0] is IContentDocument doc)
-            {
-                _manager.Databindings.Add(kryptonNavigator1.SelectedPage.Text, doc.Quantity);
-            }
-        }
-
-        private void BtnProdListRemove_Click(object sender, EventArgs e)
-        {
-            if (kryptonNavigator1.SelectedPage == null) return;
-            _manager.Databindings.Remove(kryptonNavigator1.SelectedPage.Text);
-        }
-
-        private void BtnProdListClose_Click(object sender, EventArgs e)
-        {
-            if (KryptonMessageBox.Show(@"Really close current Production List?",
-                @"Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)== DialogResult.Yes)
-            {
-                GetProductionPage(true);
-            }
-        }
-
         private void ProductionListClose()
         {
             _manager.Databindings.Clear();
             CbRecentLists.SelectedIndex = -1;
             CbRecentLists.Text = "";
-            Properties.Settings.Default.LastProductionList = "";
-            SaveSettings();
+            SettingsMgr.UpdateSettings(SettingsEnum.LastProductionList, "");
+            SettingsMgr.SaveSettings();
             ProductionListUpdates(null);
         }
 
@@ -1185,14 +1223,101 @@ namespace DU_Industry_Tool
                 Text += DUData.ProductionListTitle + " " + _manager.Databindings.Count;
             }
             Text += ")";
+            if (_manager.Databindings.ListLoaded)
+            {
+                StoreLatestList(_manager.Databindings.Filepath);
+            }
+        }
+
+        private void LoadAndRunProductionList(string filename)
+        {
+            if (string.IsNullOrEmpty(filename)) return;
+            if (!File.Exists(filename))
+            {
+                while (CbRecentLists.Items.Count > 0 && CbRecentLists.Items.Contains(filename))
+                {
+                    CbRecentLists.Items.Remove(filename);
+                }
+                SettingsMgr.UpdateSettings(SettingsEnum.LastProductionList, "");
+                SaveSettings();
+                return;
+            }
+            try
+            {
+                if (!_manager.Databindings.Load(filename) || !_manager.Databindings.ListLoaded)
+                {
+                    return;
+                }
+                StoreLatestList(filename);
+                ProcessProductionList();
+            }
+            catch (Exception) { }
+        }
+
+        private void StoreLatestList(string filename)
+        {
+            if (string.IsNullOrEmpty(filename) || !File.Exists(filename)) return;
+            SettingsMgr.UpdateSettings(SettingsEnum.LastProductionList, filename);
+            try
+            {
+                while (CbRecentLists.Items.Count > 0 && CbRecentLists.Items.Contains(filename))
+                {
+                    CbRecentLists.Items.Remove(filename);
+                }
+                CbRecentLists.Items.Insert(0, filename);
+                CbRecentLists.SelectedIndex = 0;
+            }
+            finally
+            {
+                SaveSettings();
+            }
         }
 
         #endregion Production List
 
-        private void CbFullSchematicQty_CheckedChanged(object sender, EventArgs e)
+        #region Search box + autocomplete
+
+        private void SearchBox_KeyPress(object sender, KeyPressEventArgs e)
         {
-            DUData.FullSchematicQuantities = CbFullSchematicQty.Checked;
+            if ((Keys)e.KeyChar == Keys.Enter)
+            {
+                if (acMenu.Visible) acMenu.Close();
+                SearchForRecipe(SearchBox.Text);
+            }
         }
+
+        private void SearchBoxOnKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode != Keys.Escape || acMenu.Visible) return;
+            if (sender is TextBox tb) tb.Clear();
+        }
+
+        private bool _changing = false;
+        private void SearchBoxOnTextChanged(object sender, EventArgs e)
+        {
+            if (_changing || !(sender is TextBox tb)) return;
+            _changing = true;
+            try
+            {
+                if (tb.Text.Length < SearchHelper.MinimumSearchLength) return;
+                var matchingItems = SearchHelper.SearchItems(tb.Text);
+                acMenu.SetAutocompleteItems(matchingItems.Select(item => new RecipeAutocompleteItem(item)).ToList());
+            }
+            finally
+            {
+                _changing = false;
+            }
+        }
+
+        private void acMenu_Selected(object sender, AutocompleteMenuNS.SelectedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(e?.Item?.Text)) return;
+            if (!SearchHelper.SearchableItems.Contains(e.Item.Text)) return;
+            SearchBox.Text = e.Item.Text;
+            SearchButton.PerformClick();
+        }
+
+        #endregion
 
     } // Mainform
 }

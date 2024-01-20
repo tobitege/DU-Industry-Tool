@@ -3,6 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using DU_Helpers;
+
+// ReSharper disable UnusedVariable
 
 namespace DU_Industry_Tool
 {
@@ -10,15 +13,16 @@ namespace DU_Industry_Tool
     {
         #region Properties
 
-        public Guid Id { get; private set; }
+        private readonly SortedDictionary<string, CalcEntry> Data;
+        private Guid Id { get; set; }
+        private int Depth { get; set; }
         public Guid ParentId { get; set; }
         public SummationType? SumType { get; set; }
         public int Tier { get; set; }
-        public int Depth { get; set; }
         public bool IsActive = true;
         public bool IsSection { get; set; }
+        public bool IsProdItem { get; set; }
         public bool HasData => Data?.Any() == true;
-        public readonly SortedDictionary<string, CalcEntry> Data;
 
         #endregion
 
@@ -42,6 +46,7 @@ namespace DU_Industry_Tool
             ParentId = Guid.Empty;
         }
 
+        /*
         public RecipeCalculation(string section, string entry, decimal qty, decimal amt,
             decimal? qtyS=null, decimal? amtS=null, string comment=null)
         {
@@ -68,7 +73,7 @@ namespace DU_Industry_Tool
             Id = Guid.NewGuid();
             ParentId = Guid.Empty;
         }
-
+        */
         #endregion
 
         #region NotifyProperty Fields
@@ -101,31 +106,55 @@ namespace DU_Industry_Tool
             get => qty;
             set
             {
-                if (qty.IsEqual(value)) return;
+                if (qty.IsEqualDec(value)) return;
                 qty = value;
                 OnPropertyChanged("Qty");
             }
         }
         private decimal qty;
 
+        public decimal Margin
+        {
+            get => margin;
+            set
+            {
+                if (margin.IsEqualDec(value)) return;
+                margin = value;
+                OnPropertyChanged("Margin");
+            }
+        }
+        private decimal margin;
+
         public decimal Amt
         {
             get => amt;
             set
             {
-                if (amt.IsEqual(value)) return;
+                if (amt.IsEqualDec(value)) return;
                 amt = value;
                 OnPropertyChanged("Amt");
             }
         }
         private decimal amt;
 
+        public decimal Retail
+        {
+            get => retail;
+            set
+            {
+                if (retail.IsEqualDec(value)) return;
+                retail = value;
+                OnPropertyChanged("Retail");
+            }
+        }
+        private decimal retail;
+
         public decimal Mass
         {
             get => mass;
             set
             {
-                if (mass.IsEqual(value)) return;
+                if (mass.IsEqualDec(value)) return;
                 mass = value;
                 OnPropertyChanged("Mass");
             }
@@ -137,7 +166,7 @@ namespace DU_Industry_Tool
             get => vol;
             set
             {
-                if (vol.IsEqual(value)) return;
+                if (vol.IsEqualDec(value)) return;
                 vol = value;
                 OnPropertyChanged("Vol");
             }
@@ -191,7 +220,7 @@ namespace DU_Industry_Tool
         private string comment;
         #endregion
 
-        public void CopyFrom(CalcEntry ce)
+        private void CopyFrom(CalcEntry ce)
         {
             Qty = ce.Qty;
             Amt = ce.Amt;
@@ -221,21 +250,23 @@ namespace DU_Industry_Tool
             {
                 if (!Calculator.GetFromStoreWithProducts(ParentId, out var calc))
                     return children;
-                foreach (var prd in calc.Recipe.Products)
+                // must sum up costs at this time
+                foreach (var child in calc.Recipe.Products.Select(prd => new RecipeCalculation(Section, null)
+                     {
+                         IsProdItem = prd.IsProdItem,
+                         Entry = prd.Name,
+                         ParentId = Id,
+                         Tier = prd.Level,
+                         Amt = Math.Round(prd.Cost, 2),
+                         Qty = Math.Round(prd.Quantity, 2, MidpointRounding.AwayFromZero),
+                         AmtSchemata = Math.Round(prd.SchemaAmt, 2),
+                         Mass = Math.Round(prd.Mass / 1000, 2),
+                         Vol = Math.Round(prd.Volume / 1000, 2),
+                         Margin = prd.Margin,
+                         Retail = prd.Retail,
+                         comment = prd.IsByproduct ? "Byproduct" : prd.SchemaType + (prd.SchemaQty > 0 ? " (total schematics cost)" : "")
+                     }))
                 {
-                    var child = new RecipeCalculation(Section, null)
-                    {
-                        Entry = prd.Name,
-                        ParentId = Id,
-                        Tier = prd.Level,
-                        Amt = Math.Round(prd.Cost, 2, MidpointRounding.AwayFromZero),
-                        Qty = prd.Quantity,
-                        AmtSchemata = Math.Round(prd.SchemaAmt, 2, MidpointRounding.AwayFromZero),
-                        Mass = Math.Round(prd.Mass / 1000, 2),
-                        Vol = Math.Round(prd.Volume / 1000, 2),
-                        comment = prd.IsByproduct ? "Byproduct" : prd.SchemaType + (prd.SchemaQty > 0 ? " (total schematics cost)" : "")
-                        //comment = "total schematics cost"
-                    };
                     children.Add(child);
                 }
                 return children;
@@ -249,15 +280,15 @@ namespace DU_Industry_Tool
                 if (!Calculator.GetFromStoreWithNodes(Id, out var calc))
                     return children;
                 foreach (var subsection in calc.Nodes.Select(node => new RecipeCalculation(node.Value.Name)
-                         {
-                             Id = node.Value.Id,
-                             Depth = this.Depth + 1,
-                             IsSection = (node.Value.Nodes?.Any() == true),
-                             ParentId = Id,
-                             Entry = node.Value.Name,
-                             Tier = node.Value.RecipeExists ? node.Value.Recipe.Level : 0,
-                             Qty = node.Value.Quantity
-                         }))
+                     {
+                         Id = node.Value.Id,
+                         Depth = this.Depth + 1,
+                         IsSection = (node.Value.Nodes?.Any() == true),
+                         ParentId = Id,
+                         Entry = node.Value.Name,
+                         Tier = node.Value.RecipeExists ? node.Value.Recipe.Level : 0,
+                         Qty = node.Value.Quantity
+                     }))
                 {
                     children.Add(subsection);
                 }

@@ -13,5 +13,6 @@ namespace DU_Industry_Tool.Interfaces
         LinkClickedEventHandler LinkClick { get; set; }
         void SetCalcResult(CalculatorClass calc);
         decimal Quantity { get; set; }
+        int NumLabelWidth { get; set; }
     }
 }

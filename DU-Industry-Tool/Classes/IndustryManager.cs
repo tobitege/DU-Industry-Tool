@@ -7,12 +7,17 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using DU_Industry_Tool;
 using Krypton.Toolkit;
 
 namespace DU_Industry_Tool
 {
     public class IndustryManager
     {
+        public static SortedDictionary<string, DuLuaItem> LuaSchematics; // List of schematics from du-lua.dev
+        public static SortedDictionary<string, DuLuaItem> LuaItems; // List of items from du-lua.dev
+        public static SortedDictionary<string, DuLuaRecipe> LuaRecipes; // List of recipes from du-lua.dev
+
         private readonly bool SkipProcessing = true;
         public DUDataBindings Databindings { get; } = new DUDataBindings();
 
@@ -43,8 +48,8 @@ namespace DU_Industry_Tool
                 try
                 {
                     var tmpItems = JsonConvert.DeserializeObject<List<DuLuaItem>>(File.ReadAllText("items_api_dump.json"));
-                    Utils.LuaItems = new SortedDictionary<string, DuLuaItem>();
-                    Utils.LuaSchematics = new SortedDictionary<string, DuLuaItem>();
+                    LuaItems = new SortedDictionary<string, DuLuaItem>();
+                    LuaSchematics = new SortedDictionary<string, DuLuaItem>();
                     foreach (var item in tmpItems)
                     {
                         // 2023-07-22: filter out ~416 entries
@@ -52,7 +57,7 @@ namespace DU_Industry_Tool
                         if (item.ClassId == item.DisplayClassId && item.DisplayNameWithSize.EndsWith(" Schematic Copy"))
                         {
                             Debug.WriteLine("Skip: " + item.DisplayNameWithSize);
-                            Utils.LuaSchematics.Add(item.DisplayNameWithSize, item);
+                            LuaSchematics.Add(item.DisplayNameWithSize, item);
                             continue;
                         }
 
@@ -73,12 +78,12 @@ namespace DU_Industry_Tool
                         if (item.ClassId == "2332967944" || item.DisplayClassId == "2332967944") continue; // schematics
                         if (item.ClassId == "1315100172" || item.DisplayClassId == "1315100172") continue; // honeycomb materials category (has mass+volume, doh!)
                         if (item.ClassId == "809433891" || item.DisplayClassId == "809433891") continue; // minable materials categories
-                        if (Utils.LuaItems.ContainsKey(item.DisplayNameWithSize))
+                        if (LuaItems.ContainsKey(item.DisplayNameWithSize))
                         {
                             Debug.WriteLine("DUPLICATE: " + item.DisplayNameWithSize);
                             continue;
                         }
-                        Utils.LuaItems.Add(item.DisplayNameWithSize, item);
+                        LuaItems.Add(item.DisplayNameWithSize, item);
                     }
                 }
                 catch (Exception e)
@@ -96,16 +101,16 @@ namespace DU_Industry_Tool
                 try
                 {
                     var tmpItems = JsonConvert.DeserializeObject<List<DuLuaRecipe>>(File.ReadAllText("recipes_api_dump.json"));
-                    Utils.LuaRecipes = new SortedDictionary<string, DuLuaRecipe>();
+                    LuaRecipes = new SortedDictionary<string, DuLuaRecipe>();
                     foreach (var item in tmpItems.Where(x => x.Products?.Count > 0 && !string.IsNullOrEmpty(x.Products[0].DisplayNameWithSize)))
                     {
                         var prdName = item.Products[0].DisplayNameWithSize;
-                        if (Utils.LuaRecipes.ContainsKey(prdName))
+                        if (LuaRecipes.ContainsKey(prdName))
                         {
                             Debug.WriteLine("DUPLICATE: " + prdName);
                             continue;
                         }
-                        Utils.LuaRecipes.Add(prdName, item);
+                        LuaRecipes.Add(prdName, item);
                     }
                 }
                 catch (Exception e)
@@ -166,7 +171,7 @@ namespace DU_Industry_Tool
                 // Check against Items from du-lua.dev (optional)
                 if (dmp)
                 {
-                    var dmpItem = Utils.LuaItems.FirstOrDefault(x => x.Value.Id == itemId);
+                    var dmpItem = Enumerable.FirstOrDefault<KeyValuePair<string, DuLuaItem>>(LuaItems, x => x.Value.Id == itemId);
                     if (dmpItem.Value != null)
                     {
                         // Transfer updateable values and only protocol to debug console
@@ -208,7 +213,7 @@ namespace DU_Industry_Tool
                     {
                         Debug.WriteLine("NqId NOT FOUND: " + itemId + " Key: " + kvp.Key);
                         itemId = kvp.Value.Id.ToString();
-                        if (dmp && !Utils.LuaItems.ContainsKey(itemId))
+                        if (dmp && !LuaItems.ContainsKey(itemId))
                         {
                             Debug.WriteLine("Id NOT FOUND: " + itemId + " Key: " + kvp.Key);
                         }
@@ -217,10 +222,10 @@ namespace DU_Industry_Tool
                     // Special honeycomb check for wrong ID's
                     if (kvp.Key.StartsWith("hc"))
                     {
-                        var luaItem = Utils.LuaItems.FirstOrDefault(x => x.Value.Description.StartsWith("Honeycomb") &&
-                                                                         !x.Value.DisplayNameWithSize.EndsWith("Schematic Copy") &&
-                                                                         x.Value.DisplayNameWithSize.Equals(kvp.Value.Name,
-                                                                             StringComparison.InvariantCultureIgnoreCase));
+                        var luaItem = Enumerable.FirstOrDefault<KeyValuePair<string, DuLuaItem>>(LuaItems, x => x.Value.Description.StartsWith("Honeycomb") &&
+                                        !x.Value.DisplayNameWithSize.EndsWith("Schematic Copy") &&
+                                        x.Value.DisplayNameWithSize.Equals(kvp.Value.Name,
+                                        StringComparison.InvariantCultureIgnoreCase));
                         if (!string.IsNullOrEmpty(luaItem.Key) && luaItem.Key != kvp.Value.NqId.ToString())
                         {
                             if (ulong.TryParse(luaItem.Key, out var uTmp))
@@ -236,7 +241,7 @@ namespace DU_Industry_Tool
                 // and transfer usable values
                 if (dmpRcp)
                 {
-                    var dmpItem = Utils.LuaRecipes.FirstOrDefault(x =>
+                    var dmpItem = Enumerable.FirstOrDefault<KeyValuePair<string, DuLuaRecipe>>(LuaRecipes, x =>
                         x.Value.Products?.Count > 0 &&
                         x.Value.Products[0].Id == kvp.Value.NqId);
                     if (dmpItem.Value == null)
@@ -676,7 +681,7 @@ namespace DU_Industry_Tool
                 var missingIds = new StringBuilder();
                 var idLine = "";
                 var idCount = 0;
-                foreach (var kvp in Utils.LuaItems)
+                foreach (var kvp in LuaItems)
                 {
                     // Exclusion checks
                     if (kvp.Value.DisplayNameWithSize.EndsWith("Schematic Copy")) continue; // schematics
@@ -756,7 +761,7 @@ namespace DU_Industry_Tool
                         if (ulong.TryParse(kvp.Value.Id, out var uTmp))
                         {
                             rec.Value.NqId = uTmp;
-                            var luaRcp = Utils.LuaRecipes.FirstOrDefault(x =>
+                            var luaRcp = Enumerable.FirstOrDefault<KeyValuePair<string, DuLuaRecipe>>(LuaRecipes, x =>
                                 x.Value.Products != null &&
                                 x.Value.Products[0].Id == uTmp);
                             if (luaRcp.Value != null && ulong.TryParse(luaRcp.Value.Id, out uTmp))
@@ -785,9 +790,8 @@ namespace DU_Industry_Tool
             if (dmpRcp)
             {
                 var funcPartsId = DUData.Groups["FunctionalPart"].Id;
-                var missingRec = Utils.LuaRecipes.Where(
-                        x => x.Value.Products?.Count > 0 && 
-                        DUData.Recipes.Values.All(y => y.NqId != x.Value.Products[0].Id))
+                var missingRec = Enumerable.Where<KeyValuePair<string, DuLuaRecipe>>(LuaRecipes, x => x.Value.Products?.Count > 0 && 
+                                                                                                            DUData.Recipes.Values.All(y => y.NqId != x.Value.Products[0].Id))
                     .OrderBy(x => x.Value.Products[0].DisplayNameWithSize);
                 foreach (var missing in missingRec.ToList())
                 {
@@ -838,7 +842,7 @@ namespace DU_Industry_Tool
                             var isPart = false;
                             if (dmp)
                             {
-                                var dmpItem = Utils.LuaItems.FirstOrDefault(x => x.Value.Id == newRecipe.NqId.ToString());
+                                var dmpItem = Enumerable.FirstOrDefault<KeyValuePair<string, DuLuaItem>>(LuaItems, x => x.Value.Id == newRecipe.NqId.ToString());
                                 if (dmpItem.Value != null)
                                 {
                                     newRecipe.UnitMass = dmpItem.Value.UnitMass;
@@ -879,9 +883,9 @@ namespace DU_Industry_Tool
                                 }
                             }
 
-                            var isIngred = Utils.LuaRecipes.Any(x => 
+                            var isIngred = Enumerable.Any<KeyValuePair<string, DuLuaRecipe>>(LuaRecipes, x => 
                                 x.Value.Ingredients != null &&
-                                x.Value.Ingredients.Any(y => y.Id == newRecipe.NqId)) == true;
+                                Enumerable.Any<DuLuaSubItem>(x.Value.Ingredients, y => y.Id == newRecipe.NqId)) == true;
                             // IF it is a part, skip it if it is not an ingredient anywhere (not ingame parts!)
                             if (isPart && !isIngred)
                             {
@@ -1074,7 +1078,8 @@ namespace DU_Industry_Tool
                 }
 
                 // Check for missing Plasma in DUData.Recipes' ingredients
-                var plasmaIds = new List<ulong> {
+                var plasmaIds = new List<ulong>
+                {
                     1769135512, 1831558336, 1831557945, 1831558342,
                     1831558338, 1831558341, 1831558343, 1831558340,
                     1831558339, 1831558337
@@ -1119,9 +1124,10 @@ namespace DU_Industry_Tool
             DUData.SaveRecipes();
 
             DUData.RecipeNames.AddRange(DUData.Recipes
-                .Where(x => !string.IsNullOrEmpty(x.Value.Industry) &&
-                    x.Value.ParentGroupName != "Ore" &&
-                    x.Value.Industry.IndexOf("Honeycomb", StringComparison.InvariantCultureIgnoreCase) < 0)
+                //.Where(x => !string.IsNullOrEmpty(x.Value.Industry)
+                    //&& x.Value.ParentGroupName != "Ore") 
+                    //&& x.Value.Industry.IndexOf("Honeycomb", StringComparison.InvariantCultureIgnoreCase) < 0)
+                //)
                 .Select(x => x.Value.Name).OrderBy(y => y).ToList());
             Databindings.RecipeNamesBindingList = new BindingList<string>(DUData.RecipeNames);
         }
@@ -1309,6 +1315,5 @@ namespace DU_Industry_Tool
         //    }
         //    Debug.WriteLine(recipe.Name.PadRight(40)+" -> NO INDY!");
         //}
-
     }
 }

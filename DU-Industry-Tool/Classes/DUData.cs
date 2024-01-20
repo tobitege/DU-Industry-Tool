@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
-using DocumentFormat.OpenXml;
 using Krypton.Toolkit;
 using Newtonsoft.Json;
 
@@ -138,21 +138,29 @@ namespace DU_Industry_Tool
                 Name = DUData.ProductionListTitle
             };
             var cnt = 0;
-            foreach (var prodItem in ProductionBindingList)
+            foreach (var prodItem in ProductionBindingList.OrderBy(x => x.Name))
             {
                 if (prodItem.Quantity < 1) continue;
 
                 // 2024.1.8 - individual production list item has to be calculated now to get the item price at cost.
-                // Before this wasn't available as the sum of all ingredients was calculated.
+                // In earlier patches, this wasn't available as the sum of all ingredients was calculated.
                 Calculator.Initialize();
                 Calculator.ProductQuantity = prodItem.Quantity;
-                var recipe = DUData.Recipes.FirstOrDefault(x => x.Value.Name.Equals(prodItem.Name, StringComparison.InvariantCultureIgnoreCase));
-                if (recipe.Value?.Name == null) continue;
+                //var recipe = DUData.Recipes.FirstOrDefault(x => x.Value.Name.Equals(prodItem.Name, StringComparison.InvariantCultureIgnoreCase));
+                var recipe = SchematicRecipe.GetByName(prodItem.Name);
+                if (string.IsNullOrEmpty(recipe?.Name))
+                {
+                    Debug.WriteLine($"Error: Recipe {prodItem.Name} not found!");
+                    continue;
+                }
                 Calculator.CalculateRecipe(recipe.Key, prodItem.Quantity, silent: true);
                 var calc = Calculator.Get(recipe.Key, Guid.Empty);
+                //Calculator.CreateByKey(recipe.Key, out var calc);
 
                 if (calc.Recipe.Ingredients?.Any() != true || calc.Recipe.Products?.Any() != true)
+                {
                     continue;
+                }
 
                 // Add items to the overall products list
                 var batchCount = 1m;
@@ -170,8 +178,8 @@ namespace DU_Industry_Tool
                         prod.Quantity = prodItem.Quantity;
                         prod.Level = calc.Tier;
                         prod.SchemaType = calc.SchematicType;
-                        prod.Mass += prodItem.Quantity * (calc.Recipe.UnitMass ?? 0);
-                        prod.Volume += prodItem.Quantity * (calc.Recipe.UnitVolume ?? 0);
+                        prod.Mass = prodItem.Quantity * (calc.Recipe.UnitMass ?? 0);
+                        prod.Volume = prodItem.Quantity * (calc.Recipe.UnitVolume ?? 0);
                         // TODO check why BatchOutput is occasionally null here
                         //var batchOutput = calc.IsBatchmode ? (decimal)(calc.BatchOutput ?? 0) : prod.Quantity;
                         //if (calc.CalcSchematicFromQty(prod.SchemaType, prod.Quantity, batchOutput,
@@ -181,7 +189,9 @@ namespace DU_Industry_Tool
                         //    prod.SchemaAmt = minCost;
                         //}
                         prod.SchemaAmt = calc.SchematicsCost;
-                        prod.Cost = calc.OreCost + calc.SchematicsCost;
+                        prod.Cost = calc.OreCost;
+                        prod.Margin = calc.Margin;
+                        prod.Retail = calc.Retail;
                         if (calc.BatchTime == null)
                         {
                             calc.BatchTime = calc.Recipe.Time * (calc.EfficencyFactor ?? 1);
@@ -194,10 +204,19 @@ namespace DU_Industry_Tool
                     // Add Byproducts
                     if (!DUData.GetRecipeCloneByKey(prod.Type, out var rec2))
                         continue;
-                    if (rec2.IsPlasma) continue;
+                    if (rec2 == null || rec2.IsPlasma) continue;
                     prod.IsByproduct = true;
-                    prod.Name += DUData.ByproductMarker;
-                    prod.Quantity *= calc.OutputMultiplier;
+                    //prod.Name = prod.Name.TrimLastStr(DUData.ByproductMarker);
+                    //prod.Name += DUData.ByproductMarker;
+                    if (calc.IsBatchmode)
+                    {
+                        var batches = calc.Quantity / (calc.BatchInput ?? 1);
+                        prod.Quantity = batches * prod.Quantity * calc.OutputMultiplier;
+                    }
+                    else
+                    {
+                        prod.Quantity *= calc.OutputMultiplier;
+                    }
                     prod.Quantity *= batchCount;
                     cmp.Products.Add(prod);
                 }
@@ -224,6 +243,8 @@ namespace DU_Industry_Tool
                 cnt++;
             }
             if (cnt == 0) return false;
+            cmp.UnitMass = Math.Round(cmp.Products.Sum(x => x.Mass), 3);
+            cmp.UnitVolume = Math.Round(cmp.Products.Sum(x => x.Volume), 3);
             DUData.CompoundRecipe = cmp;
 
             // Add compound recipe to main recipe list, check first to remove an existing one
@@ -241,6 +262,9 @@ namespace DU_Industry_Tool
         public static IndustryManager IndyMgrInstance { get; set; }
 
         #region Global Data
+        private static SortedDictionary<string, string> ItemTypeNames { get; set; }
+        private static readonly string _talentsFile = "talentSettings.json";
+
         public const string IndyProductsTabTitle = "Industry Products";
         public static readonly List<string> SizeList = new List<string> { "XS", "S", "M", "L", "XL" };
         public static readonly List<string> TierNames = new List<string> { "", "Basic", "Uncommon", "Advanced", "Rare", "Exotic" };
@@ -259,7 +283,6 @@ namespace DU_Industry_Tool
         public static int[] SchemCraftingTalents { get; set; } = new[] { 0, 0, 0, 0 };
         public static List<Talent> Talents { get; private set; } = new List<Talent>();
         public static List<string> Groupnames { get; private set; } = new List<string>(370);
-        public static SortedDictionary<string, string> ItemTypeNames { get; set; }
         #endregion
 
         #region Production List
@@ -288,27 +311,14 @@ namespace DU_Industry_Tool
         ///</summary>
         public static bool GetRecipeCloneByKey(string recipeKey, out SchematicRecipe result)
         {
-            result = null;
-            var tmp = Recipes.FirstOrDefault(x => x.Key.Equals(recipeKey, StringComparison.InvariantCultureIgnoreCase));
-            if (tmp.Value != null)
-            {
-                result = (SchematicRecipe)tmp.Value.Clone();
-                result.Key = tmp.Key;
-                result.ParentGroupName = tmp.Value.ParentGroupName;
-            }
+            result = SchematicRecipe.GetByKey(recipeKey);
             return result != null;
         }
 
         // returns a clone!
         public static bool GetRecipeCloneByName(string recipeName, out SchematicRecipe result)
         {
-            result = null;
-            var tmp = Recipes.FirstOrDefault(x => x.Value.Name.Equals(recipeName, StringComparison.InvariantCultureIgnoreCase));
-            if (tmp.Value != null)
-            {
-                result = (SchematicRecipe)tmp.Value.Clone();
-                result.Key = tmp.Key;
-            }
+            result = SchematicRecipe.GetByName(recipeName);
             return result != null;
         }
 
@@ -345,28 +355,28 @@ namespace DU_Industry_Tool
         ///</summary>
         private static void ApplySchematicCraftingTalents()
         {
-            // TODO
+            // TODO someday, add time talents here, too
             var costFactor = 1m - DUData.SchemCraftingTalents[0] * 0.05m - DUData.SchemCraftingTalents[1] * 0.03m;
             var prodFactor = 1m + DUData.SchemCraftingTalents[2] * 0.03m + DUData.SchemCraftingTalents[3] * 0.02m;
             foreach (var item in Schematics)
             {
-                item.Value.BatchSize = (int)Math.Round(item.Value.BatchSize * prodFactor, MidpointRounding.AwayFromZero);
-                item.Value.BatchCost = Math.Round(item.Value.Cost * costFactor, MidpointRounding.AwayFromZero);
-                item.Value.Cost = Math.Round(item.Value.BatchCost / item.Value.BatchSize, 2);
+                item.Value.BatchSize = (int)Math.Round(item.Value.BatchSize * prodFactor, 2, MidpointRounding.AwayFromZero);
+                item.Value.BatchCost = Math.Round(item.Value.Cost * costFactor, 2, MidpointRounding.AwayFromZero);
+                item.Value.Cost = Math.Round(item.Value.BatchCost / item.Value.BatchSize, 2, MidpointRounding.AwayFromZero);
             }
         }
         
         public static void LoadSchematics()
         {
             // Schematics and prices
-            // mostly by formula as of patch 0.31.6
+            string schematicsFile = "schematicValues.json";
             var loaded = false;
-            if (File.Exists("schematicValues.json"))
+            if (File.Exists(schematicsFile))
             {
                 try
                 {
                     Schematics = JsonConvert.DeserializeObject<SortedDictionary<string, Schematic>>(
-                                            File.ReadAllText("schematicValues.json"));
+                                             File.ReadAllText(schematicsFile));
                     loaded = true;
                     ApplySchematicCraftingTalents();
                 }
@@ -374,9 +384,11 @@ namespace DU_Industry_Tool
             }
             if (!loaded)
             {
-                MessageBox.Show("Required file 'schematicValues.json' not found or invalid!\r\nPlease restore from GitHub repo!");
+                MessageBox.Show("Required file '"+ schematicsFile +"' not found or invalid!\r\nPlease restore from GitHub repo!");
             }
-            
+
+            #region DU Beta schematics generator
+            // mostly by formula as of patch 0.31.6
             // Generate (prefixed with Tx with x = tier):
             // U  = Pures, e.g. T2U
             // P  = Products, e.g. T3P
@@ -590,6 +602,7 @@ namespace DU_Industry_Tool
             ApplySchematicCraftingTalents();
             SaveSchematicValues();
             */
+            #endregion
         }
 
         public static void LoadOres()
@@ -668,13 +681,26 @@ namespace DU_Industry_Tool
         public static void LoadTalents()
         {
             // Check if talents file already exists to load values from
-            if (File.Exists("talentSettings.json"))
+            bool loaded = false;
+            if (File.Exists(_talentsFile))
             {
-                Talents = JsonConvert.DeserializeObject<List<Talent>>(File.ReadAllText("talentSettings.json"));
-                // make sure new talents are available
-                AddPureEfficiencyTalents();
-                return;
+                try
+                {
+                    Talents = JsonConvert.DeserializeObject<List<Talent>>(File.ReadAllText(_talentsFile));
+                    // make sure new-ish talents are available (legacy code)
+                    AddPureEfficiencyTalents();
+                    loaded = true;
+                }
+                catch (Exception e)
+                {
+                    MessageBox.Show("ERROR in '" + _talentsFile + "':\r\n"+e.Message);
+                }
             }
+            if (loaded) return;
+
+            // TODO User prompt here before creating a generic talentSettings file?
+            // At this stage the file did not exist, was unreadable or had invalid data (exception).
+            MessageBox.Show("Required file '"+ _talentsFile+"' not found or invalid!\r\nPlease restore from GitHub repo!");
 
             // Generate Talents:
             // below is to re-generate the talents file programmatically if it was missing
@@ -838,6 +864,19 @@ namespace DU_Industry_Tool
             return string.Compare(x.Name, y.Name, StringComparison.InvariantCultureIgnoreCase);
         }
 
+        public static void SaveTalents()
+        {
+            try
+            {
+                File.WriteAllText(_talentsFile, JsonConvert.SerializeObject(Talents));
+            }
+            catch (Exception)
+            {
+                KryptonMessageBox.Show("Failed to write talents to file!", "Error",
+                    MessageBoxButtons.OK, KryptonMessageBoxIcon.ERROR);
+            }
+        }
+
         public static decimal GetOrePriceByKey(string key)
         {
             if (string.IsNullOrEmpty(key)) return 0;
@@ -859,19 +898,6 @@ namespace DU_Industry_Tool
             catch (Exception)
             {
                 KryptonMessageBox.Show("Failed to write ore values file!", "Error",
-                    MessageBoxButtons.OK, KryptonMessageBoxIcon.ERROR);
-            }
-        }
-
-        public static void SaveTalents()
-        {
-            try
-            {
-                File.WriteAllText("talentSettings.json", JsonConvert.SerializeObject(Talents));
-            }
-            catch (Exception)
-            {
-                KryptonMessageBox.Show("Failed to write talents file!", "Error",
                     MessageBoxButtons.OK, KryptonMessageBoxIcon.ERROR);
             }
         }

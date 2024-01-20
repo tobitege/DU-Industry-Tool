@@ -44,7 +44,7 @@
             this.BtnSave.Location = new System.Drawing.Point(0, 608);
             this.BtnSave.Margin = new System.Windows.Forms.Padding(6);
             this.BtnSave.Name = "BtnSave";
-            this.BtnSave.Size = new System.Drawing.Size(482, 35);
+            this.BtnSave.Size = new System.Drawing.Size(682, 35);
             this.BtnSave.TabIndex = 0;
             this.BtnSave.Text = "Save";
             this.BtnSave.UseVisualStyleBackColor = true;
@@ -60,7 +60,7 @@
             this.FlowPanel.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.FlowPanel.Location = new System.Drawing.Point(0, 2);
             this.FlowPanel.Name = "FlowPanel";
-            this.FlowPanel.Size = new System.Drawing.Size(480, 600);
+            this.FlowPanel.Size = new System.Drawing.Size(680, 600);
             this.FlowPanel.TabIndex = 1;
             this.FlowPanel.WrapContents = false;
             // 
@@ -69,11 +69,11 @@
             this.LblHint.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.LblHint.LabelStyle = Krypton.Toolkit.LabelStyle.TitlePanel;
-            this.LblHint.Location = new System.Drawing.Point(140, 3);
-            this.LblHint.Margin = new System.Windows.Forms.Padding(140, 3, 3, 3);
-            this.LblHint.MinimumSize = new System.Drawing.Size(0, 500);
+            this.LblHint.Location = new System.Drawing.Point(250, 3);
+            this.LblHint.Margin = new System.Windows.Forms.Padding(250, 3, 3, 3);
+            this.LblHint.MinimumSize = new System.Drawing.Size(300, 100);
             this.LblHint.Name = "LblHint";
-            this.LblHint.Size = new System.Drawing.Size(201, 500);
+            this.LblHint.Size = new System.Drawing.Size(300, 100);
             this.LblHint.TabIndex = 0;
             this.LblHint.Values.Text = "Loading talents...";
             // 
@@ -88,14 +88,14 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.ClientSize = new System.Drawing.Size(482, 643);
+            this.ClientSize = new System.Drawing.Size(682, 643);
             this.Controls.Add(this.FlowPanel);
             this.Controls.Add(this.BtnSave);
             this.CornerRoundingRadius = 4F;
             this.DoubleBuffered = true;
             this.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.MaximumSize = new System.Drawing.Size(500, 1000);
-            this.MinimumSize = new System.Drawing.Size(500, 690);
+            this.MaximumSize = new System.Drawing.Size(750, 1600);
+            this.MinimumSize = new System.Drawing.Size(700, 690);
             this.Name = "SkillForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.StateCommon.Border.DrawBorders = ((Krypton.Toolkit.PaletteDrawBorders)((((Krypton.Toolkit.PaletteDrawBorders.Top | Krypton.Toolkit.PaletteDrawBorders.Bottom) 
