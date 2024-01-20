@@ -59,7 +59,7 @@ namespace DU_Industry_Tool
         [JsonIgnore]
         public bool IsProduct { get; protected set; }
         [JsonIgnore]
-        protected bool IsFuel { get; set; }
+        public bool IsFuel { get; protected set; }
         [JsonIgnore]
         public bool IsBatchmode => IsOre || IsPure || IsProduct || IsFuel || IsAmmo;
     }
@@ -271,6 +271,12 @@ namespace DU_Industry_Tool
             {
                 BatchInput = inputMultiplier + inputAdder;
                 BatchOutput = 40 * outputMultiplier + outputAdder;
+            }
+            else
+            if (recipe.IsFuel)
+            {
+                BatchInput = 20 * inputMultiplier + inputAdder;
+                BatchOutput = 100 * outputMultiplier + outputAdder;
             }
             else
             {

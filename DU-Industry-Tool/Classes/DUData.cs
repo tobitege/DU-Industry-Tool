@@ -142,11 +142,10 @@ namespace DU_Industry_Tool
             {
                 if (prodItem.Quantity < 1) continue;
 
-                // 2024.1.8 - individual production list item has to be calculated now to get the item price at cost.
+                // 2024.1.8 - individual production list items have to be calculated now to get the item price at cost.
                 // In earlier patches, this wasn't available as the sum of all ingredients was calculated.
                 Calculator.Initialize();
                 Calculator.ProductQuantity = prodItem.Quantity;
-                //var recipe = DUData.Recipes.FirstOrDefault(x => x.Value.Name.Equals(prodItem.Name, StringComparison.InvariantCultureIgnoreCase));
                 var recipe = SchematicRecipe.GetByName(prodItem.Name);
                 if (string.IsNullOrEmpty(recipe?.Name))
                 {
@@ -155,7 +154,6 @@ namespace DU_Industry_Tool
                 }
                 Calculator.CalculateRecipe(recipe.Key, prodItem.Quantity, silent: true);
                 var calc = Calculator.Get(recipe.Key, Guid.Empty);
-                //Calculator.CreateByKey(recipe.Key, out var calc);
 
                 if (calc.Recipe.Ingredients?.Any() != true || calc.Recipe.Products?.Any() != true)
                 {

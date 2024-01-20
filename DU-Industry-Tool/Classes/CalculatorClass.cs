@@ -491,7 +491,7 @@ namespace DU_Industry_Tool
                 qty = amount;
                 if (myRecipe.IsPart || myRecipe.IsProduct || myRecipe.IsPure)
                 {
-                    if (depth == 0)
+                    if (DUData.ProductionListMode && depth == 0)
                     {
                         qty = Math.Round(ingredient.Quantity * amount, 2);
                     }

@@ -1,5 +1,21 @@
 # Latest Changes
 
+## v2024.1.10
+
+- Hotfix for atmo fuel calculation (Nitron)
+- Hotfix for Excel export with margins applied showing wrong values
+- Added "Fuel Efficiency" to the talentSettings.json file. It has only influence
+on additional infos about batch sizes and refining times.
+However, since we do not yet have any industry efficiency and handling talents,
+the displayed values will still differ from values shown in game.
+- Fixed Kergon-X5 not having fuel talents been applied
+- **Note:** with one of next updates I will separate the talents and
+and the entered user values into separate files, so that the talentSettings.json
+file can be updated at any time without loosing your entered values.  
+For now, keep a backup of that file before updating from the ZIP file and
+restore it if necessary.  
+For now the calculations should not be influenced by its changes in this patch.
+
 ## v2024.1.9
 
 - Main form: added "Apply Gross Margin (%)" and "Round topline sums" options (of power of tens).

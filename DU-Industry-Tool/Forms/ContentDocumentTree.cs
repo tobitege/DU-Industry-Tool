@@ -81,6 +81,7 @@ namespace DU_Industry_Tool
                 }
             }
             LblCostSuffix.Width = lblIndustryValue.Left - LblCostSuffix.Left - 8;
+            LblSchemCostSuffix.Width = LblCostSuffix.Width;
         }
 
         private void FetchOptionsFromForm()
@@ -387,7 +388,7 @@ namespace DU_Industry_Tool
 
             SetLabelTextAndVisibility(lblOreCost, calc.IsPlasma ? "Plasma:" : "Ore:");
             SetLabelTextAndVisibility(lblOreCostValue, $"{calc.OreCost:N2} q");
-            if (!calc.IsPlasma && !calc.IsOre)
+            if (!calc.IsPlasma && !calc.IsOre && !calc.IsPure)
             {
                 SetLabelTextAndVisibility(LblOreCostSuffix, $"{(calc.OreCost / calc.Retail * 100):N2} %");
             }
@@ -460,18 +461,32 @@ namespace DU_Industry_Tool
             }
 
             // Do not round these!
-            var batchInputVol = (calc.IsProduct ? 100 : (calc.IsAmmo ? 1  : 65)) * calc.InputMultiplier  + calc.InputAdder;
-            var batchOutputVol = (calc.IsProduct ? 75 : (calc.IsAmmo ? 40 : 45)) * calc.OutputMultiplier + calc.OutputAdder;
-            if (calc.IsOre && calc.BatchTime != null)
+            var batchInputVol = 0m;
+            var batchOutputVol = 0m;
+            if (calc.IsBatchmode)
             {
-                batchInputVol  = (decimal)(calc.BatchInput ?? batchInputVol);
-                batchOutputVol = (decimal)(calc.BatchOutput ?? batchOutputVol);
+                // the GetTalents() earlier *should* have set values already, but...
+                if (!calc.IsOre && calc.BatchInput > 0 && calc.BatchOutput > 0 && calc.BatchTime > 0)
+                {
+                    batchInputVol = (decimal)calc.BatchInput;
+                    batchOutputVol = (decimal)calc.BatchOutput;
+                    time = (decimal)calc.BatchTime;
+                }
+                else
+                {
+                    batchInputVol = (calc.IsProduct ? 100 : (calc.IsAmmo ? 1  : 65)) * calc.InputMultiplier  + calc.InputAdder;
+                    batchOutputVol = (calc.IsProduct ? 75 : (calc.IsAmmo ? 40 : 45)) * calc.OutputMultiplier + calc.OutputAdder;
+                    if (calc.IsOre && calc.BatchTime != null)
+                    {
+                        batchInputVol  = (decimal)(calc.BatchInput ?? batchInputVol);
+                        batchOutputVol = (decimal)(calc.BatchOutput ?? batchOutputVol);
+                    }
+                }
             }
 
             SetLabelTextAndVisibility(lblDefaultCraftTimeValue, Utils.GetReadableTime(time));
             SetLabelTextAndVisibility(lblDefaultCraftTime,
-                (calc.IsPart || calc.IsProduct || calc.IsAmmo)
-                ? "Default prod. time: " : "Default refin. time:");
+                (calc.IsPart || calc.IsAmmo) ? "Default prod. time: " : "Default refin. time:");
 
             // display some batch-based numbers
             var batchVol = Math.Max(1, batchOutputVol);
@@ -809,7 +824,7 @@ namespace DU_Industry_Tool
                 XRow.Tier = $"{Calc.Tier:N0}";
                 XRow.Qty = $"{Calc.Quantity:N2}";
                 XRow.Amt = $"{Calc.OreCost + Calc.SchematicsCost:N2}";
-                XRow.SchemataQ = "0.00";// Calc.;
+                XRow.SchemataQ = "0.00";
                 XRow.SchemataA = $"{Calc.SchematicsCost:N2}";
                 XRow.Mass = $"{Calc.Mass:N2}";
                 XRow.Vol = $"{Calc.Volume:N2}";
@@ -1006,8 +1021,8 @@ namespace DU_Industry_Tool
                         }
                         if (qty > 0 && decimal.TryParse((string)XRow.Amt, out var total))
                         {
-                            var oreCost = Math.Round((total - schemCost) / qty, 2);//, MidpointRounding.AwayFromZero);
-                            ws.CellSet(ix, ++col, oreCost); // Ore cost per 1
+                            var oreCost = Math.Round(total / qty, 2);
+                            ws.CellSet(ix, ++col, oreCost); // Ore cost per item
                             col++;
                             // Schematics cost per 1
                             ws.CellSet(ix, col, schemCostSingle);
