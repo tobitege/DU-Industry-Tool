@@ -57,7 +57,7 @@ jobs:
             release_name: DU-Industry-Tool-v${{ steps.getversion.outputs.version }}
             draft: true
             prerelease: false
-            body_path: latestchanges.md
+            body_path: DU-Industry-Tool/latestchanges.md
 
         - name: Upload release
           if: ${{ (github.ref == 'refs/heads/master') }}  # ONLY ON MASTER
