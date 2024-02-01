@@ -8,9 +8,9 @@ using AutocompleteMenuNS;
 
 namespace DU_Helpers
 {
-    public class RecipeAutocompleteItem : AutocompleteItem
+    public class SearchResultItem : AutocompleteItem
     {
-        public RecipeAutocompleteItem(string text) : base(text) { }
+        public SearchResultItem(string text) : base(text) { }
 
         public override CompareResult Compare(string fragmentText)
         {

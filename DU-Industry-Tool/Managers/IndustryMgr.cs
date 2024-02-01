@@ -1,33 +1,38 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using DU_Industry_Tool;
+using System.Windows.Forms;
+using DU_Industry_Tool.Skills;
 using Krypton.Toolkit;
 
 namespace DU_Industry_Tool
 {
-    public class IndustryManager
+    public class IndustryMgr
     {
-        public static SortedDictionary<string, DuLuaItem> LuaSchematics; // List of schematics from du-lua.dev
-        public static SortedDictionary<string, DuLuaItem> LuaItems; // List of items from du-lua.dev
-        public static SortedDictionary<string, DuLuaRecipe> LuaRecipes; // List of recipes from du-lua.dev
-
+#if DEBUGx
+        private static SortedDictionary<string, DuLuaItem> LuaSchematics; // List of schematics from du-lua.dev
+        private static SortedDictionary<string, DuLuaItem> LuaItems; // List of items from du-lua.dev
+        private static SortedDictionary<string, DuLuaRecipe> LuaRecipes; // List of recipes from du-lua.dev
+#endif
         private readonly bool SkipProcessing = true;
+
         public DUDataBindings Databindings { get; } = new DUDataBindings();
 
         // Constructor
-        public IndustryManager()
+        public IndustryMgr()
         {
             CultureInfo.CurrentCulture = new CultureInfo("en-us");
             if (!File.Exists(@"RecipesGroups.json") || !File.Exists("Groups.json"))
             {
-                KryptonMessageBox.Show(@"Files RecipesGroups.json and/or Groups.json are missing! Please re-download!");
+                KryptonMessageBox.Show("Files 'RecipesGroups.json' and/or 'Groups.json' are missing!"+
+                    "\r\nPlease re-download the release archive!", "Error",
+                    KryptonMessageBoxButtons.OK, false);
+                Application.Exit();
                 return;
             }
 
@@ -35,13 +40,15 @@ namespace DU_Industry_Tool
             DUData.LoadRecipes();
             DUData.LoadOres();
             DUData.LoadGroups();
-            DUData.LoadTalents();
+            TalentsManager.LoadTalentsAndValues();
             DUData.LoadSchematics();
 
-            // Load @jericho's awesome list of ID's to be able to cross-check our DUData.Recipes
-            // Item dump from https://du-lua.dev/#/items
             var dmp = false;
             var dmpRcp = false;
+#region du lua dev helper
+#if DEBUGx
+            // Load @jericho's awesome list of ID's to be able to cross-check our DUData.Recipes
+            // Item dump from https://du-lua.dev/#/items
 
             if (dmp && File.Exists("items_api_dump.json"))
             {
@@ -122,7 +129,12 @@ namespace DU_Industry_Tool
             {
                 dmpRcp = false;
             }
+#endif
+#endregion
 
+            // Below ONLY needed by developer for recipe updates!
+            // DO NOT CHANGE #if CONDITION!
+#if DEBUGx
             // Populate Keys, fix products and assign schematics
             foreach (var kvp in DUData.Recipes)
             {
@@ -319,9 +331,10 @@ namespace DU_Industry_Tool
                     }
                 }
 
-                if (kvp.Key.StartsWith("Catalyst") ||
-                    kvp.Value.ParentGroupName == "Ore" ||
-                    (kvp.Value.ParentGroupName == "Pure" && kvp.Value.Level <= 1))
+                if ((kvp.Key.StartsWith("Catalyst") ||
+                     kvp.Value.ParentGroupName == "Ore" ||
+                     (kvp.Value.ParentGroupName == "Pure" && kvp.Value.Level <= 1))
+                    && (kvp.Value.SchemaPrice != 0m || !string.IsNullOrEmpty(kvp.Value.SchemaType)))
                 {
                     kvp.Value.SchemaPrice = 0;
                     kvp.Value.SchemaType = null;
@@ -791,7 +804,7 @@ namespace DU_Industry_Tool
             {
                 var funcPartsId = DUData.Groups["FunctionalPart"].Id;
                 var missingRec = Enumerable.Where<KeyValuePair<string, DuLuaRecipe>>(LuaRecipes, x => x.Value.Products?.Count > 0 && 
-                                                                                                            DUData.Recipes.Values.All(y => y.NqId != x.Value.Products[0].Id))
+                                 DUData.Recipes.Values.All(y => y.NqId != x.Value.Products[0].Id))
                     .OrderBy(x => x.Value.Products[0].DisplayNameWithSize);
                 foreach (var missing in missingRec.ToList())
                 {
@@ -1086,7 +1099,7 @@ namespace DU_Industry_Tool
                 };
                 var plas = DUData.Recipes.Values.Where(x => x.Ingredients.Count > 0 &&
                                                             x.Ingredients.Any(y => plasmaIds.Contains(y.Id)))
-                                .OrderBy(x => x.Products[0].Name).ToList();
+                                 .OrderBy(x => x.Products[0].Name).ToList();
                 foreach (var pl in plas)
                 {
                     var ingName = pl.Ingredients.First(x => x.Name.StartsWith("Relic Plasma")).Name;
@@ -1121,15 +1134,16 @@ namespace DU_Industry_Tool
             //var removalEntries = DUData.Recipes.Where(x => x.Value.Ingredients?.Any(y => y.Type == x.Key) == true).ToList();
 
             // ONLY uncomment if "RecipeGroups.json" should be overwritten everytime!
-            DUData.SaveRecipes();
+            //DUData.SaveRecipes();
+#else
+            // Copy key over, required!
+            foreach (var kvp in DUData.Recipes)
+            {
+                kvp.Value.Key = kvp.Key;
+            }
+#endif
 
-            DUData.RecipeNames.AddRange(DUData.Recipes
-                //.Where(x => !string.IsNullOrEmpty(x.Value.Industry)
-                    //&& x.Value.ParentGroupName != "Ore") 
-                    //&& x.Value.Industry.IndexOf("Honeycomb", StringComparison.InvariantCultureIgnoreCase) < 0)
-                //)
-                .Select(x => x.Value.Name).OrderBy(y => y).ToList());
-            Databindings.RecipeNamesBindingList = new BindingList<string>(DUData.RecipeNames);
+            DUData.RecipeNames.AddRange(DUData.Recipes.Select(x => x.Value.Name).OrderBy(y => y).ToList());
         }
 
         //private void DetermineIndustryFor(SchematicRecipe recipe)

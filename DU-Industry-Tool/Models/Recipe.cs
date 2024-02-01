@@ -6,6 +6,7 @@ using System.Runtime.Serialization;
 using Newtonsoft.Json;
 // ReSharper disable InconsistentNaming
 // ReSharper disable ClassNeverInstantiated.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 
 namespace DU_Industry_Tool
 {
@@ -28,26 +29,32 @@ namespace DU_Industry_Tool
                 if (string.IsNullOrEmpty(_parentGroupName))
                 {
                     IsAmmo = false;
+                    IsFuel = false;
+                    IsHC = false;
                     IsOre = false;
                     IsPart = false;
                     IsPure = false;
                     IsProduct = false;
-                    IsFuel = false;
                     return;
                 }
+                IsAmmo = _parentGroupName.IndexOf(" ammo", StringComparison.InvariantCultureIgnoreCase) > 0;
+                IsFuel = _parentGroupName.Equals("Fuels");
+                IsHC = _parentGroupName.Contains("Honeycomb");
                 IsOre = _parentGroupName.Equals("Ore");
                 IsPart = _parentGroupName.EndsWith(" parts");
                 IsPlasma = Name?.StartsWith("Relic Plasma") == true &&
                            _parentGroupName.Equals("Consumables");
-                IsPure = _parentGroupName.Equals("Pure");
                 IsProduct = _parentGroupName.Equals("Product") || _parentGroupName.Equals("Refined Materials");
-                IsAmmo = _parentGroupName.IndexOf(" ammo", StringComparison.InvariantCultureIgnoreCase) > 0;
-                IsFuel = _parentGroupName.Equals("Fuels");
+                IsPure = _parentGroupName.Equals("Pure");
             }
         }
 
         [JsonIgnore]
         public bool IsAmmo { get; protected set; }
+        [JsonIgnore]
+        public bool IsFuel { get; protected set; }
+        [JsonIgnore]
+        public bool IsHC { get; protected set; }
         [JsonIgnore]
         public bool IsOre { get; protected set; }
         [JsonIgnore]
@@ -58,8 +65,6 @@ namespace DU_Industry_Tool
         public bool IsPure { get; protected set; }
         [JsonIgnore]
         public bool IsProduct { get; protected set; }
-        [JsonIgnore]
-        public bool IsFuel { get; protected set; }
         [JsonIgnore]
         public bool IsBatchmode => IsOre || IsPure || IsProduct || IsFuel || IsAmmo;
     }
@@ -227,6 +232,8 @@ namespace DU_Industry_Tool
         [JsonIgnore]
         public decimal? BatchTime { get; set; }
         [JsonIgnore]
+        public int? Batches { get; set; }
+        [JsonIgnore]
         public decimal InputMultiplier { get; set; }
         [JsonIgnore]
         public decimal InputAdder { get; set; }
@@ -253,10 +260,10 @@ namespace DU_Industry_Tool
             ResetTalents();
             if (string.IsNullOrEmpty(recipe?.Key)) return null;
 
-            var result = Calculator.GetTalentsForKey(recipe.Key,
+            var result = Calculator.GetTalentsForKey(recipe.Key, recipe.Industry,
                 out var inputMultiplier,  out var inputAdder,
                 out var outputMultiplier, out var outputAdder,
-                out var efficiencyFactor);
+                out var efficiencyFactor, out var efficiencyFactorIndy);
 
             InputMultiplier = inputMultiplier;
             InputAdder = inputAdder;
@@ -265,36 +272,50 @@ namespace DU_Industry_Tool
             EfficencyFactor = efficiencyFactor;
 
             BatchTime = recipe.Time;
-            if (!recipe.IsBatchmode || recipe.IsOre) return result;
-
-            if (recipe.IsAmmo)
-            {
-                BatchInput = inputMultiplier + inputAdder;
-                BatchOutput = 40 * outputMultiplier + outputAdder;
-            }
-            else
-            if (recipe.IsFuel)
-            {
-                BatchInput = 20 * inputMultiplier + inputAdder;
-                BatchOutput = 100 * outputMultiplier + outputAdder;
-            }
-            else
-            {
-                BatchInput = (recipe.IsProduct ? 100 : 65) * inputMultiplier + inputAdder;
-                BatchOutput = (recipe.IsProduct ? 75 : 45) * outputMultiplier + outputAdder;
-
+            if (recipe.IsOre) return result;
+            if (recipe.IsBatchmode)
+            { 
+                if (recipe.IsAmmo)
+                {
+                    BatchInput = inputMultiplier + inputAdder;
+                    BatchOutput = 40 * outputMultiplier + outputAdder;
+                }
+                else
+                if (recipe.IsFuel)
+                {
+                    BatchInput = 20 * inputMultiplier + inputAdder;
+                    BatchOutput = 100 * outputMultiplier + outputAdder;
+                }
+                else
+                {
+                    BatchInput = (recipe.IsProduct ? 100 : 65) * inputMultiplier + inputAdder;
+                    BatchOutput = (recipe.IsProduct ? 75 : 45) * outputMultiplier + outputAdder;
+                }
             }
             if (recipe.Time < 1) return result;
 
-            BatchTime = recipe.Time * (EfficencyFactor ?? 1);
+            if (!recipe.IsBatchmode)
+            {
+                // facepalm! the recipe talent factors are summed up, but the industry
+                // efficiency factors are multiplied on top
+                EfficencyFactor = (EfficencyFactor ?? 1) * efficiencyFactorIndy;
+                BatchTime = recipe.Time * EfficencyFactor;
+                return result;
+            }
+
             if (recipe.Level != 1) return result;
 
-            // Apply efficiency and for T1 the batch size formula
+            // Apply efficiency and only for tier 1 apply the batch size formula
             var time = (decimal)BatchTime;
-            var batches = (time > 180 ? Math.Floor(180 / time) : Math.Ceiling(180 / time));
-            BatchTime = Math.Round(time * Math.Max(1, batches), 0);
-            BatchInput *= batches;
-            BatchOutput *= batches;
+            Batches = (int)Math.Max(1, Math.Floor(180 / time));
+            BatchTime = Math.Round(time * (int)Batches);
+            if (BatchTime >= 180)
+            {
+                Batches--;
+                BatchTime = time * Batches;
+            }
+            BatchInput *= Batches;
+            BatchOutput *= Batches;
             return result;
         }
     }
@@ -397,24 +418,6 @@ namespace DU_Industry_Tool
         public string Name { get; set; }
         public Guid ParentId { get; set; }
     }
-
-    public class Talent
-    {
-        public string Name { get; set; }
-        public decimal Multiplier { get; set; }
-        public int Addition { get; set; }
-        public List<string> ApplicableRecipes { get; set; } = new List<string>();
-        public int Value { get; set; } // Contains the effective talent level that we're using.
-        public bool InputTalent { get; set; } = false;
-        public bool EfficiencyTalent { get; set; } = false;
-
-        public decimal GetEfficiencyFactor()
-        {
-            if (!EfficiencyTalent) return 1;
-            return 1 + (Value * Multiplier);
-        }
-    }
-
     // For saving settings, a simple lookup
     public class Ore
     {

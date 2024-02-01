@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
-using System.Windows.Forms.VisualStyles;
 using ClosedXML.Excel;
 using DU_Helpers;
+using DU_Industry_Tool.Skills;
 using Krypton.Toolkit;
 using Newtonsoft.Json;
 
@@ -15,11 +15,12 @@ namespace DU_Industry_Tool
     {
         private readonly string exl_int_format = "#,##0";
         private readonly string exl_num_format = "#,##0.00";
+        private bool loading = true;
 
         public SchematicValueForm()
         {
             InitializeComponent();
-            PopulateCraftingTalents();
+            InitializeTalentButtons();
             PopulateGrid();
             BtnLoad.Click += BtnLoad_Click;
             BtnSave.Click += BtnSave_Click;
@@ -28,10 +29,14 @@ namespace DU_Industry_Tool
             grossMarginEdit.Value = Utils.ClampDec(SettingsMgr.GetDecimal(SettingsEnum.SchemGrossMargin), 0, 1000);
             ApplyRoundingCB.Checked = SettingsMgr.GetBool(SettingsEnum.SchemApplyRounding);
             RoundToCmb.SelectedIndex = Utils.ClampInt(SettingsMgr.GetInt(SettingsEnum.SchemRoundDigits),0,RoundToCmb.Items.Count-1);
+            expCustSheet.Click += expCustSheet_Click;
+            loading = false;
         }
 
         private void SchematicValueForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            ApplyTalentValues();
+            TalentValues.SaveValues();
             SettingsMgr.UpdateSettings(SettingsEnum.SchemApplyMargin, ApplyGrossMarginCB.Checked);
             SettingsMgr.UpdateSettings(SettingsEnum.SchemGrossMargin, grossMarginEdit.Value);
             SettingsMgr.UpdateSettings(SettingsEnum.SchemApplyRounding, ApplyRoundingCB.Checked);
@@ -49,43 +54,15 @@ namespace DU_Industry_Tool
                 var loadedInfo = JsonConvert.DeserializeObject<List<SchematicInfo>>(File.ReadAllText(fname));
                 if (loadedInfo == null || loadedInfo.Count == 0)
                 {
-                    KryptonMessageBox.Show("No data was recognized!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    KryptonMessageBox.Show("No data was recognized!", "Error", KryptonMessageBoxButtons.OK, false);
                     return;
                 }
-
-                totalSumLabel.Text = "";
-                var total = 0m;
-                foreach (DataGridViewRow row in schematicsGrid.Rows)
-                {
-                    var key = row.Cells[KEY.Index].Value.ToString();
-                    var data = loadedInfo.FirstOrDefault(x => x.Key == key);
-                    if (data?.Qty == null) continue;
-
-                    row.Cells[Qty.Index].Value = null;
-                    row.Cells[Sum.Index].Value = null;
-                    DUData.Schematics[key].Qty = null;
-                    DUData.Schematics[key].Total = null;
-                    if (data.Qty < 1) continue;
-
-                    if (!decimal.TryParse(row.Cells[Quanta.Index].Value.ToString(), out decimal quanta)) continue;
-
-                    var qty = (decimal)data.Qty;
-                    var tmp = new ProductDetail { Cost = quanta * qty, Quantity = qty };
-                    Calculator.CalcRetail(tmp, ApplyGrossMarginCB.Checked, grossMarginEdit.Value, ApplyRoundingCB.Checked, RoundToCmb.SelectedIndex + 1);
-                    
-                    var itemCost = Math.Round(tmp.Retail / qty, 2);
-                    row.Cells[Qty.Index].Value = (int)qty;
-                    row.Cells[Sum.Index].Value = tmp.Retail;
-                    DUData.Schematics[key].Qty = qty;
-                    DUData.Schematics[key].Total = tmp.Retail;
-                    total += itemCost;
-                }
-                totalSumLabel.Text = $"Total: {total:#,##0.00}";
+                Apply(loadedInfo);
             }
             catch (Exception ex)
             {
                 KryptonMessageBox.Show("Could not load file, maybe wrong one?" + Environment.NewLine + ex.Message,
-                    "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    "ERROR", KryptonMessageBoxButtons.OK, false);
             }
         }
 
@@ -97,7 +74,7 @@ namespace DU_Industry_Tool
                 .ToList();
             if (savedQty.Count == 0)
             {
-                KryptonMessageBox.Show("No schematics with quantities found!", "Nothing to save",
+                MessageBox.Show("No schematics with quantities found!", "Nothing to save",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -113,13 +90,13 @@ namespace DU_Industry_Tool
             catch (Exception ex)
             {
                 KryptonMessageBox.Show("Could not save schematic quantities! " + Environment.NewLine + ex.Message,
-                    @"ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    @"ERROR", KryptonMessageBoxButtons.OK, false);
             }
         }
 
         private void BtnClear_Click(object sender, EventArgs e)
         {
-            if (KryptonMessageBox.Show(@"Really clear the list now?", @"Clear List", MessageBoxButtons.YesNo,
+            if (MessageBox.Show(@"Really clear the list now?", @"Clear List", MessageBoxButtons.YesNo,
                     MessageBoxIcon.Warning) != DialogResult.Yes)
                 return;
             clearQuantities();
@@ -130,23 +107,31 @@ namespace DU_Industry_Tool
             Close();
         }
 
-        private void Apply()
+        private void Apply(List<SchematicInfo> useThisData = null)
         {
             applyBtn.Enabled = false;
             try
             {
-                // save any available entries' quantities
-                var savedQty = DUData.Schematics
-                    .Where(kv => kv.Value.Qty > 0)
-                    .Select(kv => new SchematicInfo { Key = kv.Value.Key, Qty = kv.Value.Qty.Value })
-                    .ToList();
+                List<SchematicInfo> data;
+                if (useThisData == null)
+                {
+                    // save any available entries' quantities
+                    data = DUData.Schematics
+                        .Where(kv => kv.Value.Qty > 0)
+                        .Select(kv => new SchematicInfo { Key = kv.Value.Key, Qty = kv.Value.Qty.Value })
+                        .ToList();
+                }
+                else
+                {
+                    data = useThisData;
+                }
 
                 ApplyTalentValues();
                 DUData.LoadSchematics();
 
                 // re-apply quantities and calculate the total again
                 var total = 0m;
-                foreach (var saved in savedQty)
+                foreach (var saved in data)
                 {
                     DUData.Schematics.TryGetValue(saved.Key, out var schem);
                     if (schem?.Name == null) continue;
@@ -206,20 +191,20 @@ namespace DU_Industry_Tool
         private void SetLabel(int idx, string val)
         {
             var el = Controls.Find("skill" + (idx + 1), true).FirstOrDefault();
-            if (el is KLabel lbl)
-            {
-                lbl.Text = val;
-            }
+            if (!(el is KLabel lbl) || lbl.Text == val) return;
+            lbl.Text = val;
+            if (!loading) Apply();
         }
 
         /// <summary>
-        /// Fill grid with all schematics' cost as informational value (readonly).
+        /// Fill grid with all schematics' costs as informational value (readonly).
         /// </summary>
         private void PopulateGrid()
         {
             schematicsGrid.SuspendLayout();
             try
             {
+                schematicsGrid.Rows.Clear();
                 foreach (var schema in DUData.Schematics.OrderBy(o => o.Key))
                 {
                     schematicsGrid.Rows.Add(schema.Key, schema.Value.Name, schema.Value.BatchSize, schema.Value.BatchCost, schema.Value.Cost, schema.Value.Qty, schema.Value.Total);
@@ -232,20 +217,27 @@ namespace DU_Industry_Tool
             }
         }
 
-        private void PopulateCraftingTalents()
+        private void InitializeTalentButtons()
         {
-            tbSkill1.SetValue(DUData.SchemCraftingTalents[0]);
-            tbSkill2.SetValue(DUData.SchemCraftingTalents[1]);
-            tbSkill3.SetValue(DUData.SchemCraftingTalents[2]);
-            tbSkill4.SetValue(DUData.SchemCraftingTalents[3]);
+            tbSkill1.SetValue(SchemaTalentsCache.CostOptimizationBasic);
+            tbSkill2.SetValue(SchemaTalentsCache.CostOptimizationAdvanced);
+            tbSkill3.SetValue(SchemaTalentsCache.OutputProductivityBasic);
+            tbSkill4.SetValue(SchemaTalentsCache.OutputProductivityAdvanced);
+            // TODO
+            //tbSkill5.SetValue(SchemaTalentsCache.ResearchTimeEfficiencyBasic);
+            //tbSkill6.SetValue(SchemaTalentsCache.ResearchTimeEfficiencyAdvanced);
         }
 
         private void ApplyTalentValues()
         {
-            DUData.SchemCraftingTalents[0] = tbSkill1.GetValue();
-            DUData.SchemCraftingTalents[1] = tbSkill2.GetValue();
-            DUData.SchemCraftingTalents[2] = tbSkill3.GetValue();
-            DUData.SchemCraftingTalents[3] = tbSkill4.GetValue();
+
+            SchemaTalentsCache.CostOptimizationBasic = tbSkill1.GetValue();
+            SchemaTalentsCache.CostOptimizationAdvanced = tbSkill2.GetValue();
+            SchemaTalentsCache.OutputProductivityBasic = tbSkill3.GetValue();
+            SchemaTalentsCache.OutputProductivityAdvanced = tbSkill4.GetValue();
+            // TODO
+            //SchemaTalentsCache.ResearchTimeEfficiencyBasic = tbSkill5.GetValue();
+            //SchemaTalentsCache.ResearchTimeEfficiencyAdvanced = tbSkill6.GetValue();
         }
 
         private void clearQuantities()
@@ -267,12 +259,10 @@ namespace DU_Industry_Tool
             var total = 0m;
             foreach (DataGridViewRow row in schematicsGrid.Rows)
             {
-                if (row.Cells[Sum.Index].Value != null)
+                if (row.Cells[Sum.Index].Value == null) continue;
+                if (decimal.TryParse(row.Cells[Sum.Index].Value.ToString(), out decimal quanta))
                 {
-                    if (decimal.TryParse(row.Cells[Sum.Index].Value.ToString(), out decimal quanta))
-                    {
-                        total += quanta;
-                    }
+                    total += quanta;
                 }
             }
             totalSumLabel.Text = $"Total: {total:#,##0.00}";
@@ -325,134 +315,9 @@ namespace DU_Industry_Tool
             }
         }
 
-        private void exportKBtn_Click(object sender, EventArgs e)
-        {
-            var title = "Schematics Export " + DateTime.Now.ToString("yyyy-MM-dd");
-            var fname = title + ".xlsx";
-            fname = Utils.PromptSave("Export schematics", fname, true);
-            if (fname == null) return;
-
-            using (var workbook = new XLWorkbook())
-            {
-                var worksheet = workbook.Worksheets.Add(title);
-
-                int row = 1;
-                int totalIdx = 0;
-                var total = 0m;
-                IXLRange range = null;
-
-                if (expOptInclTalents.Checked)
-                {
-                    worksheet.Cell(row, 1).Value = "Schematic Cost Optimization (-5% q)";
-                    worksheet.Cell(row, 2).Value = DUData.SchemCraftingTalents[0];
-
-                    row++;
-                    worksheet.Cell(row, 1).Value = "Adv. Schematic Cost Optim. (-3% q)";
-                    worksheet.Cell(row, 2).Value = DUData.SchemCraftingTalents[1];
-
-                    row++;
-                    worksheet.Cell(row, 1).Value = "Schematic Output Productivity (+3%)";
-                    worksheet.Cell(row, 2).Value = DUData.SchemCraftingTalents[2];
-
-                    row++;
-                    worksheet.Cell(row, 1).Value = "Adv. Schematic Output Prod. (+2%)";
-                    worksheet.Cell(row, 2).Value = DUData.SchemCraftingTalents[3];
-                    worksheet.Range("A1:A4").Style.Font.Bold = true;
-                    range = worksheet.Range($"B1:B{row}");
-                    range.Style.NumberFormat.Format = exl_int_format;
-
-                    row += 2;
-                }
-                var colIdx = 1;
-                worksheet.Cell(row, colIdx).Value = "Name";
-                if (expOptInclSchemDetails.Checked)
-                {
-                    worksheet.Cell(row, ++colIdx).Value = "Batch Size";
-                    worksheet.Cell(row, ++colIdx).Value = "Batch Cost (q)";
-                    worksheet.Cell(row, ++colIdx).Value = "Cost per 1 (q)";
-                }
-                else
-                {
-                    worksheet.Cell(row, ++colIdx).Value = "Cost per 1 (q)";
-                }
-                if (expOptInclQtySums.Checked)
-                {
-                    worksheet.Cell(row, ++colIdx).Value = "Quantity";
-                    worksheet.Cell(row, ++colIdx).Value = "Total (q)";
-                    totalIdx = colIdx;
-                }
-                if (expOptInclSchemDetails.Checked)
-                {
-                    worksheet.Cell(row, ++colIdx).Value = "Time (h:m:s)";
-                    worksheet.Cell(row, ++colIdx).Value = "Item ID";
-                }
-                worksheet.Row(row).CellsUsed().Style.Font.SetBold();
-
-                foreach (var schem in DUData.Schematics.Where(x => (!expOptOnlyWithQty.Checked || x.Value.Qty > 0)))
-                {
-                    row++;
-                    colIdx = 1;
-                    worksheet.Cell(row, colIdx).Value = schem.Value.Name;
-                    if (expOptInclSchemDetails.Checked)
-                    {
-                        worksheet.Cell(row, ++colIdx).Value = schem.Value.BatchSize;
-
-                        worksheet.Cell(row, ++colIdx).Value = schem.Value.BatchCost;
-                        worksheet.Cell(row, colIdx).Style.NumberFormat.Format = exl_num_format;
-                    }
-
-                    worksheet.Cell(row, ++colIdx).Value = schem.Value.Cost;
-                    worksheet.Cell(row, colIdx).Style.NumberFormat.Format = exl_num_format;
-                    if (expOptInclQtySums.Checked)
-                    {
-                        if (schem.Value.Qty != null && schem.Value.Total != null)
-                        {
-                            worksheet.Cell(row, ++colIdx).Value = schem.Value.Qty;
-                            worksheet.Cell(row, colIdx).Style.NumberFormat.Format = exl_int_format;
-
-                            worksheet.Cell(row, ++colIdx).FormulaR1C1 = "=(R[0]C[-2]*R[0]C[-1])";
-                            worksheet.Cell(row, colIdx).Style.NumberFormat.Format = exl_num_format;
-                            total += (schem.Value.Total ?? 0);
-                        }
-                        else
-                        {
-                            colIdx += 2;
-                        }
-                    }
-                    if (expOptInclSchemDetails.Checked)
-                    {
-                        worksheet.Cell(row, ++colIdx).Value = "  "+Utils.GetReadableTime(schem.Value.BatchTime);
-                        worksheet.Cell(row, ++colIdx).Value = schem.Value.NqId;
-                    }
-                }
-                if (totalIdx > 0)
-                {
-                    row++;
-                    worksheet.Cell(row, totalIdx).Value = total;
-                    worksheet.Cell(row, totalIdx).Style.NumberFormat.Format = exl_num_format;
-                    worksheet.Cell(row, totalIdx).Style.Font.SetBold();
-                }
-
-                worksheet.ColumnsUsed().AdjustToContents(1, 50);
-
-                try
-                {
-                    workbook.SaveAs(fname);
-                    KryptonMessageBox.Show("Data successfully exported to file.", "Success",
-                        MessageBoxButtons.OK, KryptonMessageBoxIcon.INFORMATION);
-
-                }
-                catch (Exception ex)
-                {
-                    KryptonMessageBox.Show("Export failed!\r\nMake sure the file is not already open in another application!\r\n" + ex.Message,
-                        @"ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
-        }
-
         private void duCraftImportBtn_Click(object sender, EventArgs e)
         {
-            if (KryptonMessageBox.Show("Try to load skills from clipboard?\n\n"+ 
+            if (MessageBox.Show("Try to load skills from clipboard?\n\n"+ 
                     "Make sure to use the Copy Config button on the du-craft.online site now!\n\n"+
                     "This will OVERWRITE above talent values!", @"Confirm",
                     MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
@@ -475,6 +340,176 @@ namespace DU_Industry_Tool
         private void ApplyRoundingCB_CheckStateChanged(object sender, EventArgs e)
         {
             Apply();
+        }
+
+        private void expCustSheet_Click(object sender, EventArgs e)
+        {
+            
+            exportKBtn_Click(sender, e);
+        }
+
+        private void exportKBtn_Click(object sender, EventArgs e)
+        {
+            var isCustsheet = sender == expCustSheet;
+
+            var title = "Schematics Export " + DateTime.Now.ToString("yyyy-MM-dd");
+            var fname = title + ".xlsx";
+            fname = Utils.PromptSave("Export schematics", fname, true);
+            if (fname == null) return;
+
+            using (var workbook = new XLWorkbook())
+            {
+                var ws = workbook.Worksheets.Add(title);
+
+                int row = 1;
+                int totalIdx = 0;
+                IXLRange range = null;
+
+                if (!isCustsheet && expOptInclTalents.Checked)
+                {
+                    ws.Cell(row, 1).Value = "Schematic Cost Optimization (-5% q)";
+                    ws.Cell(row, 2).Value = SchemaTalentsCache.CostOptimizationBasic;
+
+                    row++;
+                    ws.Cell(row, 1).Value = "Adv. Schematic Cost Optim. (-3% q)";
+                    ws.Cell(row, 2).Value = SchemaTalentsCache.CostOptimizationAdvanced;
+
+                    row++;
+                    ws.Cell(row, 1).Value = "Schematic Output Productivity (+3%)";
+                    ws.Cell(row, 2).Value = SchemaTalentsCache.OutputProductivityBasic;
+
+                    row++;
+                    ws.Cell(row, 1).Value = "Adv. Schematic Output Prod. (+2%)";
+                    ws.Cell(row, 2).Value = SchemaTalentsCache.OutputProductivityAdvanced;
+
+                    row++;
+                    ws.Cell(row, 1).Value = "Schematic Research Time Efficiency (-3%)";
+                    ws.Cell(row, 2).Value = SchemaTalentsCache.ResearchTimeEfficiencyBasic;
+
+                    row++;
+                    ws.Cell(row, 1).Value = "Adv. Schematic Research Time Efficiency (-2%)";
+                    ws.Cell(row, 2).Value = SchemaTalentsCache.ResearchTimeEfficiencyAdvanced;
+                    
+                    ws.Range($"A1:A{row}").Style.Font.Bold = true;
+                    range = ws.Range($"B1:B{row}");
+                    range.Style.NumberFormat.Format = exl_int_format;
+
+                    row += 2;
+                }
+                var colIdx = 1;
+                ws.Cell(row, colIdx).Value = "Name";
+                if (!isCustsheet && expOptInclSchemDetails.Checked)
+                {
+                    ws.Cell(row, ++colIdx).Value = "Batch Size";
+                    ws.Cell(row, ++colIdx).Value = "Batch Cost (q)";
+                    ws.Cell(row, ++colIdx).Value = "Cost per 1 (q)";
+                }
+                else
+                {
+                    ws.Cell(row, ++colIdx).Value = "Cost per 1 (q)";
+                }
+                if (isCustsheet || expOptInclQtySums.Checked)
+                {
+                    ws.Cell(row, ++colIdx).Value = "Quantity";
+                    ws.Cell(row, ++colIdx).Value = "Net total (q)";
+                    totalIdx = colIdx;
+                }
+                if (!isCustsheet && expOptInclSchemDetails.Checked)
+                {
+                    if (ApplyGrossMarginCB.Checked && expOptInclQtySums.Checked)
+                    {
+                        ws.Cell(row, ++colIdx).Value = "Margin (q)";
+                        ws.Cell(row, ++colIdx).Value = "Gross (q)";
+                    }
+                    ws.Cell(row, ++colIdx).Value = "Time (h:m:s)";
+                    ws.Cell(row, ++colIdx).Value = "Item ID";
+                }
+                ws.Row(row).CellsUsed().Style.Font.SetBold();
+
+                var dataStart = row+1;
+                foreach (var schem in DUData.Schematics.Where(x => 
+                             (!isCustsheet && !expOptOnlyWithQty.Checked || x.Value.Qty > 0)))
+                {
+                    row++;
+                    colIdx = 1;
+                    ws.Cell(row, colIdx).Value = schem.Value.Name;
+                    if (!isCustsheet)
+                    {
+                        if (expOptInclSchemDetails.Checked)
+                        {
+                            ws.Cell(row, ++colIdx).Value = schem.Value.BatchSize;
+                            ws.Cell(row, ++colIdx).Value = schem.Value.BatchCost;
+                            ws.Cell(row, colIdx).Style.NumberFormat.Format = exl_num_format;
+                        }
+                        ws.Cell(row, ++colIdx).Value = schem.Value.Cost;
+                        ws.Cell(row, colIdx).Style.NumberFormat.Format = exl_num_format;
+                    }
+                    else
+                    {
+                        ws.Cell(row, ++colIdx).Value = schem.Value.Total / schem.Value.Qty;
+                        ws.Cell(row, colIdx).Style.NumberFormat.Format = exl_num_format;
+                    }
+
+                    if (isCustsheet || expOptInclQtySums.Checked)
+                    {
+                        if (schem.Value.Qty != null && schem.Value.Total != null)
+                        {
+                            ws.Cell(row, ++colIdx).Value = schem.Value.Qty;
+                            ws.Cell(row, colIdx).Style.NumberFormat.Format = exl_int_format;
+                            ws.Cell(row, ++colIdx).FormulaR1C1 = "=(R[0]C[-2]*R[0]C[-1])";
+                            ws.Cell(row, colIdx).Style.NumberFormat.Format = exl_num_format;
+                        }
+                        else
+                        {
+                            colIdx += 2;
+                        }
+                    }
+                    if (isCustsheet || !expOptInclSchemDetails.Checked) continue;
+
+                    if (ApplyGrossMarginCB.Checked && expOptInclQtySums.Checked)
+                    {
+                        var tmp = new ProductDetail { Cost = schem.Value.Cost * (decimal)(schem.Value?.Qty ?? 0), Quantity = (decimal)(schem.Value?.Qty ?? 0) };
+                        Calculator.CalcRetail(tmp, ApplyGrossMarginCB.Checked, grossMarginEdit.Value, ApplyRoundingCB.Checked, RoundToCmb.SelectedIndex + 1);
+                        ws.Cell(row, ++colIdx).Value = tmp.Margin;
+                        ws.Cell(row, ++colIdx).Value = tmp.Retail;
+                        ws.XRangeFmtDec(row, colIdx-2, row, colIdx);
+                    }
+                    ws.Cell(row, ++colIdx).Value = "  " + Utils.GetReadableTime(schem.Value?.BatchTime ?? 0);
+                    ws.Cell(row, ++colIdx).Value = schem.Value?.NqId ?? 0;
+                }
+                // Footer
+                if (totalIdx > 0)
+                {
+                    row++;
+                    totalIdx--;
+                    var letter = 'A';
+                    ws.XSetCellSum(ref row, ref totalIdx, dataStart, ref letter);
+                    ws.Cell(row, totalIdx).Style.NumberFormat.Format = exl_num_format;
+                    ws.Cell(row, totalIdx).Style.Font.SetBold();
+                    if (!isCustsheet && expOptInclSchemDetails.Checked && ApplyGrossMarginCB.Checked)
+                    {
+                        ws.XSetCellSum(ref row, ref totalIdx, dataStart, ref letter); // Margin
+                        ws.XSetCellSum(ref row, ref totalIdx, dataStart, ref letter); // Gross total
+                        ws.XRangeBold(row, 1, row, totalIdx);
+                        ws.XRangeFmtDec(row, 1, row, totalIdx);
+                    }
+                }
+
+                ws.ColumnsUsed().AdjustToContents(1, 50);
+
+                try
+                {
+                    workbook.SaveAs(fname);
+                    KryptonMessageBox.Show("Data successfully exported to file.", "Success",
+                        KryptonMessageBoxButtons.OK, false);
+
+                }
+                catch (Exception ex)
+                {
+                    KryptonMessageBox.Show("Export failed!\r\nMake sure the file is not already open in another application!\r\n" + ex.Message,
+                        @"ERROR", KryptonMessageBoxButtons.OK, false);
+                }
+            }
         }
     }
 }

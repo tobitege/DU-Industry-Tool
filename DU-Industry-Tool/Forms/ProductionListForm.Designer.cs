@@ -61,14 +61,12 @@ namespace DU_Industry_Tool
             this.BtnRemoveEntry = new Krypton.Toolkit.KryptonButton();
             this.kCmdRemove = new Krypton.Toolkit.KryptonCommand();
             this.productionListBindingSource = new System.Windows.Forms.BindingSource(this.components);
-            this.recipeNamesBindingSource = new System.Windows.Forms.BindingSource(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.MainPanel)).BeginInit();
             this.MainPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvProductionList)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.PanelTop)).BeginInit();
             this.PanelTop.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.productionListBindingSource)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.recipeNamesBindingSource)).BeginInit();
             this.SuspendLayout();
             // 
             // MainPanel
@@ -157,7 +155,7 @@ namespace DU_Industry_Tool
             this.Column1.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
             this.Column1.DataPropertyName = "Name";
             this.Column1.DataSource = this.productionListBindingSource;
-            dataGridViewCellStyle1.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Verdana", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Column1.DefaultCellStyle = dataGridViewCellStyle1;
             this.Column1.DisplayMember = "Name";
             this.Column1.DropDownWidth = 300;
@@ -175,7 +173,7 @@ namespace DU_Industry_Tool
             this.Column2.AllowDecimals = false;
             this.Column2.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
             this.Column2.DataPropertyName = "Quantity";
-            dataGridViewCellStyle2.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle2.Font = new System.Drawing.Font("Verdana", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Column2.DefaultCellStyle = dataGridViewCellStyle2;
             this.Column2.FillWeight = 50F;
             this.Column2.HeaderText = "Quantity";
@@ -212,7 +210,7 @@ namespace DU_Industry_Tool
             this.recipeSearchBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.acMenu.SetAutocompleteMenu(this.recipeSearchBox, null);
-            this.recipeSearchBox.Font = new System.Drawing.Font("Segoe UI", 10.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.recipeSearchBox.Font = new System.Drawing.Font("Verdana", 10.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.recipeSearchBox.Location = new System.Drawing.Point(100, 54);
             this.recipeSearchBox.Name = "recipeSearchBox";
             this.recipeSearchBox.Size = new System.Drawing.Size(549, 31);
@@ -362,8 +360,8 @@ namespace DU_Industry_Tool
             this.kryptonLabel1.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
             this.kryptonLabel1.Name = "kryptonLabel1";
             this.kryptonLabel1.Size = new System.Drawing.Size(588, 24);
-            this.kryptonLabel1.StateCommon.LongText.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.kryptonLabel1.StateCommon.ShortText.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.kryptonLabel1.StateCommon.LongText.Font = new System.Drawing.Font("Verdana", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.kryptonLabel1.StateCommon.ShortText.Font = new System.Drawing.Font("Verdana", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.kryptonLabel1.TabIndex = 0;
             this.kryptonLabel1.ToolTipValues.Description = "Use of * and ? as wildcards should work, too.";
             this.kryptonLabel1.ToolTipValues.EnableToolTips = true;
@@ -388,7 +386,7 @@ namespace DU_Industry_Tool
             this.acMenu.AllowsTabKey = true;
             this.acMenu.AppearInterval = 400;
             this.acMenu.Colors = ((AutocompleteMenuNS.Colors)(resources.GetObject("acMenu.Colors")));
-            this.acMenu.Font = new System.Drawing.Font("Segoe UI", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.acMenu.Font = new System.Drawing.Font("Verdana", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.acMenu.ImageList = null;
             this.acMenu.Items = new string[0];
             this.acMenu.LeftPadding = 2;
@@ -426,11 +424,6 @@ namespace DU_Industry_Tool
             this.productionListBindingSource.DataMember = "ProductionBindingList";
             this.productionListBindingSource.DataSource = typeof(DU_Industry_Tool.DUDataBindings);
             // 
-            // recipeNamesBindingSource
-            // 
-            this.recipeNamesBindingSource.DataMember = "RecipeNamesBindingList";
-            this.recipeNamesBindingSource.DataSource = typeof(DU_Industry_Tool.DUDataBindings);
-            // 
             // ProductionListForm
             // 
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Inherit;
@@ -439,7 +432,7 @@ namespace DU_Industry_Tool
             this.Controls.Add(this.LblLoaded);
             this.Controls.Add(this.MainPanel);
             this.DoubleBuffered = true;
-            this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Pixel, ((byte)(0)));
+            this.Font = new System.Drawing.Font("Verdana", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Pixel, ((byte)(0)));
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
             this.MinimumSize = new System.Drawing.Size(700, 700);
@@ -452,10 +445,8 @@ namespace DU_Industry_Tool
             this.PanelTop.ResumeLayout(false);
             this.PanelTop.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.productionListBindingSource)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.recipeNamesBindingSource)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
-
         }
 
         #endregion
@@ -479,7 +470,6 @@ namespace DU_Industry_Tool
         private Krypton.Toolkit.KryptonButton BtnClose;
         private Krypton.Toolkit.KryptonCommand kCmdClose;
         private System.Windows.Forms.BindingSource productionListBindingSource;
-        private System.Windows.Forms.BindingSource recipeNamesBindingSource;
         private KryptonDataGridView dgvProductionList;
         private KryptonDataGridViewComboBoxColumn Column1;
         private KryptonDataGridViewNumericUpDownColumn Column2;

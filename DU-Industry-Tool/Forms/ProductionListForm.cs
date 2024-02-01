@@ -13,17 +13,17 @@ namespace DU_Industry_Tool
     {
         private bool _changed = false;
         private string _loadedFile;
-        private IndustryManager Manager { get; }
+        private IndustryMgr mgr { get; }
 
-        public ProductionListForm(IndustryManager manager)
+        public ProductionListForm(IndustryMgr mgr)
         {
             InitializeComponent();
             Text = DUData.ProductionListTitle;
 
-            Manager = manager;
-            if (Manager.Databindings.ProductionBindingList == null)
+            this.mgr = mgr;
+            if (this.mgr.Databindings.ProductionBindingList == null)
             {
-                Manager.Databindings.ProductionBindingList = new BindingList<ProductionItem>
+                this.mgr.Databindings.ProductionBindingList = new BindingList<ProductionItem>
                 {
                     AllowEdit = true,
                     AllowNew = true,
@@ -31,7 +31,7 @@ namespace DU_Industry_Tool
                     RaiseListChangedEvents = true
                 };
             }
-            dgvProductionList.DataSource = Manager.Databindings.ProductionBindingList;
+            dgvProductionList.DataSource = this.mgr.Databindings.ProductionBindingList;
             dgvProductionList.KeyDown += DgvProductionListOnKeyDown;
 
             // manually assign click events due to designer occasionally loosing them :(
@@ -52,7 +52,7 @@ namespace DU_Industry_Tool
         private void RemoveGridEntry()
         {
             if (dgvProductionList.CurrentRow == null) return;
-            Manager.Databindings.ProductionBindingList.RemoveAt(dgvProductionList.CurrentRow.Index);
+            mgr.Databindings.ProductionBindingList.RemoveAt(dgvProductionList.CurrentRow.Index);
             _changed = true;
         }
 
@@ -74,10 +74,10 @@ namespace DU_Industry_Tool
             // Add new recipe, otherwise increase quantity of existing recipe
             try
             {
-                var item = Manager.Databindings.ProductionBindingList.FirstOrDefault(x => x.Name.Equals(recipeSearchBox.Text, StringComparison.CurrentCultureIgnoreCase));
+                var item = mgr.Databindings.ProductionBindingList.FirstOrDefault(x => x.Name.Equals(recipeSearchBox.Text, StringComparison.CurrentCultureIgnoreCase));
                 if (item == null)
                 {
-                    Manager.Databindings.ProductionBindingList.Add(new ProductionItem
+                    mgr.Databindings.ProductionBindingList.Add(new ProductionItem
                     {
                         Name = recipeSearchBox.Text,
                         Quantity = NumUpDownQuantity.Value
@@ -98,7 +98,7 @@ namespace DU_Industry_Tool
         {
             if (_changed)
             {
-                if (KryptonMessageBox.Show("Proceed with calculation? Answer 'No' to be able to save the production list!",
+                if (MessageBox.Show("Proceed with calculation? Answer 'No' to be able to save the production list!",
                         "Proceed with Calculation?", MessageBoxButtons.YesNo,
                         MessageBoxIcon.Information) != DialogResult.Yes)
                 {
@@ -113,11 +113,11 @@ namespace DU_Industry_Tool
             dgvProductionList.DataSource = null;
             try
             {
-                LoadList(Manager);
+                LoadList(mgr);
             }
             finally
             {
-                dgvProductionList.DataSource = Manager.Databindings.ProductionBindingList;
+                dgvProductionList.DataSource = mgr.Databindings.ProductionBindingList;
             }
             UpdateFileDisplay();
             dgvProductionList.Invalidate(true);
@@ -126,24 +126,24 @@ namespace DU_Industry_Tool
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
-            SaveList(Manager);
+            SaveList(mgr);
             UpdateFileDisplay();
             _changed = false;
         }
 
         private void UpdateFileDisplay()
         {
-            _loadedFile = Manager.Databindings.GetFilename();
+            _loadedFile = mgr.Databindings.GetFilename();
             LblLoaded.Text = _loadedFile == "" ? "" : "Loaded: " + _loadedFile;
             LblLoaded.Visible = _loadedFile != "";
         }
 
         private void BtnClear_Click(object sender, EventArgs e)
         {
-            if (KryptonMessageBox.Show("Really clear the list now?", "Clear List", MessageBoxButtons.YesNo,
+            if (MessageBox.Show("Really clear the list now?", "Clear List", MessageBoxButtons.YesNo,
                     MessageBoxIcon.Warning) != DialogResult.Yes)
                 return;
-            Manager.Databindings.ProductionBindingList.Clear();
+            mgr.Databindings.ProductionBindingList.Clear();
             dgvProductionList.Invalidate(true);
             LblLoaded.Text = "";
             LblLoaded.Visible = false;
@@ -157,38 +157,38 @@ namespace DU_Industry_Tool
 
         #region list load/save
         
-        public static bool LoadList(IndustryManager manager)
+        public static bool LoadList(IndustryMgr mgr)
         {
             var fname = Utils.PromptOpen("Load Production List");
             if (fname == null) return false;
             
             try
             {
-                manager.Databindings.Load(fname);
+                mgr.Databindings.Load(fname);
                 return true;
             }
             catch (Exception ex)
             {
                 KryptonMessageBox.Show("Could not load file:" + Environment.NewLine + ex.Message,
-                    "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    "ERROR", KryptonMessageBoxButtons.OK, false);
             }
             return false;
         }
 
-        public static bool SaveList(IndustryManager manager)
+        public static bool SaveList(IndustryMgr mgr)
         {
-            var fname = Utils.PromptSave("Save Production List", manager.Databindings.GetFilename());
+            var fname = Utils.PromptSave("Save Production List", mgr.Databindings.GetFilename());
             if (fname == null) return false;
 
             try
             {
-                manager.Databindings.Save(fname);
+                mgr.Databindings.Save(fname);
                 return true;
             }
             catch (Exception ex)
             {
                 KryptonMessageBox.Show("Could not save file!" + Environment.NewLine + ex.Message,
-                    "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    "ERROR", KryptonMessageBoxButtons.OK, false);
             }
             return false;
         }
@@ -214,7 +214,7 @@ namespace DU_Industry_Tool
             {
                 if (tb.Text.Length < SearchHelper.MinimumSearchLength) return;
                 var matchingItems = SearchHelper.SearchItems(tb.Text);
-                acMenu.SetAutocompleteItems(matchingItems.Select(item => new RecipeAutocompleteItem(item)).ToList());
+                acMenu.SetAutocompleteItems(matchingItems.Select(item => new SearchResultItem(item)).ToList());
             }
             finally
             {

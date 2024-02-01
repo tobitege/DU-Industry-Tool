@@ -102,7 +102,7 @@ namespace DU_Industry_Tool
             this.discordLink.Name = "discordLink";
             this.discordLink.Size = new System.Drawing.Size(239, 27);
             this.discordLink.TabIndex = 5;
-            this.discordLink.Values.Text = "https://discord.gg/7psYcmAb";
+            this.discordLink.Values.Text = "https://discord.gg/gkn8ScASNy";
             // 
             // OkButton
             // 

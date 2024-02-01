@@ -30,108 +30,166 @@ namespace DU_Industry_Tool
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(OreValueForm));
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
-            this.oreGrid = new System.Windows.Forms.DataGridView();
-            this.BtnSave = new System.Windows.Forms.Button();
+            this.layoutPanel = new Krypton.Toolkit.KryptonTableLayoutPanel();
+            this.oreGrid = new Krypton.Toolkit.KryptonDataGridView();
             this.OreName = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Test = new Krypton.Toolkit.KryptonDataGridViewNumericUpDownColumn();
+            this.Quanta = new Krypton.Toolkit.KryptonDataGridViewNumericUpDownColumn();
+            this.panelBottom = new Krypton.Toolkit.KryptonPanel();
+            this.btnClose = new System.Windows.Forms.Button();
+            this.btnSave = new System.Windows.Forms.Button();
+            this.layoutPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.oreGrid)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.panelBottom)).BeginInit();
+            this.panelBottom.SuspendLayout();
             this.SuspendLayout();
+            // 
+            // layoutPanel
+            // 
+            this.layoutPanel.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("layoutPanel.BackgroundImage")));
+            this.layoutPanel.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
+            this.layoutPanel.ColumnCount = 1;
+            this.layoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.layoutPanel.Controls.Add(this.oreGrid, 0, 0);
+            this.layoutPanel.Controls.Add(this.panelBottom, 0, 1);
+            this.layoutPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.layoutPanel.Location = new System.Drawing.Point(0, 0);
+            this.layoutPanel.Name = "layoutPanel";
+            this.layoutPanel.PanelBackStyle = Krypton.Toolkit.PaletteBackStyle.ControlGroupBox;
+            this.layoutPanel.RowCount = 2;
+            this.layoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.layoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 60F));
+            this.layoutPanel.Size = new System.Drawing.Size(585, 746);
+            this.layoutPanel.TabIndex = 2;
             // 
             // oreGrid
             // 
             this.oreGrid.AllowUserToAddRows = false;
             this.oreGrid.AllowUserToDeleteRows = false;
+            this.oreGrid.AllowUserToResizeColumns = false;
             this.oreGrid.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.oreGrid.BackgroundColor = System.Drawing.SystemColors.Window;
+            this.oreGrid.AutoSizeRowsMode = System.Windows.Forms.DataGridViewAutoSizeRowsMode.AllCells;
+            this.oreGrid.ClipboardCopyMode = System.Windows.Forms.DataGridViewClipboardCopyMode.EnableAlwaysIncludeHeaderText;
             this.oreGrid.ColumnHeadersHeight = 32;
             this.oreGrid.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             this.oreGrid.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.OreName,
-            this.Test});
+            this.Quanta});
             this.oreGrid.EditMode = System.Windows.Forms.DataGridViewEditMode.EditOnEnter;
-            this.oreGrid.Location = new System.Drawing.Point(13, 13);
+            this.oreGrid.Location = new System.Drawing.Point(3, 3);
             this.oreGrid.Name = "oreGrid";
-            this.oreGrid.RowHeadersWidth = 51;
+            this.oreGrid.RowHeadersWidth = 30;
             this.oreGrid.RowTemplate.Height = 24;
-            this.oreGrid.Size = new System.Drawing.Size(538, 636);
-            this.oreGrid.TabIndex = 0;
-            // 
-            // BtnSave
-            // 
-            this.BtnSave.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.BtnSave.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.BtnSave.Font = new System.Drawing.Font("Segoe UI", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.BtnSave.Location = new System.Drawing.Point(232, 655);
-            this.BtnSave.Name = "BtnSave";
-            this.BtnSave.Size = new System.Drawing.Size(96, 31);
-            this.BtnSave.TabIndex = 1;
-            this.BtnSave.Text = "&Save";
-            this.BtnSave.UseVisualStyleBackColor = true;
-            this.BtnSave.Click += new System.EventHandler(this.Button1_Click);
+            this.oreGrid.ShowEditingIcon = false;
+            this.oreGrid.Size = new System.Drawing.Size(579, 680);
+            this.oreGrid.TabIndex = 1;
             // 
             // OreName
             // 
             this.OreName.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            dataGridViewCellStyle1.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Verdana", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.OreName.DefaultCellStyle = dataGridViewCellStyle1;
-            this.OreName.HeaderText = "Name";
+            this.OreName.HeaderText = "Ore";
             this.OreName.MaxInputLength = 30;
             this.OreName.MinimumWidth = 60;
             this.OreName.Name = "OreName";
             this.OreName.ReadOnly = true;
             this.OreName.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
             // 
-            // Test
+            // Quanta
             // 
-            this.Test.DecimalPlaces = 2;
-            dataGridViewCellStyle2.Font = new System.Drawing.Font("Segoe UI", 10.01739F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.Quanta.AllowDecimals = false;
+            this.Quanta.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            this.Quanta.DecimalPlaces = 2;
+            dataGridViewCellStyle2.Font = new System.Drawing.Font("Verdana", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             dataGridViewCellStyle2.NullValue = "0";
-            this.Test.DefaultCellStyle = dataGridViewCellStyle2;
-            this.Test.HeaderText = "Quanta/L";
-            this.Test.Maximum = new decimal(new int[] {
+            this.Quanta.DefaultCellStyle = dataGridViewCellStyle2;
+            this.Quanta.HeaderText = "Quanta/L";
+            this.Quanta.Maximum = new decimal(new int[] {
             999000000,
             0,
             0,
             0});
-            this.Test.Minimum = new decimal(new int[] {
+            this.Quanta.Minimum = new decimal(new int[] {
             1,
             0,
             0,
             0});
-            this.Test.MinimumWidth = 60;
-            this.Test.Name = "Test";
-            this.Test.TrailingZeroes = true;
-            this.Test.Width = 200;
+            this.Quanta.MinimumWidth = 200;
+            this.Quanta.Name = "Quanta";
+            this.Quanta.TrailingZeroes = true;
+            this.Quanta.Width = 200;
+            // 
+            // panelBottom
+            // 
+            this.panelBottom.Controls.Add(this.btnClose);
+            this.panelBottom.Controls.Add(this.btnSave);
+            this.panelBottom.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panelBottom.Location = new System.Drawing.Point(3, 689);
+            this.panelBottom.Name = "panelBottom";
+            this.panelBottom.Size = new System.Drawing.Size(579, 54);
+            this.panelBottom.TabIndex = 2;
+            // 
+            // btnClose
+            // 
+            this.btnClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnClose.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.btnClose.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+            this.btnClose.Font = new System.Drawing.Font("Verdana", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnClose.Location = new System.Drawing.Point(339, 9);
+            this.btnClose.Name = "btnClose";
+            this.btnClose.Size = new System.Drawing.Size(125, 36);
+            this.btnClose.TabIndex = 4;
+            this.btnClose.Text = "&Close";
+            this.btnClose.UseVisualStyleBackColor = true;
+            // 
+            // btnSave
+            // 
+            this.btnSave.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.btnSave.Font = new System.Drawing.Font("Verdana", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnSave.Location = new System.Drawing.Point(150, 9);
+            this.btnSave.Name = "btnSave";
+            this.btnSave.Size = new System.Drawing.Size(125, 36);
+            this.btnSave.TabIndex = 3;
+            this.btnSave.Text = "&Save";
+            this.btnSave.UseVisualStyleBackColor = true;
+            this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
             // 
             // OreValueForm
             // 
-            this.AcceptButton = this.BtnSave;
-            this.AutoScaleDimensions = new System.Drawing.SizeF(115F, 115F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            this.AutoSize = true;
+            this.AcceptButton = this.btnSave;
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.ClientSize = new System.Drawing.Size(565, 692);
-            this.Controls.Add(this.BtnSave);
-            this.Controls.Add(this.oreGrid);
-            this.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.ClientSize = new System.Drawing.Size(585, 746);
+            this.Controls.Add(this.layoutPanel);
+            this.DoubleBuffered = true;
+            this.Font = new System.Drawing.Font("Verdana", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
+            this.MinimumSize = new System.Drawing.Size(590, 700);
             this.Name = "OreValueForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Ore && Plasma Prices";
+            this.layoutPanel.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.oreGrid)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.panelBottom)).EndInit();
+            this.panelBottom.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
 
         #endregion
 
-        private System.Windows.Forms.DataGridView oreGrid;
-        private System.Windows.Forms.Button BtnSave;
+        private Krypton.Toolkit.KryptonTableLayoutPanel layoutPanel;
+        private Krypton.Toolkit.KryptonDataGridView oreGrid;
+        private Krypton.Toolkit.KryptonPanel panelBottom;
+        private Button btnClose;
+        private Button btnSave;
         private DataGridViewTextBoxColumn OreName;
-        private Krypton.Toolkit.KryptonDataGridViewNumericUpDownColumn Test;
+        private Krypton.Toolkit.KryptonDataGridViewNumericUpDownColumn Quanta;
     }
 }

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Forms;
 using DU_Helpers;
+using DU_Industry_Tool.Skills;
 
 namespace DU_Industry_Tool
 {
@@ -238,31 +239,20 @@ namespace DU_Industry_Tool
             // Process main item's schematic (if exists and not in prod list mode)
             if (!string.IsNullOrEmpty(calc.SchematicType))
             {
-                var batches = ProductQuantity;
+                var schems = ProductQuantity;
                 if (calc.IsBatchmode && calc.BatchOutput > 0)
                 {
-                    batches = Math.Round(ProductQuantity / (decimal)calc.BatchOutput, 2);
-                    if (DUData.FullSchematicQuantities)
-                    {
-                        batches = Math.Ceiling(batches);
-                    }
+                    schems = (calc.Batches ?? 1) * Math.Round(ProductQuantity / (decimal)calc.BatchOutput, 2);
                 }
-                if (CalcSchematic(calc.SchematicType, batches, out var minCost, out _, out _))
+                if (CalcSchematic(calc.SchematicType, schems, out var minCost, out _, out _))
                 {
-                    calc.AddSchema(calc.SchematicType, batches, minCost);
+                    calc.AddSchema(calc.SchematicType, schems, minCost);
                     calc.AddSchematicCost(minCost);
                 }
             }
 
             // Recalculate retail sum and margin, fixing potential rounding errors
-            var item = new ProductDetail
-            {
-                Cost = calc.OreCost,
-                SchemaAmt = calc.SchematicsCost,
-                Quantity = calc.Quantity,
-                Margin = 0m,
-                Retail = 0m
-            };
+            var item = new ProductDetail { Cost = calc.OreCost, SchemaAmt = calc.SchematicsCost, Quantity = calc.Quantity };
             CalcRetail(item, applyMargin, marginPct, applyRnd, rndDigi);
             calc.Margin = item.Margin;
             calc.Retail = item.Retail;
@@ -545,16 +535,33 @@ namespace DU_Industry_Tool
             return calc.OreCost;
         }
 
-        public static List<string> GetTalentsForKey(string key, out decimal inputMultiplier, out decimal inputAdder,
-            out decimal outputMultiplier, out decimal outputAdder, out decimal efficiencyFactor)
+        /// <summary>
+        /// Return talent-based factors for specifc recipe.
+        /// v2024.1.10: In addition, it will return an industry-level efficiency talent
+        /// factor, too (1 + (industry-type efficiency * handling efficiency))
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="industry"></param>
+        /// <param name="inputMultiplier"></param>
+        /// <param name="inputAdder"></param>
+        /// <param name="outputMultiplier"></param>
+        /// <param name="outputAdder"></param>
+        /// <param name="effFactorRecipe"></param>
+        /// <param name="effFactorIndustry"></param>
+        /// <returns></returns>
+        public static List<string> GetTalentsForKey(string key, string industry,
+            out decimal inputMultiplier, out decimal inputAdder,
+            out decimal outputMultiplier, out decimal outputAdder,
+            out decimal effFactorRecipe, out decimal effFactorIndustry)
         {
             inputMultiplier = 1;
             inputAdder = 0;
             outputMultiplier = 1;
             outputAdder = 0;
-            efficiencyFactor = 1;
+            effFactorRecipe = 1;
+            effFactorIndustry = 1;
 
-            foreach (var talent in DUData.Talents.Where(t => t.ApplicableRecipes.Contains(key)))
+            foreach (var talent in Talents.Where(t => t.ApplicableRecipes.Contains(key)))
             {
                 if (ApplicableTalents == null) ApplicableTalents = new List<string>();
                 if (!ApplicableTalents.Contains(talent.Name))
@@ -563,13 +570,14 @@ namespace DU_Industry_Tool
                 }
                 if (talent.EfficiencyTalent)
                 {
-                    efficiencyFactor = talent.GetEfficiencyFactor();
+                    effFactorRecipe += (talent.Value * talent.Multiplier);
                     continue;
                 }
 
                 if (talent.InputTalent)
                 {
-                    // Add each talent's multipler and adder so that we get values like 1.15 or 0.85, for pos/neg multipliers
+                    // Add each talent's multiplier and adder so that we get
+                    // values like 1.15 or 0.85, for pos/neg multipliers
                     inputMultiplier += talent.Multiplier * talent.Value;
                     inputAdder += talent.Addition * talent.Value;
                 }
@@ -579,6 +587,25 @@ namespace DU_Industry_Tool
                     outputAdder += talent.Addition * talent.Value;
                 }
             }
+            // v2024.1.11:
+            var indType = DUData.GetIndustryType(industry);
+            var indSize = DUData.GetElementSize(industry, true);
+            if (indType != "")
+            {
+                foreach (var talent in Talents.Where(t => t.Name.Contains(indType) && t.EfficiencyTalent))
+                {
+                    if (indType == "Assembly" && !talent.Name.Contains(indSize))
+                    {
+                        continue;
+                    }
+                    if (ApplicableTalents == null) ApplicableTalents = new List<string>();
+                    if (!ApplicableTalents.Contains(talent.Name))
+                    {
+                        ApplicableTalents.Add(talent.Name);
+                    }
+                    effFactorIndustry *= (1 + (talent.Value * talent.Multiplier));
+                }
+            }
 
             ApplicableTalents?.Sort();
             return ApplicableTalents;
@@ -586,7 +613,7 @@ namespace DU_Industry_Tool
 
         //public static decimal GetBaseCost(string key)
         //{
-        //    // Just like the other one, but ignore DUData.Talents.
+        //    // Just like the other one, but ignore Talents.
         //    if (DUData.Recipes?.Keys.Contains(key) != true)
         //        return 0;
         //    var recipe = DUData.Recipes[key];

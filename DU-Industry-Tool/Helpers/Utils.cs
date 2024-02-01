@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-using System.Text;
+using System.Reflection;
 using System.Windows.Forms;
-using DocumentFormat.OpenXml.VariantTypes;
 using Krypton.Toolkit;
 
 namespace DU_Helpers
@@ -36,7 +35,12 @@ namespace DU_Helpers
             return (char)(value + 64);
         }
 
-        public static float ScalingFactor = 1;
+        private static float _scalingFactor = 1;
+        public static float ScalingFactor
+        {
+            get => _scalingFactor;
+            set => _scalingFactor = Math.Max(1, value);
+        }
 
         // https://stackoverflow.com/a/909583
         public static string GetVersion()
@@ -184,13 +188,14 @@ namespace DU_Helpers
             "Grab a beer, brb...",
             "Patience, youngling!",
             "Git'in it done...",
-            "Out for lunch...",
+            "Calculating my adjustor off...",
+            "Polishing my honeycombs...",
             "Checking mails...",
             "Hold my beer...",
             "Grabbing coffee...",
             "Out shopping...",
             "Mowing the lawn...",
-            "Come back later!",
+            "Browsing du-creators...",
         };
 
         public static string PromptOpen(string title, SettingsEnum savePathTo = SettingsEnum.ProdListDirectory)
@@ -218,7 +223,7 @@ namespace DU_Helpers
             if (dlg.ShowDialog() != DialogResult.OK) return null;
             if (!File.Exists(dlg.FileName))
             {
-                KryptonMessageBox.Show(@"File does not exist!", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                KryptonMessageBox.Show(@"File does not exist!", @"Error", KryptonMessageBoxButtons.OK, false);
                 return null;
             }
             SettingsMgr.UpdateSettings(savePathTo, Path.GetDirectoryName(dlg.FileName));
@@ -252,7 +257,7 @@ namespace DU_Helpers
             };
             if (dlg.ShowDialog() != DialogResult.OK) return null;
             if (File.Exists(dlg.FileName) &&
-                (KryptonMessageBox.Show(@"Overwrite existing file?", @"Overwrite",
+                (MessageBox.Show(@"Overwrite existing file?", @"Overwrite",
                     MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes))
             {
                 return null;
@@ -337,6 +342,26 @@ namespace DU_Helpers
             }
             margin = retail - totalCostWithoutMargin;
             return retail;
+        }
+
+        public static Color CalculateInverseTextColor(Color backgroundColor)
+        {
+            int backgroundColorArgb = backgroundColor.ToArgb();
+            int[] backgroundColorRgb = new int[] { backgroundColorArgb >> 16 & 0xFF, backgroundColorArgb >> 8 & 0xFF, backgroundColorArgb & 0xFF };
+            int[] inverseTextColorRgb = new int[3];
+
+            for (int i = 0; i < 3; i++)
+            {
+                inverseTextColorRgb[i] = 255 - backgroundColorRgb[i];
+            }
+
+            return Color.FromArgb(inverseTextColorRgb[0], inverseTextColorRgb[1], inverseTextColorRgb[2]);
+        }
+
+        public static Stream GetEmbeddedResourceStream(string resourceName)
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            return assembly.GetManifestResourceStream(resourceName);
         }
     }
 }

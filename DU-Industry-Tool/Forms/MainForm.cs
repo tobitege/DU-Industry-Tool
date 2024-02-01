@@ -3,15 +3,17 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
 using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
 using BrightIdeasSoftware;
 using ClosedXML.Excel;
 using DU_Helpers;
 using DU_Industry_Tool.Interfaces;
+using DU_Industry_Tool.Skills;
 using Krypton.Navigator;
 using Krypton.Ribbon;
 using Krypton.Workspace;
@@ -24,7 +26,7 @@ namespace DU_Industry_Tool
     public partial class MainForm : KryptonForm
     {
         private bool _startUp = true;
-        private IndustryManager _manager;
+        private IndustryMgr _mgr;
         private MarketManager _market;
         private bool _marketFiltered;
         private readonly List<string> _breadcrumbs = new List<string>();
@@ -32,22 +34,24 @@ namespace DU_Industry_Tool
         private decimal _overrideQty;
         private List<string> sortedRecipes;
 
+        // Create a multicaster shared among all docs
+        private readonly ThemeChangePublisher themeChangePublisher = new ThemeChangePublisher();
+
         public MainForm()
         {
             InitializeComponent();
-
             CultureInfo.CurrentCulture = new CultureInfo("en-us");
             QuantityBox.SelectedIndex = 0;
+            SetupThemeButtonTags();
+            // only for Nightly alpha build > 24.1.30!
+            //this.kryptonRibbon.RibbonAppButton.FormCloseBoxVisible = true;
         }
 
         private void MainForm_Load(object sender, EventArgs e)
         {
             // Setup docking functionality
             var w = kryptonDockingManager.ManageWorkspace(kryptonDockableWorkspace);
-            if (w != null)
-            {
-                kryptonDockingManager.ManageControl(kryptonPage1, w);
-            }
+            kryptonDockingManager.ManageControl(kryptonPage1, w);
             kryptonDockingManager.ManageFloating(this);
 
             // Do not allow the left-side page to be closed or made auto hidden/docked
@@ -57,17 +61,7 @@ namespace DU_Industry_Tool
 
             OnMainformResize(sender, e);
 
-            // load settings before IndustryManager
-            if (SettingsMgr.LoadSettings())
-            {
-                SettingsMgr.SaveSettings();
-                ApplySettings();
-            }
-
             Utils.ScalingFactor = CurrentAutoScaleDimensions.Width / 96;
-
-            _manager = new IndustryManager();
-            _market = new MarketManager();
 
             kryptonPage1.Flags = 0;
             kryptonPage1.ClearFlags(KryptonPageFlags.DockingAllowDocked);
@@ -77,18 +71,26 @@ namespace DU_Industry_Tool
             kryptonNavigator1.Dock = DockStyle.Fill;
             OnMainformResize(null, null);
 
-            DUData.IndyMgrInstance = _manager;
+            treeView.TreeView.BackColorChanged += treeView_BackColorChanged;
+            treeView.TreeView.ForeColorChanged += treeView_BackColorChanged;
+            
+            // load settings before IndustryManager
+            if (SettingsMgr.LoadSettings())
+            {
+                SettingsMgr.SaveSettings();
+                ApplySettings();
+            }
 
-            SearchHelper.NoResultsIfEmpty = false;
-            SearchHelper.SearchableItems = DUData.RecipeNames.ToList();
-            SearchHelper.MinimumSearchLength = 2;
+            _mgr = new IndustryMgr();
+            _market = new MarketManager();
 
-            acMenu.SetAutocompleteMenu(SearchBox, acMenu);
-            acMenu.SearchPattern = ".*";
-            SearchBox.TextChanged += SearchBoxOnTextChanged;
-            SearchBox.KeyDown += SearchBoxOnKeyDown;
+            DUData.IndyMgrInstance = _mgr;
 
-            _manager.Databindings.ProductionListChanged += ProductionListUpdates;
+            SetupSearch();
+
+            SwitchTheme();
+
+            _mgr.Databindings.ProductionListChanged += ProductionListUpdates;
             ProductionListUpdates(null);
 
             LoadTree();
@@ -100,8 +102,6 @@ namespace DU_Industry_Tool
             
             _startUp = false;
         }
-
-        public IndustryManager IndyManager => _manager;
 
         private void LoadTree()
         {
@@ -224,6 +224,7 @@ namespace DU_Industry_Tool
             newDoc.ItemClick = OpenRecipe;
             newDoc.IndustryClick = LabelIndustry_Click;
             newDoc.LinkClick = Link_Click;
+            newDoc.FontChanged = DocFontChanged;
             newDoc.SetCalcResult(calc);
 
             OnMainformResize(null, null);
@@ -270,7 +271,6 @@ namespace DU_Industry_Tool
         private KryptonLabel AddLinkedLabel(System.Windows.Forms.Control.ControlCollection cc, string lblText, string lblKey)
         {
             var lbl = AddKLinkLabel(cc, lblText, FontStyle.Underline);
-            //lbl.ForeColor = Color.CornflowerBlue;
             lbl.Text = lblText;
             lbl.Tag = lblKey;
             return lbl;
@@ -423,6 +423,11 @@ namespace DU_Industry_Tool
 
         #region Results page delegates
 
+        private void DocFontChanged(object sender, FontsizeChangedEventArgs e)
+        {
+            myPalette.LabelStyles.LabelNormalPanel.StateNormal.ShortText.Font = new Font("Verdana", e.Fontsize);
+        }
+
         private void Link_Click(object sender, LinkClickedEventArgs e)
         {
             SearchByLink(e.LinkText);
@@ -471,7 +476,6 @@ namespace DU_Industry_Tool
                 page = NewPage(DUData.IndyProductsTabTitle, null);
                 kryptonNavigator1.Pages.Insert(0, page);
             }
-            if (page == null) return;
             kryptonNavigator1.SelectedPage = page;
 
             page.Controls.Clear();
@@ -698,8 +702,8 @@ namespace DU_Industry_Tool
                 worksheet.Row(1).Style.Font.SetBold();
 
                 var row = 2;
-                var ingredients = Calculator.GetIngredientRecipes(recipe.Key).OrderByDescending(i => i.Tier).GroupBy(i => i.Name);
-                if (!ingredients?.Any() == true) return;
+                var ingredients = Calculator.GetIngredientRecipes(recipe.Key).OrderByDescending(i => i.Tier).GroupBy(i => i.Name).ToList();
+                if (!ingredients.Any()) return;
                 try
                 {
                     foreach(var group in ingredients)
@@ -708,10 +712,12 @@ namespace DU_Industry_Tool
                         worksheet.Cell(row, 3).Value = group.First().Name;
                         worksheet.Cell(row, 4).FormulaA1 = $"=B2*{groupSum}";
                         decimal outputMult = 1;
-                        var talents = DUData.Talents.Where(t => t.InputTalent == false &&
-                                                                t.ApplicableRecipes.Contains(group.First().Name));
-                        if (talents?.Any() == true)
+                        var talents = Talents.Where(t => t.InputTalent == false &&
+                                                         t.ApplicableRecipes.Contains(group.First().Name)).ToList();
+                        if (talents.Any())
+                        {
                             outputMult += talents.Sum(t => t.Multiplier);
+                        }
                         if (group.First().Recipe.ParentGroupName != "Ore")
                         {
                             worksheet.Cell(row, 5).Value = (86400 / group.First().Recipe.Time) * group.First().Recipe.Products.First().Quantity * outputMult;
@@ -727,7 +733,7 @@ namespace DU_Industry_Tool
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Sorry, an error occured during calculation!", "ERROR", MessageBoxButtons.OK);
+                    KryptonMessageBox.Show("Sorry, an error occured during calculation!", "ERROR", KryptonMessageBoxButtons.OK, false);
                     Console.WriteLine(ex);
                 }
             }
@@ -739,10 +745,10 @@ namespace DU_Industry_Tool
 
         private void OnMainformResize(object sender, EventArgs e)
         {
-            kryptonNavigator1.Left = searchPanel.Width + 0;
+            kryptonNavigator1.Left = searchPanel.Width + 8;
             kryptonNavigator1.Top = kryptonRibbon.Height + 0;
-            kryptonNavigator1.Height = kryptonWorkspaceCell1.Height - 2;
-            kryptonNavigator1.Width = ClientSize.Width - searchPanel.Width - 0;
+            kryptonNavigator1.Height = kryptonWorkspaceCell1.Height - 0;
+            kryptonNavigator1.Width = ClientSize.Width - searchPanel.Width - 8;
         }
 
         private void MainForm_KeyUp(object sender, KeyEventArgs e)
@@ -833,11 +839,6 @@ namespace DU_Industry_Tool
             CbRestoreWindow.Checked = SettingsMgr.GetBool(SettingsEnum.RestoreWindow);
             CbStartupProdList.Checked = SettingsMgr.GetBool(SettingsEnum.LaunchProdList);
             CbFullSchematicQty.Checked = SettingsMgr.GetBool(SettingsEnum.FullSchematicQuantities);
-            var themeId = SettingsMgr.GetInt(SettingsEnum.ThemeId);
-            if (themeId > 0)
-            {
-                kryptonManager.GlobalPaletteMode = (PaletteModeManager)themeId;
-            }
 
             if (!_startUp) return;
 
@@ -846,19 +847,12 @@ namespace DU_Industry_Tool
                 SetWindowSettingsIntoScreenArea();
             }
 
-            DUData.SchemCraftingTalents[0] = SettingsMgr.GetInt(SettingsEnum.SchemCraftCost1);
-            DUData.SchemCraftingTalents[1] = SettingsMgr.GetInt(SettingsEnum.SchemCraftCost2);
-            DUData.SchemCraftingTalents[2] = SettingsMgr.GetInt(SettingsEnum.SchemCraftOutput1);
-            DUData.SchemCraftingTalents[3] = SettingsMgr.GetInt(SettingsEnum.SchemCraftOutput2);
-
             try
             {
                 var recentsList = JsonConvert.DeserializeObject<string[]>((string)SettingsMgr.Settings["RecentProdLists"]);
-                if (recentsList != null)
-                {
-                    CbRecentLists.Items.Clear();
-                    CbRecentLists.Items.AddRange(recentsList);
-                }
+                if (recentsList == null) return;
+                CbRecentLists.Items.Clear();
+                CbRecentLists.Items.AddRange(recentsList);
             }
             catch (Exception) { }
         }
@@ -873,14 +867,7 @@ namespace DU_Industry_Tool
             SettingsMgr.UpdateSettings(SettingsEnum.LastWidth, Width);
             SettingsMgr.UpdateSettings(SettingsEnum.LaunchProdList, CbStartupProdList.Checked);
             SettingsMgr.UpdateSettings(SettingsEnum.RestoreWindow, CbRestoreWindow.Checked);
-            SettingsMgr.UpdateSettings(SettingsEnum.ThemeId, (int)kryptonManager.GlobalPaletteMode);
-
             SettingsMgr.UpdateSettings(SettingsEnum.FullSchematicQuantities, DUData.FullSchematicQuantities);
-            SettingsMgr.UpdateSettings(SettingsEnum.SchemCraftCost1, DUData.SchemCraftingTalents[0]);
-            SettingsMgr.UpdateSettings(SettingsEnum.SchemCraftCost2, DUData.SchemCraftingTalents[1]);
-            SettingsMgr.UpdateSettings(SettingsEnum.SchemCraftOutput1, DUData.SchemCraftingTalents[2]);
-            SettingsMgr.UpdateSettings(SettingsEnum.SchemCraftOutput2, DUData.SchemCraftingTalents[3]);
-
             SettingsMgr.UpdateSettings(SettingsEnum.RecentProdLists, JsonConvert.SerializeObject(CbRecentLists.Items));
             SettingsMgr.SaveSettings();
         }
@@ -927,7 +914,9 @@ namespace DU_Industry_Tool
                     return xDoc;
                 }
             }
-            var newDoc = new ContentDocumentTree();
+            var newDoc = new ContentDocumentTree(themeChangePublisher);
+            newDoc.CheckPaletteChanges(myPalette);
+
             var page = NewPage(title ?? "Recipe", newDoc);
             kryptonNavigator1.Pages.Add(page);
             kryptonNavigator1.SelectedPage = page;
@@ -937,6 +926,7 @@ namespace DU_Industry_Tool
 
         private void AddTabCloseButton(KryptonPage page)
         {
+            if (page == null) return;
             // Add a close button
             var bsa = new ButtonSpecAny
             {
@@ -946,7 +936,7 @@ namespace DU_Industry_Tool
                 Visible = true,
             };
             bsa.Click += BsaOnClick;
-            page.ButtonSpecs.Add(bsa);
+            page.ButtonSpecs?.Add(bsa);
         }
 
         private void BsaOnClick(object sender, EventArgs e)
@@ -994,7 +984,7 @@ namespace DU_Industry_Tool
             var page = kryptonNavigator1.Pages.FirstOrDefault(x => x.Text == DUData.ProductionListTitle);
             if (!remove || page == null) return page;
             kryptonNavigator1.Pages.Remove(page);
-            _manager.Databindings.Remove(page.Text);
+            _mgr.Databindings.Remove(page.Text);
             return null;
         }
 
@@ -1004,33 +994,49 @@ namespace DU_Industry_Tool
 
         private void BtnTalents_Click(object sender, EventArgs e)
         {
-            using (var form = new SkillForm())
+            try
             {
-                form.ShowDialog(this);
+                using (var form = new SkillForm2())
+                {
+                    form.ShowDialog(this);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("An error occurred: " + ex.Message);
             }
         }
 
         private void BtnOreValues_Click(object sender, EventArgs e)
         {
-            using (var form = new OreValueForm())
+            try
             {
-                form.ShowDialog(this);
+                using (var form = new OreValueForm())
+                {
+                    form.ShowDialog(this);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("An error occurred: " + ex.Message);
             }
         }
 
         private void BtnSchematics_Click(object sender, EventArgs e)
         {
-            var oldTalents = DUData.SchemCraftingTalents.Clone();
-            using (var form = new SchematicValueForm())
+            try
             {
-                form.ShowDialog(this);
+                using (var form = new SchematicValueForm())
+                {
+                    form.ShowDialog(this);
+                }
             }
-            // if schematic crafting talents have changed, reload vanilla talents
-            // and re-apply talents:
-            if (oldTalents != DUData.SchemCraftingTalents)
+            catch (Exception ex)
             {
-                DUData.LoadSchematics();
+                MessageBox.Show("An error occurred: " + ex.Message);
             }
+            // reload vanilla schematics and re-apply talents
+            DUData.LoadSchematics();
         }
 
         private void RibbonAppButtonExit_Click(object sender, EventArgs e)
@@ -1046,40 +1052,13 @@ namespace DU_Industry_Tool
             }
         }
 
-        private void RbOffice2010Blue_Click(object sender, EventArgs e)
-        {
-            kryptonManager.GlobalPaletteMode = PaletteModeManager.Office2010Blue;
-            SaveSettings();
-        }
-
-        private void RbOffice2010BSilver_Click(object sender, EventArgs e)
-        {
-            kryptonManager.GlobalPaletteMode = PaletteModeManager.Office2010Silver;
-            SaveSettings();
-        }
-
-        private void RbOffice365White_Click(object sender, EventArgs e)
-        {
-            kryptonManager.GlobalPaletteMode = PaletteModeManager.Office365White;
-            SaveSettings();
-        }
-
-        //private void CmbThemes_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
-        //{
-        //    var idx = ((KryptonThemeComboBox)CmbThemes.CustomControl).ThemeSelectedIndex;
-        //    if (idx >= 0)
-        //    {
-        //        kryptonManager.GlobalPaletteMode = (PaletteModeManager)idx;
-        //    }
-        //}
-
         #endregion
 
         #region Production List
 
         private void RbnBtnProductionList_Click(object sender, EventArgs e)
         {
-            using (var form = new ProductionListForm(_manager))
+            using (var form = new ProductionListForm(_mgr))
             {
                 if (form.ShowDialog(this) == DialogResult.Cancel) return;
             }
@@ -1100,20 +1079,19 @@ namespace DU_Industry_Tool
 
         private void RbnBtnProductionListLoad_Click(object sender, EventArgs e)
         {
-            if (!ProductionListForm.LoadList(_manager)) return;
-            if (!_manager.Databindings.ListLoaded) return;
-            StoreLatestList(_manager.Databindings.Filepath);
+            if (!ProductionListForm.LoadList(_mgr)) return;
+            if (!_mgr.Databindings.ListLoaded) return;
+            StoreLatestList(_mgr.Databindings.Filepath);
             ProcessProductionList();
         }
 
         private void RbnBtnProductionListSave_Click(object sender, EventArgs e)
         {
-            if (!_manager.Databindings.HasData && !_manager.Databindings.ListLoaded) return;
-            if (!ProductionListForm.SaveList(_manager)) return;
-            StoreLatestList(_manager.Databindings.Filepath);
+            if (!_mgr.Databindings.HasData && !_mgr.Databindings.ListLoaded) return;
+            if (!ProductionListForm.SaveList(_mgr)) return;
+            StoreLatestList(_mgr.Databindings.Filepath);
             KryptonMessageBox.Show("Production list saved to:"+Environment.NewLine+
-                _manager.Databindings.Filepath, "Success",
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
+                _mgr.Databindings.Filepath, "Success", KryptonMessageBoxButtons.OK, false);
         }
 
         private void BtnProdListAdd_Click(object sender, EventArgs e)
@@ -1122,8 +1100,8 @@ namespace DU_Industry_Tool
             if (DUData.IsIgnorableTitle(kryptonNavigator1.SelectedPage.Text)) return;
             if (kryptonNavigator1.SelectedPage.Controls[0] is IContentDocument doc)
             {
-                var isNew = !_manager.Databindings.HasData && !_manager.Databindings.ListLoaded;
-                _manager.Databindings.Add(kryptonNavigator1.SelectedPage.Text, doc.Quantity);
+                var isNew = !_mgr.Databindings.HasData && !_mgr.Databindings.ListLoaded;
+                _mgr.Databindings.Add(kryptonNavigator1.SelectedPage.Text, doc.Quantity);
                 if (!isNew) return;
                 ProcessProductionList();
             }
@@ -1132,12 +1110,12 @@ namespace DU_Industry_Tool
         private void BtnProdListRemove_Click(object sender, EventArgs e)
         {
             if (kryptonNavigator1.SelectedPage == null) return;
-            _manager.Databindings.Remove(kryptonNavigator1.SelectedPage.Text);
+            _mgr.Databindings.Remove(kryptonNavigator1.SelectedPage.Text);
         }
 
         private void BtnProdListClose_Click(object sender, EventArgs e)
         {
-            if (KryptonMessageBox.Show("Really close current production list?",
+            if (MessageBox.Show("Really close current production list?",
                 "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
             {
                 GetProductionPage(true);
@@ -1147,7 +1125,7 @@ namespace DU_Industry_Tool
         private void BtnClearProdLists_Click(object sender, EventArgs e)
         {
             if (CbRecentLists.Items.Count == 0 ||
-                KryptonMessageBox.Show("Really clear list of recent production lists?",
+                MessageBox.Show("Really clear list of recent production lists?",
                 "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
             {
                 return;
@@ -1173,7 +1151,7 @@ namespace DU_Industry_Tool
                 try
                 {
                     Calculator.Initialize();
-                    if (!_manager.Databindings.PrepareProductListRecipe())
+                    if (!_mgr.Databindings.PrepareProductListRecipe())
                     {
                         KryptonMessageBox.Show("Production List could not be prepared!", "Failure");
                         return;
@@ -1195,7 +1173,7 @@ namespace DU_Industry_Tool
 
         private void ProductionListClose()
         {
-            _manager.Databindings.Clear();
+            _mgr.Databindings.Clear();
             CbRecentLists.SelectedIndex = -1;
             CbRecentLists.Text = "";
             SettingsMgr.UpdateSettings(SettingsEnum.LastProductionList, "");
@@ -1206,26 +1184,26 @@ namespace DU_Industry_Tool
         private void ProductionListUpdates(object sender)
         {
             BtnProdListAdd.Enabled = !DUData.IsIgnorableTitle(kryptonNavigator1.SelectedPage?.Text);
-            BtnProdListClose.Enabled = _manager.Databindings.HasData || _manager.Databindings.ListLoaded;
-            BtnProdListRemove.Enabled = BtnProdListAdd.Enabled && _manager.Databindings.HasData;
+            BtnProdListClose.Enabled = _mgr.Databindings.HasData || _mgr.Databindings.ListLoaded;
+            BtnProdListRemove.Enabled = BtnProdListAdd.Enabled && _mgr.Databindings.HasData;
             RbnBtnProductionListSave.Enabled = BtnProdListClose.Enabled;
             if (_navUpdating) return;
             Text = "DU Industry Tool " + Utils.GetVersion();
             if (!RbnBtnProductionListSave.Enabled) return;
             Text += " (";
-            if (_manager.Databindings.ListLoaded)
+            if (_mgr.Databindings.ListLoaded)
             {
-                Text += DUData.ProductionListTitle + ": " + _manager.Databindings.GetFilename() +
-                        " / " + _manager.Databindings.Count;
+                Text += DUData.ProductionListTitle + ": " + _mgr.Databindings.GetFilename() +
+                        " / " + _mgr.Databindings.Count;
             }
             else
             {
-                Text += DUData.ProductionListTitle + " " + _manager.Databindings.Count;
+                Text += DUData.ProductionListTitle + " " + _mgr.Databindings.Count;
             }
             Text += ")";
-            if (_manager.Databindings.ListLoaded)
+            if (_mgr.Databindings.ListLoaded)
             {
-                StoreLatestList(_manager.Databindings.Filepath);
+                StoreLatestList(_mgr.Databindings.Filepath);
             }
         }
 
@@ -1244,7 +1222,7 @@ namespace DU_Industry_Tool
             }
             try
             {
-                if (!_manager.Databindings.Load(filename) || !_manager.Databindings.ListLoaded)
+                if (!_mgr.Databindings.Load(filename) || !_mgr.Databindings.ListLoaded)
                 {
                     return;
                 }
@@ -1277,6 +1255,18 @@ namespace DU_Industry_Tool
 
         #region Search box + autocomplete
 
+        private void SetupSearch()
+        {
+            SearchHelper.NoResultsIfEmpty = false;
+            SearchHelper.SearchableItems = DUData.RecipeNames.ToList();
+            SearchHelper.MinimumSearchLength = 2;
+
+            acMenu.SetAutocompleteMenu(SearchBox, acMenu);
+            acMenu.SearchPattern = ".*";
+            SearchBox.TextChanged += SearchBoxOnTextChanged;
+            SearchBox.KeyDown += SearchBoxOnKeyDown;
+        }
+
         private void SearchBox_KeyPress(object sender, KeyPressEventArgs e)
         {
             if ((Keys)e.KeyChar == Keys.Enter)
@@ -1301,7 +1291,7 @@ namespace DU_Industry_Tool
             {
                 if (tb.Text.Length < SearchHelper.MinimumSearchLength) return;
                 var matchingItems = SearchHelper.SearchItems(tb.Text);
-                acMenu.SetAutocompleteItems(matchingItems.Select(item => new RecipeAutocompleteItem(item)).ToList());
+                acMenu.SetAutocompleteItems(matchingItems.Select(item => new SearchResultItem(item)).ToList());
             }
             finally
             {
@@ -1315,6 +1305,382 @@ namespace DU_Industry_Tool
             if (!SearchHelper.SearchableItems.Contains(e.Item.Text)) return;
             SearchBox.Text = e.Item.Text;
             SearchButton.PerformClick();
+        }
+
+        #endregion
+
+        #region Theme switching
+
+        private void SetupThemeButtonTags()
+        {
+            rbnBtnThemeBlue.Tag = (int)PaletteMode.Microsoft365Blue;
+            rbnBtnThemeSilver.Tag = (int)PaletteMode.Microsoft365Silver;
+            rbnBtnThemeWhite.Tag = (int)PaletteMode.Microsoft365White;
+            rbThemeDarkBlue.Tag = (int)PaletteMode.Microsoft365BlueDarkMode;
+            rbThemeDarkSilver.Tag = (int)PaletteMode.Microsoft365SilverDarkMode;
+            rbThemeVStudioDark.Tag = (int)PaletteMode.VisualStudio2010Render365;
+            rbThemeBlackDarkMode.Tag = (int)PaletteMode.Microsoft365BlackDarkMode;
+            rbThemeSparkleOrangeDark.Tag = (int)PaletteMode.SparkleOrangeDarkMode;
+            rbThemeSparkleBlueDark.Tag = (int)PaletteMode.SparkleBlueDarkMode;
+        }
+
+        private void SwitchTheme()
+        {
+            CloseBox = true;
+            // load settings
+            var useCustom = SettingsMgr.GetBool(SettingsEnum.UseCustomTheme);
+            var customTheme = SettingsMgr.GetStr(SettingsEnum.LastCustomTheme);
+
+            // Clear custom theme by default (after reading the value!).
+            // This will only be written again if switch was successful.
+            SaveCustomThemeSetting("", false);
+
+            if (useCustom)
+            {
+                SwitchCustomTheme(customTheme);
+                return;
+            }
+            SwitchBuiltinTheme(SettingsMgr.GetInt(SettingsEnum.ThemeId));
+        }
+
+        private void SaveCustomThemeSetting(string themeName, bool active)
+        {
+            SettingsMgr.UpdateSettings(SettingsEnum.UseCustomTheme, active);
+            SettingsMgr.UpdateSettings(SettingsEnum.LastCustomTheme, themeName);
+            SettingsMgr.SaveSettings();
+        }
+
+        private bool SwitchCustomTheme(string customTheme)
+        {
+            // Custom themes support (limited)
+            var custThemes = new[]
+            {
+                "Asphalt",
+                "Chrome",
+                "Green Palette",
+                "Hazel",
+                "McLane",
+                "vs2019.dark",
+                "win7"
+            };
+
+            if (string.IsNullOrEmpty(customTheme) || !custThemes.Contains(customTheme))
+            {
+                return false;
+            }
+
+            // Finally, try importing (and upgrade if needed) the custom theme 
+            try
+            {
+                using (var res = Utils.GetEmbeddedResourceStream($"DU_Industry_Tool.Palettes.{customTheme}.xml"))
+                {
+                    if (res == null) return false;
+                    myPalette = new KryptonCustomPaletteBase(this.components);
+                    kryptonManager.GlobalCustomPalette = myPalette;
+                    kryptonManager.GlobalPaletteMode = PaletteMode.Custom;
+
+                    myPalette.Import(res); //myPalette.ImportWithUpgrade(res);
+                    myPalette.ThemeName = customTheme;
+
+                    //myPalette.Export($"c:\\temp\\{customTheme}.xml", true, true);
+
+                    // only if successful, store custom theme again in settings
+                    SaveCustomThemeSetting(customTheme, true);
+
+                    // Fix colors and notify all docs of the theme change
+                    FixPaletteColors();
+                    return true;
+                }
+            }
+            catch (Exception e)
+            {
+                KryptonMessageBox.Show("Sorry, could not load theme " + customTheme, "Theme Error");
+            }
+            return false;
+        }
+
+        private bool SwitchBuiltinTheme(int themeId)
+        {
+            // Lets assume that "PaletteMode.Custom" has highest index.
+            // We need the id to be above Global and lower than Custom
+            themeId = Utils.ClampInt(themeId, (int)PaletteMode.Global, (int)PaletteMode.Custom);
+            if (themeId < 1 || themeId >= (int)PaletteMode.Custom) return false;
+
+            try
+            {
+                myPalette = new KryptonCustomPaletteBase(this.components);
+                kryptonManager.GlobalCustomPalette = myPalette;
+                kryptonManager.GlobalPaletteMode = PaletteMode.Custom;
+                myPalette.BasePalette = KryptonManager.GetPaletteForMode((PaletteMode)themeId);
+                if (myPalette.BasePalette == null)
+                {
+                    return false;
+                }
+                SettingsMgr.UpdateSettings(SettingsEnum.UseCustomTheme, false);
+                SettingsMgr.UpdateSettings(SettingsEnum.ThemeId, themeId);
+                SettingsMgr.SaveSettings();
+                FixPaletteColors();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // Fallback to Silver
+                kryptonManager.GlobalPaletteMode = PaletteMode.Microsoft365Silver;
+                KryptonMessageBox.Show("Failed to switch theme!\r\nERROR:\r\n" + ex.Message,
+                    "Theme switching error");
+            }
+            return false;
+        }
+
+        private void rbTheme1_Click(object sender, EventArgs e)
+        {
+            if (!(sender is KryptonRibbonGroupButton btn)) return;
+            var switched = false;
+            switch (btn.Tag)
+            {
+                case int tag:
+                    switched = SwitchBuiltinTheme((int)tag);
+                    break;
+                case string themeName:
+                    switched = SwitchCustomTheme(themeName);
+                    break;
+            }
+            CloseBox = true;
+
+            if (!switched) return;
+            if (rbnThemesStdTriple.Items != null)
+            {
+                foreach (var item in rbnThemesStdTriple.Items)
+                {
+                    if (item is KryptonRibbonGroupButton rbnBtn)
+                    {
+                        rbnBtn.Checked = rbnBtn == btn;
+                    }
+                }
+            }
+            if (rbnThemesStdLine1.Items != null)
+            {
+                foreach (var item in rbnThemesStdLine1.Items)
+                {
+                    if (item is KryptonRibbonGroupButton rbnBtn)
+                    {
+                        rbnBtn.Checked = rbnBtn == btn;
+                    }
+                }
+            }
+            if (rbnThemesCustomLine1.Items == null) return;
+            foreach (var item in rbnThemesCustomLine1.Items)
+            {
+                if (item is KryptonRibbonGroupButton rbnBtn)
+                {
+                    rbnBtn.Checked = rbnBtn == btn;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Not happy with some themes, that on some elements the fore- and background
+        /// colors are just painful, like white-on-white or darkgray-on-black.
+        /// Lets try to fix some (subjectively) bad cases here manually.
+        /// Based on v90.24 latest Canary build of Krypton Toolkit!
+        /// </summary>
+        private void FixPaletteColors()
+        {
+            if (myPalette?.BasePalette == null) return;
+
+            // Info:
+            // RibbonTab:
+            //  StateCheckedNormal = Selected/Active
+            //  StateCheckedNormal.BackColor1 : tab border
+            //  StateCheckedNormal.BackColor2 : starting gradient color
+            //  StateCheckedNormal.BackColor3 : ending gradient color
+            //  StateCheckedNormal.BackColor4 : unused for RibbonTab/TabStyles
+            // Results tab - selected background:
+            //  myPalette.TabStyles.TabCommon.StateSelected.Back.Color2
+            // TreeView, edit boxes:
+            //  InputControlStandalone.StateActive.Back : regular background color! (not StateNormal!)
+            // .PaletteColorStyle.ExpertPressed seems like solid color rendering
+            //myPalette.Ribbon.RibbonTab.StateCheckedNormal.BackColor2 = Color.Red; // active (clicked) tab bg color
+            //myPalette.Ribbon.RibbonTab.StateCommon.BackColor1 = Color.xxx; // tab outer border color
+            //myPalette.TabStyles.TabCommon.StateCommon.Back.Color1 = Color.xxx; // tabbed page title bg, e.g. "Production List" tab
+            //myPalette.Ribbon.RibbonGroupArea.StateCommon.BackColor3 = Color.xxx;
+            //myPalette.Ribbon.RibbonGroupArea.StateTracking.BackColor3 = Color.xxx;
+            //myPalette.TabStyles.TabCommon.StatePressed.Content.ShortText.Color1 = Color.Red;
+            //myPalette.Ribbon.RibbonGroupArea.StateContextPressed.BackColor1 = Color.Orange;
+            //myPalette.Ribbon.RibbonGroupArea.StateCheckedNormal.BackColor1 = Color.Red;
+            //myPalette.Ribbon.RibbonGroupCollapsedBack.StateTracking.BackColor1 = Color.Yellow;
+            // this is not only for regular panels, but also page tabs' backgrounds!
+            //myPalette.PanelStyles.PanelClient.StateCommon.Color1 = Color.OrangeRed;
+
+            // "Segoe UI" causes internal issues as it is not truely scalable (returns null in
+            // Graphics.FromHdcInternal(dc) in some cases). For now, switched to Verdana.
+            myPalette.BasePalette.BaseFont = new Font("Verdana", 9F);
+
+            myPalette.ButtonStyles.ButtonListItem.StateNormal.Content.ShortText.Color1 = myPalette.BasePalette.ColorTable.ToolStripText;
+            DUData.SecondaryForeColor = myPalette.ButtonStyles.ButtonListItem.StateNormal.Content.ShortText.Color1;
+            //myPalette.ButtonStyles.ButtonListItem.StateNormal.Content.ShortText.Color1 = Color.Black;
+
+            // apply fixes
+            if (!SettingsMgr.GetBool(SettingsEnum.UseCustomTheme))
+            {
+                var mode = KryptonManager.GetModeForPalette(myPalette.BasePalette);
+                switch (mode)
+                {
+                    case PaletteMode.Microsoft365BlackDarkMode:
+                        SetPaletteRibbonGroupTextColors();
+                        myPalette.TabStyles.TabCommon.StateSelected.Content.ShortText.Color1 = Color.WhiteSmoke;
+                        myPalette.TabStyles.TabCommon.StateSelected.Back.ColorStyle = PaletteColorStyle.GlassCheckedSimple;
+                        // Input controls background with black are bad for readability, try very dark gray:
+                        myPalette.InputControlStyles.InputControlStandalone.StateCommon.Back.Color1 = Color.FromArgb(30, 30, 30);
+                        myPalette.GridStyles.GridList.StateCommon.DataCell.Border.Color1 = Color.FromArgb(255, 30, 30, 30);
+                        // link label color
+                        myPalette.LabelStyles.LabelNormalPanel.OverrideNotVisited.ShortText.Color1 = Color.OrangeRed;
+                        break;
+                    case PaletteMode.Microsoft365BlueDarkMode:
+                        myPalette.ButtonStyles.ButtonCommon.StateCheckedNormal.Content.ShortText.Color1 = Color.White;
+                        myPalette.Ribbon.RibbonGroupButtonText.StateCommon.TextColor = Color.Navy;
+                        myPalette.Ribbon.RibbonGroupNormalTitle.StateNormal.TextColor = Color.White;
+                        myPalette.Ribbon.RibbonTab.StateCheckedNormal.TextColor = Color.White;
+                        myPalette.Ribbon.RibbonTab.StateCheckedTracking.TextColor = Color.LightBlue; // tab font tracking color (hover)
+                        myPalette.TabStyles.TabCommon.StateSelected.Content.ShortText.Color1 = Color.White; // Active tab's title text color
+                        myPalette.TabStyles.TabCommon.StateSelected.Back.ColorStyle = PaletteColorStyle.GlassCheckedSimple;
+                        myPalette.TabStyles.TabDock.StateNormal.Back.Color1 = Color.LightBlue; // tabbed page bg; "gap" left of ContentDocument
+                        break;
+                    case PaletteMode.Microsoft365SilverDarkMode:
+                        // Button-click font color was FromArgb(168, 80, 34), way too dark on dark background FromArgb(54, 64, 88)
+                        myPalette.ButtonStyles.ButtonCommon.StatePressed.Content.ShortText.Color1 = Color.White;
+                        myPalette.ButtonStyles.ButtonCommon.StateCheckedNormal.Content.ShortText.Color1 = Color.White;
+                        myPalette.ButtonStyles.ButtonForm.StateCheckedNormal.Content.ShortText.Color1 = Color.White;
+                        myPalette.Ribbon.RibbonGroupNormalTitle.StateNormal.TextColor = Color.FromArgb(255, 70, 70, 70);
+                        myPalette.Ribbon.RibbonTab.StateNormal.TextColor = Color.Black;
+                        myPalette.TabStyles.TabCommon.StateCommon.Content.ShortText.Color1 = Color.White;
+                        myPalette.TabStyles.TabCommon.StateSelected.Content.ShortText.Color1 = Color.White;
+                        myPalette.TabStyles.TabCommon.StateSelected.Back.ColorStyle = PaletteColorStyle.GlassCheckedSimple;
+                        break;
+                    case PaletteMode.VisualStudio2010Render365:
+                    case PaletteMode.SparkleBlueDarkMode:
+                    case PaletteMode.SparkleOrangeDarkMode:
+                    case PaletteMode.Microsoft365White:
+                        myPalette.ButtonStyles.ButtonListItem.StateNormal.Content.ShortText.Color1 = Color.FromArgb(255, 30, 30, 30);
+                        DUData.SecondaryForeColor = myPalette.ButtonStyles.ButtonListItem.StateNormal.Content.ShortText.Color1;
+                        break;
+                    
+                    // example for how to darken something:
+                    //case PaletteMode.SparkleOrangeDarkMode:
+                    //    var darkened = ColorHelpers.DarkenColor(Color.FromArgb(214, 219, 225), 10);
+                    //    if (darkened != Color.Transparent && !(darkened.R == 0 && darkened.G == 0 && darkened.B == 0))
+                    //    {
+                    //        myPalette.InputControlStyles.InputControlStandalone.StateActive.Back.Color1 = darkened;
+                    //    }
+                    //    break;
+                }
+            }
+            else
+            {
+                switch (myPalette.ThemeName)
+                {
+                    case "Green Palette":
+                        myPalette.TabStyles.TabCommon.StateSelected.Content.ShortText.Color1 = Color.Black;
+                        myPalette.Ribbon.RibbonGroupButtonText.StateNormal.TextColor = Color.Black;
+                        myPalette.Ribbon.RibbonGroupButtonText.StateCommon.TextColor = Color.Black;
+                        myPalette.Ribbon.RibbonGroupRadioButtonText.StateCommon.TextColor = Color.Black;
+                        myPalette.Ribbon.RibbonGroupCheckBoxText.StateCommon.TextColor = Color.Black;
+                        myPalette.GridStyles.GridSheet.StateNormal.Background.Color1 = Color.FromArgb(242, 247, 247);
+                        // link label color
+                        myPalette.LabelStyles.LabelNormalPanel.OverrideNotVisited.ShortText.Color1 = Color.Green;
+                        // override dark button text color
+                        myPalette.ButtonStyles.ButtonCommon.StateNormal.Content.ShortText.Color1 = Color.White;
+                        // override ButtonListItem color, which is used by KryptonTreeView
+                        myPalette.ButtonStyles.ButtonListItem.StateNormal.Content.ShortText.Color1 = Color.Green;
+                        DUData.SecondaryForeColor = Color.Green;
+                        break;
+                    case "vs2019.dark":
+                        myPalette.TabStyles.TabCommon.StateSelected.Content.ShortText.Color1 = Color.Orange;
+                        myPalette.Ribbon.RibbonTab.StateCommon.TextColor = Color.Black;
+                        myPalette.Ribbon.RibbonTab.StateCheckedTracking.TextColor = Color.White;
+                        myPalette.Ribbon.RibbonGroupButtonText.StateCommon.TextColor = Color.White;
+                        myPalette.Ribbon.RibbonGroupRadioButtonText.StateCommon.TextColor = Color.White;
+                        myPalette.Ribbon.RibbonGroupCheckBoxText.StateCommon.TextColor = Color.White;
+                        // ribbon group bg gradient top color when hovering
+                        //myPalette.Ribbon.RibbonGroupArea.StateCommon.BackColor1 = Color.Black;
+                        // ribbon group bg gradient bottom color when hovering
+                        myPalette.Ribbon.RibbonGroupArea.StateCommon.BackColor3 = ColorHelpers.LightenColor(Color.Black, 20);
+                        // ribbon group bottom title
+                        myPalette.Ribbon.RibbonGroupNormalTitle.StateCommon.TextColor = Color.DarkGray;
+                        myPalette.GridStyles.GridList.StateCommon.DataCell.Border.Color1 = Color.FromArgb(255, 30, 30, 30);
+                        // For treeview
+                        myPalette.ButtonStyles.ButtonListItem.StateNormal.Content.ShortText.Color1 = Color.White;
+                        // link label color
+                        myPalette.LabelStyles.LabelNormalPanel.OverrideNotVisited.ShortText.Color1 = Color.OrangeRed;
+                        DUData.SecondaryForeColor = Color.White;
+                        break;
+                    case "Hazel":
+                        treeView.TreeView.BackColor = Color.FromArgb(255, 239, 235, 224);
+                        // link label color
+                        myPalette.LabelStyles.LabelNormalPanel.OverrideNotVisited.ShortText.Color1 = Color.Brown;
+                        break;
+                    case "McLane":
+                        myPalette.Ribbon.RibbonTab.StateCommon.TextColor = Color.Black;
+                        break;
+                }
+            }
+            treeView.Refresh(); // important!
+        }
+
+        private void treeView_BackColorChanged(object sender, EventArgs e)
+        {
+            TriggerDocColorUpdate();
+        }
+
+        private async void TriggerDocColorUpdate()
+        {
+            // Notify all docs of the theme change with a short delay
+            await Task.Delay(TimeSpan.FromSeconds(0.2));
+            DUData.SecondaryBackColor = treeView.TreeView.BackColor;
+            //DUData.SecondaryForeColor = treeView.ForeColor;
+            if (this.InvokeRequired)
+            {
+                this.Invoke((MethodInvoker)delegate {
+                    themeChangePublisher.PublishThemeChange(myPalette);
+                });
+                return;
+            }
+            themeChangePublisher.PublishThemeChange(myPalette);
+        }
+
+        private void myPaletteResetColors()
+        {
+            myPalette.Ribbon.RibbonGroupButtonText.StateNormal.TextColor = Color.Empty;
+            myPalette.Ribbon.RibbonGroupButtonText.StateCommon.TextColor = Color.Empty;
+            myPalette.Ribbon.RibbonGroupRadioButtonText.StateCommon.TextColor = Color.Empty;
+            myPalette.Ribbon.RibbonGroupCheckBoxText.StateCommon.TextColor = Color.Empty;
+            myPalette.Ribbon.RibbonTab.StateCommon.TextColor = Color.Empty;
+            myPalette.Ribbon.RibbonTab.StateCheckedNormal.TextColor = Color.Empty;
+            myPalette.Ribbon.RibbonTab.StateCheckedTracking.TextColor = Color.Empty;
+            myPalette.TabStyles.TabCommon.StateCommon.Content.ShortText.Color1 = Color.Empty;
+            myPalette.TabStyles.TabCommon.StateSelected.Content.ShortText.Color1 = Color.Empty;
+            myPalette.TabStyles.TabCommon.StateSelected.Back.ColorStyle = 0;
+            myPalette.ButtonStyles.ButtonCommon.StatePressed.Content.ShortText.Color1 = Color.Empty;
+            myPalette.ButtonStyles.ButtonCommon.StateCheckedNormal.Content.ShortText.Color1 = Color.Empty;
+            myPalette.ButtonStyles.ButtonForm.StateCheckedNormal.Content.ShortText.Color1 = Color.Empty;
+            myPalette.InputControlStyles.InputControlStandalone.StateActive.Back.Color1 = Color.Empty;
+            myPalette.InputControlStyles.InputControlStandalone.StateCommon.Back.Color1 = Color.Empty;
+        }
+
+        private void SetPaletteRibbonGroupTextColors(int r = 255, int g = 255, int b = 255)
+        {
+            var textColor = Color.FromArgb(r, g, b);
+            myPalette.Ribbon.RibbonGroupLabelText.StateNormal.TextColor = textColor;
+            myPalette.Ribbon.RibbonGroupNormalTitle.StateNormal.TextColor = textColor;
+            myPalette.Ribbon.RibbonGroupNormalTitle.StateCommon.TextColor = textColor;
+            myPalette.Ribbon.RibbonGroupCollapsedText.StateNormal.TextColor = textColor;
+            myPalette.Ribbon.RibbonGroupCollapsedText.StateCommon.TextColor = textColor;
+            myPalette.Ribbon.RibbonGroupButtonText.StateCommon.TextColor = textColor;
+            myPalette.Ribbon.RibbonGroupButtonText.StateNormal.TextColor = textColor;
+            myPalette.Ribbon.RibbonGroupCheckBoxText.StateNormal.TextColor = textColor;
+            myPalette.Ribbon.RibbonGroupCheckBoxText.StateCommon.TextColor = textColor;
+            myPalette.Ribbon.RibbonGroupRadioButtonText.StateCommon.TextColor = textColor;
+            myPalette.Ribbon.RibbonGroupRadioButtonText.StateNormal.TextColor = textColor;
         }
 
         #endregion

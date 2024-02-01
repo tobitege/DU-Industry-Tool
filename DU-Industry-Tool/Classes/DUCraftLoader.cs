@@ -14,10 +14,6 @@ namespace DU_Helpers
         public string Language { get; set; }
         public Dictionary<string, int> SkillValues { get; set; } = new Dictionary<string, int>();
         public Dictionary<string, int> Prices { get; set; } = new Dictionary<string, int>();
-
-        public DUCraftData()
-        {
-        }
     }
 
     public class DuCraftDataHandler
@@ -39,7 +35,7 @@ namespace DU_Helpers
             {
                 if (!File.Exists(filePath))
                 {
-                    KryptonMessageBox.Show($"File not found: {filePath}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    KryptonMessageBox.Show($"File not found: {filePath}", "Error", KryptonMessageBoxButtons.OK, false);
                     return false;
                 }
 
@@ -48,7 +44,7 @@ namespace DU_Helpers
             }
             catch (Exception ex)
             {
-                KryptonMessageBox.Show($"Error loading from file:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                KryptonMessageBox.Show($"Error loading from file:\n{ex.Message}", "Error", KryptonMessageBoxButtons.OK, false);
                 return false;
             }
             return true;
@@ -60,16 +56,16 @@ namespace DU_Helpers
             {
                 if (!Clipboard.ContainsText())
                 {
-                    KryptonMessageBox.Show("Clipboard does not contain text data.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    KryptonMessageBox.Show("Clipboard does not contain text data.", "Error", KryptonMessageBoxButtons.OK, false);
                     return false;
                 }
 
                 string jsonData = Clipboard.GetText();
                 LoadFromJson(jsonData);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                KryptonMessageBox.Show($"Clipboard data is not compatible, loading aborted.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                KryptonMessageBox.Show($"Clipboard data is not compatible, loading aborted.", "Error", KryptonMessageBoxButtons.OK, false);
                 return false;
             }
             return true;
@@ -102,16 +98,11 @@ namespace DU_Helpers
 
     public class DUCraftLoader : IDisposable
     {
-        private DuCraftDataHandler DuCraftDataHandler;
-
-        public DUCraftLoader()
-        {
-            DuCraftDataHandler = new DuCraftDataHandler();
-        }
+        private DuCraftDataHandler DuCraftDataHandler = new DuCraftDataHandler();
 
         public bool LoadJson()
         {
-            var result = KryptonMessageBox.Show("Choose how to load JSON data:", "Load JSON", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+            var result = KryptonMessageBox.Show("Choose how to load JSON data:", "Load JSON", KryptonMessageBoxButtons.YesNoCancel, false);
 
             switch (result)
             {
@@ -128,7 +119,7 @@ namespace DU_Helpers
                     }
                     else
                     {
-                        KryptonMessageBox.Show("File selection canceled.", "Operation Canceled", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        KryptonMessageBox.Show("File selection canceled.", "Operation Canceled", KryptonMessageBoxButtons.OK, false);
                         return false;
                     }
 
@@ -137,7 +128,7 @@ namespace DU_Helpers
 
                 case DialogResult.Cancel:
                 default:
-                    KryptonMessageBox.Show("Operation canceled.", "Operation Canceled", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    KryptonMessageBox.Show("Operation canceled.", "Operation Canceled", KryptonMessageBoxButtons.OK, false);
                     return false;
             }
         }
@@ -145,7 +136,6 @@ namespace DU_Helpers
         public void Dispose()
         {
             // This method is called when the object is being disposed.
-            // No unmanaged resources to release in this example.
         }
     }
 }

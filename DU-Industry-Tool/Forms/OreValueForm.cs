@@ -19,7 +19,7 @@ namespace DU_Industry_Tool
             oreGrid.AutoSize = true;
         }
 
-        private void Button1_Click(object sender, EventArgs e)
+        private void btnSave_Click(object sender, EventArgs e)
         {
             foreach(var values in oreGrid.Rows)
             {
@@ -32,7 +32,6 @@ namespace DU_Industry_Tool
                     oreRecipe.Value = oreValue;
             }
             DUData.SaveOreValues();
-            this.Close();
         }
     }
 }

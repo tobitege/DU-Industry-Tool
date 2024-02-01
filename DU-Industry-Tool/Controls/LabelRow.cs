@@ -30,7 +30,7 @@ namespace DU_Industry_Tool
                 for (int i = minValue; i <= maxValue; i++)
                 {
                     var lbl = new KryptonLabel();
-                    var fontFamily = new FontFamily("Segoe UI");
+                    var fontFamily = new FontFamily("Verdana");
                     var font = new Font(fontFamily, 10, FontStyle.Regular, GraphicsUnit.Point);
                     lbl.StateCommon.ShortText.Font = font;
                     lbl.AutoSize = false;

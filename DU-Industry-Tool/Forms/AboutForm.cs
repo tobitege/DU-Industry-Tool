@@ -28,11 +28,11 @@ namespace DU_Industry_Tool
             catch (System.ComponentModel.Win32Exception noBrowser)
             {
                 if (noBrowser.ErrorCode==-2147467259)
-                    KryptonMessageBox.Show(noBrowser.Message,"Error",MessageBoxButtons.OK,MessageBoxIcon.Error);
+                    KryptonMessageBox.Show(noBrowser.Message,"Error",KryptonMessageBoxButtons.OK,false);
             }
             catch (System.Exception)
             {
-                KryptonMessageBox.Show("Sorry, could not open the URL!","Error",MessageBoxButtons.OK,MessageBoxIcon.Error);
+                KryptonMessageBox.Show("Sorry, could not open the URL!","Error",KryptonMessageBoxButtons.OK,false);
             }
         }
     }

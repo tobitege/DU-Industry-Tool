@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Newtonsoft.Json;
+// ReSharper disable MemberCanBeProtected.Global
 
 namespace DU_Helpers
 {
@@ -18,10 +20,6 @@ namespace DU_Helpers
         RecentProdLists,
         ThemeId,
         FullSchematicQuantities,
-        SchemCraftCost1,
-        SchemCraftCost2,
-        SchemCraftOutput1,
-        SchemCraftOutput2,
         SchemApplyMargin,
         SchemGrossMargin,
         SchemApplyRounding,
@@ -30,70 +28,45 @@ namespace DU_Helpers
         ProdListGrossMargin,
         ProdListApplyRounding,
         ProdListRoundDigits,
-    };
-
-    internal static class SettingsMgr
+        LastTalentsSection,
+        UseCustomTheme,
+        LastCustomTheme,
+        ResultsFontSize,
+    }
+    
+    public class FileSettingsBase
     {
-        private static string DefaultAppFolder { get ; set ; } = "DU-Industry-Tool";
-        private static string DefaultFilename { get ; set ; } = "settings";
-        private static readonly string[] SettingsNames = Enum.GetNames(typeof(SettingsEnum));
-        private static string GetSettingsPath()
+        public string DefaultAppFolder { get; set; } = "DU-Industry-Tool";
+
+        public string DefaultFilename { get; set; } = "settings";
+
+        public string GetSettingsPath()
         {
-            var p = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), DefaultAppFolder) + '\\';
-            return p;
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), DefaultAppFolder) + '\\';
         }
-        private static string SettingsFullPath => Path.Combine(GetSettingsPath(), $"{DefaultFilename}.json");
 
-        public static readonly SortedDictionary<string, string> Settings = new SortedDictionary<string, string>();
-
-        static SettingsMgr()
+        public string SettingsFullPath => Path.Combine(GetSettingsPath(), $"{DefaultFilename}.json");
+        
+        public bool CheckPath()
         {
-            if (!Directory.Exists(GetSettingsPath()))
+            if (Directory.Exists(GetSettingsPath())) return true;
+            try
             {
-                try
-                {
-                    Directory.CreateDirectory(GetSettingsPath());
-                }
-                catch (Exception e)
-                {
-                }
+                Directory.CreateDirectory(GetSettingsPath());
+                return true;
             }
-
-            LoadSettings();
-        }
-
-        public static bool GetBool(SettingsEnum key)
-        {
-            if (!Settings.TryGetValue(SettingsNames[(int)key], out string value)) return false;
-            if (value is string s) return s == "True";
+            catch (Exception) { }
             return false;
         }
+    }
 
-        public static decimal GetDecimal(SettingsEnum key)
-        {
-            if (!Settings.TryGetValue(SettingsNames[(int)key], out string value)) return 0m;
-            if (value is string s && decimal.TryParse(s, out var dec)) return dec;
-            return 0m;
-        }
-
-        public static int GetInt(SettingsEnum key)
-        {
-            if (!Settings.TryGetValue(SettingsNames[(int)key], out string value)) return 0;
-            if (value is string s && int.TryParse(s, out var iVal)) return iVal;
-            return 0;
-        }
-
-        public static string GetStr(SettingsEnum key)
-        {
-            if (Settings.TryGetValue(SettingsNames[(int)key], out string value)) return value;
-            return "";
-        }
-
-        public static bool SaveSettings()
+    public class StringSettingsBase : FileSettingsBase
+    {
+        protected bool SaveSettings(SortedDictionary<string, string> settings)
         {
             try
             {
-                var json = JsonConvert.SerializeObject(Settings);
+                var json = JsonConvert.SerializeObject(settings);
                 File.WriteAllText(SettingsFullPath, json);
                 return true;
             }
@@ -114,22 +87,18 @@ namespace DU_Helpers
             }
         }
 
-        public static bool LoadSettings()
+        protected bool LoadSettings(SortedDictionary<string, string> settings)
         {
             try
             {
                 var loadedInfo = JsonConvert.DeserializeObject<SortedDictionary<string, string>>(File.ReadAllText(SettingsFullPath));
-                if (loadedInfo?.Count == 0)
+                if (loadedInfo == null || loadedInfo.Count == 0)
                 {
                     return false;
                 }
-
-                foreach (var setting in SettingsNames)
+                foreach (var s in loadedInfo.Where(s => settings.ContainsKey(s.Key)))
                 {
-                    if (loadedInfo.TryGetValue(setting, out var val))
-                    {
-                        Settings[setting] = val;
-                    }
+                    settings[s.Key] = s.Value;
                 }
                 return true;
             }
@@ -138,6 +107,61 @@ namespace DU_Helpers
                 Console.WriteLine($"Error: {ex.GetType().Name} - {ex.Message}");
                 return false;
             }
+        }
+    }
+    
+    public class SettingsMgr : StringSettingsBase
+    {
+        private static SettingsMgr _instance;
+        public static SettingsMgr Instance => _instance ?? (_instance = new SettingsMgr());
+
+        private static readonly string[] SettingsNames = Enum.GetNames(typeof(SettingsEnum));
+
+        public static readonly SortedDictionary<string, string> Settings = new SortedDictionary<string, string>();
+
+        private SettingsMgr()
+        {
+            foreach (var setting in SettingsNames)
+            {
+                Settings[setting] = "";
+            }
+            CheckPath();
+        }
+
+        public static bool GetBool(SettingsEnum key)
+        {
+            if (!Settings.TryGetValue(SettingsNames[(int)key], out string value)) return false;
+            if (value is string s) return s.ToLower() == "true";
+            return false;
+        }
+
+        public static decimal GetDecimal(SettingsEnum key)
+        {
+            if (!Settings.TryGetValue(SettingsNames[(int)key], out string value)) return 0m;
+            if (value is string s && decimal.TryParse(s, out var dec)) return dec;
+            return 0m;
+        }
+
+        public static int GetInt(SettingsEnum key)
+        {
+            if (!Settings.TryGetValue(SettingsNames[(int)key], out string value)) return 0;
+            if (value is string s && int.TryParse(s, out var iVal)) return iVal;
+            return 0;
+        }
+
+        public static string GetStr(SettingsEnum key)
+        {
+            return Settings.TryGetValue(SettingsNames[(int)key], out string value) ? value : "";
+        }
+
+        public static bool LoadSettings()
+        {
+            return Instance.LoadSettings(Settings);
+        }
+
+        public static bool SaveSettings()
+        {
+            return Instance.SaveSettings(Settings);
         }
 
         public static void UpdateSettings(SettingsEnum key, bool value)

@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using ClosedXML.Excel;
 using DU_Helpers;
 using DU_Industry_Tool.Interfaces;
+using DU_Industry_Tool.Skills;
 using Krypton.Toolkit;
 using Color = System.Drawing.Color;
 using Font = System.Drawing.Font;
@@ -17,33 +18,40 @@ namespace DU_Industry_Tool
 {
     public partial class ContentDocumentTree : UserControl, IContentDocument
     {
-        private bool expand = false;
+        #region Private declarations
+
+        private static string CfgFilepath => Path.Combine(SettingsMgr.Instance.GetSettingsPath(), "calcGridSettings.cfg");
+
+        private bool expand;
+        private bool loading;
         private byte[] treeListViewViewState;
         private float fontSize;
-        private bool loading = false;
         private List<string> _applicableTalents;
         private string industry;
+        private SchematicRecipe Recipe { get; set; }
+        private CalculatorClass Calc { get; set; }
 
         dynamic XRow = new ExpandoObject();
         private char XRetailCol = 'B'; // for excel export
         private int XRetailColIdx = 2; // for excel export
         private int XRetailRow = 4; // for excel export
-        private int XMarginRow = 0; // for excel export
-        public int NumLabelWidth { get; set; } // for automatic numeric labels' width
+        private int XMarginRow; // for excel export
         
         private Random _rand;
 
+        #endregion
+
+        #region Public declarations
+
         public bool IsProductionList { get; set; }
         public EventHandler RecalcProductionListClick { get; set; }
+        public FontsizeChangedEventHandler FontChanged { get; set; }
         public EventHandler ItemClick { get; set; }
         public EventHandler IndustryClick { get; set; }
         public LinkClickedEventHandler LinkClick { get; set; }
         public decimal Quantity { get; set; }
 
-        private SchematicRecipe Recipe { get; set; }
-        private CalculatorClass Calc { get; set; }
-
-        public ContentDocumentTree()
+        public ContentDocumentTree(ThemeChangePublisher themeChangePublisher)
         {
             InitializeComponent();
             fontSize = Font.Size;
@@ -64,34 +72,310 @@ namespace DU_Industry_Tool
             }
             HideAll();
 
-            NumLabelWidth = Utils.CalculateDesiredWidth(this, lblCostValue.Font, 10);
+            var numLabelWidth = Utils.CalculateDesiredWidth(this, lblCostValue.Font, 10);
             foreach (Control control in HeaderGroup.Panel.Controls)
             {
                 if (!(control is KLabel kLabel)) continue;
                 if (control.Name.EndsWith("Value") && control.Left < 200)
                 {
                     kLabel.AutoSize = false;
-                    kLabel.Width = NumLabelWidth;
+                    kLabel.Width = numLabelWidth;
                     kLabel.StateNormal.ShortText.TextH = PaletteRelativeAlign.Far;
                     continue;
                 }
                 if (control.Name.EndsWith("Suffix") && control.Left > 200)
                 {
-                    kLabel.Left = 100 + NumLabelWidth;
+                    kLabel.Left = 100 + numLabelWidth;
                 }
             }
             LblCostSuffix.Width = lblIndustryValue.Left - LblCostSuffix.Left - 8;
             LblSchemCostSuffix.Width = LblCostSuffix.Width;
+
+            this.themeChangePublisher = themeChangePublisher;
+            themeChangePublisher.Subscribe(this.OnThemeChange);
         }
 
-        private void FetchOptionsFromForm()
+        public void SetCalcResult(CalculatorClass calc)
         {
-            // Fetch options
-            CalcOptions.MarginPct = grossMarginEdit.Value;
-            CalcOptions.ApplyMargin = ApplyGrossMarginCB.Checked && (CalcOptions.MarginPct > 0.00m);
-            CalcOptions.ApplyRnd = ApplyRoundingCB.Checked;
-            CalcOptions.RndDigits = RoundCmbIndexToDigits(RoundToCmb.SelectedIndex);
+            var optionsOn = ApplyGrossMarginCB.Checked || ApplyRoundingCB.Checked;
+
+            // important: in case of repeat calculations, "remove" event handlers
+            lblIndustryValue.Click -= LblIndustryValue_Click;
+            lblPerIndustryValue.Click -= LblPerIndustryValue_Click;
+            GridTalents.CellEndEdit -= GridTalentsOnCellEndEdit;
+
+            Calc = calc;
+            Recipe = Calc?.Recipe;
+            if (Recipe == null || Calc == null) return;
+            Calc.Mass = Recipe.UnitMass ?? 0m;
+            Calc.Volume = Recipe.UnitVolume ?? 0m;
+
+            if (!calc.IsOre && !calc.IsPlasma)
+            {
+                if (IsProductionList)
+                    SetupGrid(calc);
+                else
+                    BeginInvoke((MethodInvoker)delegate () { SetupGrid(calc); });
+            }
+
+            Quantity = calc.Quantity;
+            HeaderGroup.ValuesPrimary.Heading = Recipe.Name + (IsProductionList ? "" : $" (T{Recipe.Level})");
+
+            FillUnitDetails(Recipe);
+
+            ShowNanocraftable(Recipe);
+
+            var time = calc.Recipe.Time * (calc.EfficencyFactor ?? 1);
+            var newQty = calc.Quantity;
+            var batches = 1m;
+            var industry = calc.Recipe.Industry;
+
+            // IF ore, then we basically display values from its Pure (except plasma)
+            // to have any useful information for it :)
+            if (!ShowOreOrPlasma(ref calc, ref newQty, ref time, ref batches))
+            {
+                _applicableTalents = calc.GetTalents();
+            }
+
+            LblHint.Hide();
+
+            SetLabelTextAndVisibility(lblCostForBatch, (optionsOn ? "Retail price:" : "Total cost:"));
+
+            var batchQ = calc.Quantity;
+            var fullCost = calc.Retail;
+            var netCost = (calc.IsOre ? calc.Quantity : 1) * calc.OreCost + calc.SchematicsCost;
+
+            // Ammo override: ammunition has special batch size of 40.
+            // We take the requested amount as # of ammo rounds to be calculated
+            // and determine the minimum of batches to be produced
+            if (calc.IsAmmo && calc.BatchOutput > 0)
+            {
+                batchQ /= (calc.BatchOutput ?? 40);
+            }
+
+            SetLabelTextAndVisibility(lblCostValue, $"{fullCost:N2} q");
+            SetLabelTextAndVisibility(LblCostSuffix, "", ApplyGrossMarginCB.Checked || ApplyRoundingCB.Checked);
+            if (ApplyGrossMarginCB.Checked)
+            {
+                LblCostSuffix.Text = "incl. margin";
+            }
+            if (ApplyRoundingCB.Checked)
+            {
+                LblCostSuffix.Text += "; rounded";
+            }
+
+            if (!IsProductionList)
+            {
+                if (calc.IsBatchmode)
+                {
+                    if (calc.IsAmmo)
+                    {
+                        LblCostSuffix.Text += $" ({batchQ:N2} batches)";
+                    }
+                    else
+                    {
+                        LblCostSuffix.Text += $" (per {batchQ:N2} L)";
+                    }
+                }
+                else
+                {
+                    LblCostSuffix.Text += $" (per {batchQ:N0})";
+                }
+            }
+
+            SetLabelTextAndVisibility(lblMargin, null);//, ApplyGrossMarginCB.Checked);
+            SetLabelTextAndVisibility(lblMarginValue, $"{calc.Margin:N2} q");//, ApplyGrossMarginCB.Checked);
+
+            SetLabelTextAndVisibility(lblOreCost, calc.IsPlasma ? "Plasma:" : "Ore:");
+            SetLabelTextAndVisibility(lblOreCostValue, $"{calc.OreCost:N2} q");
+            if (!calc.IsPlasma && !calc.IsOre && !calc.IsPure)
+            {
+                SetLabelTextAndVisibility(LblOreCostSuffix, $"{(calc.OreCost / calc.Retail * 100):N2} %");
+            }
+
+            if (!calc.IsPlasma && !calc.IsOre)
+            {
+                SetLabelTextAndVisibility(lblSchematicsCost);
+                SetLabelTextAndVisibility(lblSchematicsCostValue, $"{calc.SchematicsCost:N2} q");
+                if (calc.SchematicsCost > 0.00m)
+                {
+                    SetLabelTextAndVisibility(LblSchemCostSuffix, $"{(calc.SchematicsCost / calc.Retail * 100):N2} %");
+                }
+            }
+
+            if (IsProductionList && optionsOn)
+            {
+                SetLabelTextAndVisibility(lblCostSingle, "Net cost:");
+                SetLabelTextAndVisibility(lblCostSingleValue, $"{netCost:N2} q");
+            }
+            else
+            if (!calc.IsOre && !calc.IsPlasma && calc.Quantity > 1)
+            {
+                SetLabelTextAndVisibility(lblCostSingle, "Cost for 1:");
+                SetLabelTextAndVisibility(lblCostSingleValue, (netCost / calc.Quantity).ToString("N2") + " q");
+                SetLabelTooltip(lblCostSingleValue,
+                    "Retail price: " + (Calc.Retail / calc.Quantity).ToString("N2") + " q",
+                    ApplyGrossMarginCB.Checked || ApplyRoundingCB.Checked);
+            }
+
+            // Prepare talents grid and only show Recalculate button if any exist
+            SetupTalentsGrid();
+
+            BtnExport.Visible = treeListView.Items?.Count > 0;
+            BtnRecalc.Visible = true;
+            ApplyGrossMarginCB.Visible = BtnRecalc.Visible;
+            grossMarginEdit.Visible = BtnRecalc.Visible;
+            ApplyRoundingCB.Visible = BtnRecalc.Visible;
+            RoundToCmb.Visible = BtnRecalc.Visible;
+            BtnSaveOptions.Visible = BtnRecalc.Visible;
+
+            // Show industry if applicable
+            if (!IsProductionList && !string.IsNullOrEmpty(industry))
+            {
+                SetLabelTextAndVisibility(lblIndustryValue, industry, clickEvent: LblIndustryValue_Click);
+            }
+
+            // Only with a given time we can show any production/batch times etc.
+            if (time < 1) return;
+
+            // For anything other than ores, pures, products, we can only display
+            // basic production rate. Anything else is covered by tree data.
+            if (!calc.IsBatchmode)
+            {
+                lblCraftTimeValue.Text = Utils.GetReadableTime(time);
+                if (calc.Quantity > 1)
+                {
+                    lblCraftTimeInfoValue.Text = $"x{calc.Quantity:N2} = " + Utils.GetReadableTime(time * calc.Quantity);
+                }
+                var amt = 86400 / time;
+                var amtS = $"{amt:N3}";
+                if (amtS.EndsWith(".000")) amtS = amtS.Substring(0, amtS.Length - 4);
+                if (amtS.EndsWith(".00")) amtS = amtS.Substring(0, amtS.Length - 3);
+
+                SetLinkLabel(lblPerIndustryValue, $" {amtS} / day", Recipe.Key + "#" + Math.Ceiling(amt), LblPerIndustryValue_Click);
+
+                lblCraftTime.Show();
+                if (IsProductionList) lblPerIndustry.Text = "Production rate:";
+                lblPerIndustry.Show();
+                return;
+            }
+
+            // Do not round these!
+            var batchInputVol = 0m;
+            var batchOutputVol = 0m;
+            if (calc.IsBatchmode)
+            {
+                // the GetTalents() earlier *should* have set values already, but...
+                if (!calc.IsOre && calc.BatchInput > 0 && calc.BatchOutput > 0 && calc.BatchTime > 0)
+                {
+                    batchInputVol = (decimal)calc.BatchInput;
+                    batchOutputVol = (decimal)calc.BatchOutput;
+                    time = (decimal)calc.BatchTime;
+                }
+                else
+                {
+                    batchInputVol = (calc.IsProduct ? 100 : (calc.IsAmmo ? 1 : 65)) * calc.InputMultiplier + calc.InputAdder;
+                    batchOutputVol = (calc.IsProduct ? 75 : (calc.IsAmmo ? 40 : 45)) * calc.OutputMultiplier + calc.OutputAdder;
+                    if (calc.IsOre && calc.BatchTime != null)
+                    {
+                        batchInputVol = (decimal)(calc.BatchInput ?? batchInputVol);
+                        batchOutputVol = (decimal)(calc.BatchOutput ?? batchOutputVol);
+                    }
+                }
+            }
+
+            SetLabelTextAndVisibility(lblDefaultCraftTimeValue, Utils.GetReadableTime(time));
+            SetLabelTextAndVisibility(lblDefaultCraftTime,
+                (calc.IsPart || calc.IsAmmo) ? "Default prod. time: " : "Default refin. time:");
+
+            // display some batch-based numbers
+            var batchVol = Math.Max(1, batchOutputVol);
+            if (newQty >= 1 && batchInputVol > 0 && batchOutputVol > 0)
+            {
+                var batchCnt = (int)Math.Floor((calc.IsOre ? calc.Quantity : newQty) / batchVol);
+                SetLabelTextAndVisibility(lblCraftTime, batchCnt == 0 ? "0 batches (volume < input volume)" : "Production time");
+                if (batchCnt > 0)
+                {
+                    SetLabelTextAndVisibility(lblCraftTimeValue, Utils.GetReadableTime(time * batchCnt));
+                    SetLabelTextAndVisibility(lblBatchesValue, $"{batchCnt:N0} full batches");
+                    lblBatches.Show();
+                    var overflow = (calc.IsOre ? calc.Quantity : newQty) - (batchCnt * batchVol);
+                    if (overflow > 0)
+                    {
+                        lblCraftTimeInfoValue.Text = (calc.IsOre ? "Unrefined:" : "Not produced:") + $" {overflow:N2}";
+                    }
+                    if (calc.IsBatchmode)
+                    {
+                        SetLabelTextAndVisibility(LblPure, calc.IsProduct ? "Product output:" : "Pure output:");
+                        SetLabelTextAndVisibility(LblPureValue, $"{batchCnt * batchVol:N2} L");
+                    }
+                }
+            }
+
+            LblBatchSize.Show();
+            SetLabelTextAndVisibility(LblBatchSizeValue, $"{batchInputVol:N2} in / {batchOutputVol:N2} out");
+
+            lblPerIndustry.Show();
+            var batchesPerDay = Math.Floor(86400 / (decimal)(calc.BatchTime ?? 86400));
+            SetLinkLabel(lblPerIndustryValue, $"{batchesPerDay:N0} batches / day",
+                calc.Key + "#" + Math.Ceiling(batchesPerDay * batchVol),
+                LblPerIndustryValue_Click);
         }
+
+        #endregion
+
+        #region Theme change handling
+
+        public ThemeChangePublisher themeChangePublisher { get; set; }
+
+        public void CheckPaletteChanges(KryptonCustomPaletteBase palette)
+        {
+            if (palette?.BasePalette == null) return;
+
+            // Update the ContentDocumentTree's appearance based on palette
+            treeListView.UseAlternatingBackColors = true;
+            treeListView.BackColor = DUData.SecondaryBackColor;
+            treeListView.ForeColor = DUData.SecondaryForeColor;
+                //ColorHelpers.CalculateForegroundColor(treeListView.BackColor);
+
+            treeListView.AlternateRowBackColor = ColorHelpers.LightenColor(treeListView.BackColor, 5);
+            if (treeListView.AlternateRowBackColor.R == treeListView.BackColor.R &&
+                treeListView.AlternateRowBackColor.G == treeListView.BackColor.G &&
+                treeListView.AlternateRowBackColor.B == treeListView.BackColor.B)
+            {
+                treeListView.AlternateRowBackColor = ColorHelpers.DarkenColor(treeListView.BackColor, 5);
+            }
+
+            // DEV testing code for palette exceptions
+            //var sb = new StringBuilder();
+            //var errors = 0;
+            //foreach (var bstyle in Enum.GetValues(typeof(PaletteBackStyle)))
+            //{
+            //    errors = 0;
+            //    sb.AppendLine("*** PBackStyle " + (PaletteBackStyle)bstyle);
+            //    foreach (var pstate in Enum.GetValues(typeof(PaletteState)))
+            //    {
+            //        try
+            //        {
+            //            var tmp = palette.BasePalette.GetBackColor1((PaletteBackStyle)bstyle, (PaletteState)pstate);
+            //        }
+            //        catch (Exception e)
+            //        {
+            //            errors++;
+            //            sb.AppendLine("PBackStyle " + (PaletteBackStyle)bstyle +" PState " + (PaletteState)pstate);
+            //        }
+            //        if (errors > 10)
+            //        {
+            //            sb.AppendLine("...");
+            //            break;
+            //        }
+            //    }
+            //}
+        }
+
+        #endregion
+
+        #region Result display helpers
 
         public void HideAll()
         {
@@ -142,7 +426,7 @@ namespace DU_Industry_Tool
             lblDefaultCraftTimeValue.Hide();
             lblCraftTime.Hide("Production time:");
             lblCraftTimeValue.Hide("");
-            lblCraftTimeInfoValue.Hide();
+            lblCraftTimeInfoValue.Hide("");
             lblPerIndustry.Hide("Per Industry:");
             lblPerIndustryValue.Tag = null;
             lblPerIndustryValue.Hide("");
@@ -153,8 +437,6 @@ namespace DU_Industry_Tool
             this.Refresh();
         }
 
-        #region results display helpers
-        
         private void SetLabelTextAndVisibility(Control label, string text = null, bool isVisible = true, EventHandler clickEvent = null)
         {
             if (text != null) label.Text = text;
@@ -279,7 +561,7 @@ namespace DU_Industry_Tool
             {
                 if (_applicableTalents?.Any() != true) return;
                 foreach (var talent in _applicableTalents.Select(talentKey =>
-                             DUData.Talents.FirstOrDefault(x => x.Name == talentKey))
+                             Talents.FirstOrDefault(x => x.Name == talentKey))
                              .Where(talent => talent != null))
                 {
                     GridTalents.Rows.Add(CreateTalentsRow(talent));
@@ -295,231 +577,29 @@ namespace DU_Industry_Tool
 
         #endregion
 
-        public void SetCalcResult(CalculatorClass calc)
+        #region Private methods
+
+        /// <summary>
+        /// Save options of current tab into global settings store, thus becoming
+        /// default values for when the next tab is opened.
+        /// </summary>
+        private void SaveOptions()
         {
-            var optionsOn = ApplyGrossMarginCB.Checked || ApplyRoundingCB.Checked;
+            if (loading) return;
+            SettingsMgr.UpdateSettings(SettingsEnum.ProdListApplyMargin, ApplyGrossMarginCB.Checked);
+            SettingsMgr.UpdateSettings(SettingsEnum.ProdListGrossMargin, grossMarginEdit.Value);
+            SettingsMgr.UpdateSettings(SettingsEnum.ProdListApplyRounding, ApplyRoundingCB.Checked);
+            SettingsMgr.UpdateSettings(SettingsEnum.ProdListRoundDigits, RoundCmbIndexToDigits(RoundToCmb.SelectedIndex));
+            SettingsMgr.SaveSettings();
+            LblOptSaved.FadeOut();
+        }
 
-            // important: in case of repeat calculations, "remove" event handlers
-            lblIndustryValue.Click -= LblIndustryValue_Click;
-            lblPerIndustryValue.Click -= LblPerIndustryValue_Click;
-            GridTalents.CellEndEdit -= GridTalentsOnCellEndEdit;
-
-            Calc = calc;
-            Recipe = Calc?.Recipe;
-            if (Recipe == null || Calc == null) return;
-            Calc.Mass = Recipe.UnitMass ?? 0m;
-            Calc.Volume = Recipe.UnitVolume ?? 0m;
-
-            if (!calc.IsOre && !calc.IsPlasma)
-            {
-                if (IsProductionList)
-                    SetupGrid(calc);
-                else
-                    BeginInvoke((MethodInvoker)delegate() { SetupGrid(calc); });
-            }
-
-            Quantity = calc.Quantity;
-            HeaderGroup.ValuesPrimary.Heading = Recipe.Name + (IsProductionList ? "" : $" (T{Recipe.Level})");
-
-            FillUnitDetails(Recipe);
-
-            ShowNanocraftable(Recipe);
-
-            var time = calc.Recipe.Time * (calc.EfficencyFactor ?? 1);
-            var newQty = calc.Quantity;
-            var batches = 1m;
-            var industry = calc.Recipe.Industry;
-
-            // IF ore, then we basically display values from its Pure (except plasma)
-            // to have any useful information for it :)
-            if (!ShowOreOrPlasma(ref calc, ref newQty, ref time, ref batches))
-            {
-                _applicableTalents = calc.GetTalents();
-            }
-
-            LblHint.Hide();
-
-            SetLabelTextAndVisibility(lblCostForBatch, (optionsOn ? "Retail price:" : "Total cost:"));
-
-            var batchQ = calc.Quantity;
-            var fullCost = calc.Retail;
-            var netCost = (calc.IsOre ? calc.Quantity : 1) * calc.OreCost + calc.SchematicsCost;
-
-            // Ammo override: ammunition has special batch size of 40.
-            // We take the requested amount as # of ammo rounds to be calculated
-            // and determine the minimum of batches to be produced
-            if (calc.IsAmmo && calc.BatchOutput > 0)
-            {
-                batchQ /= (calc.BatchOutput ?? 40);
-            }
-
-            SetLabelTextAndVisibility(lblCostValue, $"{fullCost:N2} q");
-            SetLabelTextAndVisibility(LblCostSuffix, "", ApplyGrossMarginCB.Checked || ApplyRoundingCB.Checked);
-            if (ApplyGrossMarginCB.Checked)
-            {
-                LblCostSuffix.Text = "incl. margin";
-            }
-            if (ApplyRoundingCB.Checked)
-            {
-                LblCostSuffix.Text += "; rounded";
-            }
-
-            if (!IsProductionList)
-            {
-                if (calc.IsBatchmode)
-                {
-                    if (calc.IsAmmo)
-                    {
-                        LblCostSuffix.Text += $" ({batchQ:N2} batches)";
-                    }
-                    else
-                    {
-                        LblCostSuffix.Text += $" (per {batchQ:N2} L)";
-                    }
-                }
-                else
-                {
-                    LblCostSuffix.Text += $" (per {batchQ:N0})";
-                }
-            }
-
-            SetLabelTextAndVisibility(lblMargin, null);//, ApplyGrossMarginCB.Checked);
-            SetLabelTextAndVisibility(lblMarginValue, $"{calc.Margin:N2} q");//, ApplyGrossMarginCB.Checked);
-
-            SetLabelTextAndVisibility(lblOreCost, calc.IsPlasma ? "Plasma:" : "Ore:");
-            SetLabelTextAndVisibility(lblOreCostValue, $"{calc.OreCost:N2} q");
-            if (!calc.IsPlasma && !calc.IsOre && !calc.IsPure)
-            {
-                SetLabelTextAndVisibility(LblOreCostSuffix, $"{(calc.OreCost / calc.Retail * 100):N2} %");
-            }
-
-            if (!calc.IsPlasma && !calc.IsOre)
-            {
-                SetLabelTextAndVisibility(lblSchematicsCost);
-                SetLabelTextAndVisibility(lblSchematicsCostValue, $"{calc.SchematicsCost:N2} q");
-                if (calc.SchematicsCost > 0.00m)
-                {
-                    SetLabelTextAndVisibility(LblSchemCostSuffix, $"{(calc.SchematicsCost / calc.Retail * 100):N2} %");
-                }
-            }
-
-            if (IsProductionList && optionsOn)
-            {
-                SetLabelTextAndVisibility(lblCostSingle, "Net cost:");
-                SetLabelTextAndVisibility(lblCostSingleValue, $"{netCost:N2} q");
-            }
-            else
-            if (!calc.IsOre && !calc.IsPlasma && calc.Quantity > 1)
-            {
-                SetLabelTextAndVisibility(lblCostSingle, "Cost for 1:");
-                SetLabelTextAndVisibility(lblCostSingleValue, (netCost / calc.Quantity).ToString("N2") + " q");
-                SetLabelTooltip(lblCostSingleValue, 
-                    "Retail price: " + (Calc.Retail / calc.Quantity).ToString("N2") + " q",
-                    ApplyGrossMarginCB.Checked || ApplyRoundingCB.Checked);
-            }
-
-            // Prepare talents grid and only show Recalculate button if any exist
-            SetupTalentsGrid();
-
-            BtnExport.Visible = treeListView.Items?.Count > 0;
-            BtnRecalc.Visible = true;
-            ApplyGrossMarginCB.Visible = BtnRecalc.Visible;
-            grossMarginEdit.Visible = BtnRecalc.Visible;
-            ApplyRoundingCB.Visible = BtnRecalc.Visible;
-            RoundToCmb.Visible = BtnRecalc.Visible;
-            BtnSaveOptions.Visible = BtnRecalc.Visible;
-
-            // Show industry if applicable
-            if (!IsProductionList && !string.IsNullOrEmpty(industry))
-            {
-                SetLabelTextAndVisibility(lblIndustryValue, industry, clickEvent: LblIndustryValue_Click);
-            }
-
-            // Only with a given time we can show any production/batch times etc.
-            if (time < 1) return;
-
-            // For anything other than ores, pures, products, we can only display
-            // basic production rate. Anything else is covered by tree data.
-            if (!calc.IsBatchmode)
-            {
-                lblCraftTimeValue.Text = Utils.GetReadableTime(time);
-                if (calc.Quantity > 1)
-                {
-                    lblCraftTimeInfoValue.Text = $"x{calc.Quantity:N2} = " + Utils.GetReadableTime(time * calc.Quantity);
-                }
-                var amt = 86400 / time;
-                var amtS = $"{amt:N3}";
-                if (amtS.EndsWith(".000")) amtS = amtS.Substring(0, amtS.Length - 4);
-                if (amtS.EndsWith(".00")) amtS = amtS.Substring(0, amtS.Length - 3);
-
-                SetLinkLabel(lblPerIndustryValue, $" {amtS} / day", Recipe.Key + "#" + Math.Ceiling(amt), LblPerIndustryValue_Click);
-
-                lblCraftTime.Show();
-                if (IsProductionList) lblPerIndustry.Text = "Production rate:";
-                lblPerIndustry.Show();
-                return;
-            }
-
-            // Do not round these!
-            var batchInputVol = 0m;
-            var batchOutputVol = 0m;
-            if (calc.IsBatchmode)
-            {
-                // the GetTalents() earlier *should* have set values already, but...
-                if (!calc.IsOre && calc.BatchInput > 0 && calc.BatchOutput > 0 && calc.BatchTime > 0)
-                {
-                    batchInputVol = (decimal)calc.BatchInput;
-                    batchOutputVol = (decimal)calc.BatchOutput;
-                    time = (decimal)calc.BatchTime;
-                }
-                else
-                {
-                    batchInputVol = (calc.IsProduct ? 100 : (calc.IsAmmo ? 1  : 65)) * calc.InputMultiplier  + calc.InputAdder;
-                    batchOutputVol = (calc.IsProduct ? 75 : (calc.IsAmmo ? 40 : 45)) * calc.OutputMultiplier + calc.OutputAdder;
-                    if (calc.IsOre && calc.BatchTime != null)
-                    {
-                        batchInputVol  = (decimal)(calc.BatchInput ?? batchInputVol);
-                        batchOutputVol = (decimal)(calc.BatchOutput ?? batchOutputVol);
-                    }
-                }
-            }
-
-            SetLabelTextAndVisibility(lblDefaultCraftTimeValue, Utils.GetReadableTime(time));
-            SetLabelTextAndVisibility(lblDefaultCraftTime,
-                (calc.IsPart || calc.IsAmmo) ? "Default prod. time: " : "Default refin. time:");
-
-            // display some batch-based numbers
-            var batchVol = Math.Max(1, batchOutputVol);
-            if (newQty >= 1 && batchInputVol > 0 && batchOutputVol > 0)
-            {
-                var batchCnt = (int)Math.Floor((calc.IsOre ? calc.Quantity : newQty) / batchVol);
-                SetLabelTextAndVisibility(lblCraftTime, batchCnt == 0 ? "0 batches (volume < input volume)" : "Production time");
-                if (batchCnt > 0)
-                {
-                    SetLabelTextAndVisibility(lblCraftTimeValue, Utils.GetReadableTime(time * batchCnt));
-                    SetLabelTextAndVisibility(lblBatchesValue, $"{batchCnt:N0} full batches");
-                    lblBatches.Show();
-                    var overflow = (calc.IsOre ? calc.Quantity : newQty) - (batchCnt * batchVol);
-                    if (overflow > 0)
-                    {
-                        lblCraftTimeInfoValue.Text = (calc.IsOre ? "Unrefined:" : "Not produced:") + $" {overflow:N2}";
-                    }
-                    if (calc.IsBatchmode)
-                    {
-                        SetLabelTextAndVisibility(LblPure, calc.IsProduct ? "Product output:" : "Pure output:");
-                        SetLabelTextAndVisibility(LblPureValue, $"{batchCnt * batchVol:N2} L");
-                    }
-                }
-            }
-
-            LblBatchSize.Show();
-            SetLabelTextAndVisibility(LblBatchSizeValue, $"{batchInputVol:N2} in / {batchOutputVol:N2} out");
-
-            lblPerIndustry.Show();
-            var batchesPerDay = Math.Floor(86400 / (decimal)(calc.BatchTime ?? 86400));
-            SetLinkLabel(lblPerIndustryValue, $"{batchesPerDay:N0} batches / day",
-                calc.Key + "#" + Math.Ceiling(batchesPerDay*batchVol),
-                LblPerIndustryValue_Click);
+        private void FetchOptionsFromForm()
+        {
+            CalcOptions.MarginPct = grossMarginEdit.Value;
+            CalcOptions.ApplyMargin = ApplyGrossMarginCB.Checked && (CalcOptions.MarginPct > 0.00m);
+            CalcOptions.ApplyRnd = ApplyRoundingCB.Checked;
+            CalcOptions.RndDigits = RoundCmbIndexToDigits(RoundToCmb.SelectedIndex);
         }
 
         private void SetupGrid(CalculatorClass calc)
@@ -531,7 +611,7 @@ namespace DU_Industry_Tool
             treeListView.Visible = true;
 
             BtnSaveState.Enabled = ButtonEnabled.True;
-            ButtonRestoreState_Click(null, null);
+            BtnRestoreState_Click(null, null);
 
             treeListView.BringToFront();
             HeaderGroup.ValuesPrimary.Heading = calc.Name;
@@ -619,16 +699,49 @@ namespace DU_Industry_Tool
             return row;
         }
 
+        /// <summary>
+        /// Depends on items of RoundToCmb entries!
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        private int RoundCmbIndexToDigits(int index)
+        {
+            return index < RoundToCmb.Items.Count - 1 ? index + 1 : RoundToCmb.Items.Count - 1;
+        }
+
+        /// <summary>
+        /// Depends on items of RoundToCmb entries!
+        /// </summary>
+        /// <param name="digits"></param>
+        /// <returns></returns>
+        private int DigitsToRoundCmbIndex(int digits)
+        {
+            if (digits > RoundToCmb.Items.Count - 1)
+            {
+                digits = RoundToCmb.Items.Count;
+            }
+            return digits > 0 ? digits - 1 : 0;
+        }
+
+        #endregion
+
+        #region UI events
+
+        private void OnThemeChange(KryptonCustomPaletteBase palette)
+        {
+            CheckPaletteChanges(palette);
+        }
+
         private void GridTalentsOnCellEndEdit(object sender, DataGridViewCellEventArgs e)
         {
             // Any talent change needs to be saved back to file
             if (e.ColumnIndex != 1) return;
             var key = (string)GridTalents.Rows[e.RowIndex].Cells[0].Value;
             var cell = GridTalents.Rows[e.RowIndex].Cells[1];
-            var talent = DUData.Talents.FirstOrDefault(x => x.Name.Equals(key, StringComparison.InvariantCultureIgnoreCase));
+            var talent = Talents.FirstOrDefault(x => x.Name.Equals(key, StringComparison.InvariantCultureIgnoreCase));
             if (talent == null) return;
             talent.Value = (int)cell.Value;
-            DUData.SaveTalents();
+            TalentsManager.SaveTalentValues();
         }
 
         private void LblPerIndustryValue_Click(object sender, EventArgs e)
@@ -699,26 +812,51 @@ namespace DU_Industry_Tool
             treeListView.EndUpdate();
         }
 
-        private void ButtonSaveState_Click(object sender, EventArgs e)
+        private void BtnSaveState_Click(object sender, EventArgs e)
         {
-            // SaveState() returns a byte array that holds the current state of the columns.
-            treeListViewViewState = treeListView.SaveState();
             WriteCfg();
             CheckRestoreState();
         }
 
-        private void ButtonRestoreState_Click(object sender, EventArgs e)
+        private void BtnRestoreState_Click(object sender, EventArgs e)
         {
             if (!treeListView.Visible || !CheckRestoreState()) return;
             try
             {
                 treeListViewViewState = File.ReadAllBytes(CfgFilepath);
                 treeListView.RestoreState(treeListViewViewState);
+                fontSize = (float)SettingsMgr.GetDecimal(SettingsEnum.ResultsFontSize);
+                // lets default invalid values back to 9
+                if (fontSize < 8) fontSize = 9f;
+                else if (fontSize > 14) fontSize = 9f;
+                treeListView.Font = new Font("Verdana", fontSize);
+                FontChanged?.Invoke(this, new FontsizeChangedEventArgs { Fontsize = fontSize });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine(ex.Message);
             }
+            SettingsMgr.UpdateSettings(SettingsEnum.ResultsFontSize, (decimal)fontSize);
         }
+
+        private void BtnFontUpOnClick(object sender, EventArgs e)
+        {
+            SetFont(0.5f);
+        }
+
+        private void BtnFontDownOnClick(object sender, EventArgs e)
+        {
+            SetFont(-0.5f);
+        }
+
+        private void BtnSaveOptions_Click(object sender, EventArgs e)
+        {
+            SaveOptions();
+        }
+
+        #endregion
+
+        #region Grid settings management
 
         private bool CheckRestoreState()
         {
@@ -735,79 +873,30 @@ namespace DU_Industry_Tool
                 {
                     File.Delete(CfgFilepath);
                 }
+                // SaveState() returns a byte array that holds the current state of the columns.
+                treeListViewViewState = treeListView.SaveState();
                 File.WriteAllBytes(CfgFilepath, treeListViewViewState);
             }
             catch (Exception)
             {
                 KryptonMessageBox.Show("Could not write configuration to file!", "Error",
-                    MessageBoxButtons.OK, KryptonMessageBoxIcon.ERROR);
+                    KryptonMessageBoxButtons.OK, false);
             }
-        }
-
-        private static string CfgFilepath => Path.Combine(Application.StartupPath, "calcGridSettings.cfg");
-
-        private void BtnFontUpOnClick(object sender, EventArgs e)
-        {
-            SetFont(1);
-        }
-
-        private void BtnFontDownOnClick(object sender, EventArgs e)
-        {
-            SetFont(-1);
+            SettingsMgr.UpdateSettings(SettingsEnum.ResultsFontSize, (decimal)fontSize);
+            SettingsMgr.SaveSettings();
         }
 
         private void SetFont(float fontDelta)
         {
-            if ((fontDelta < 0 && fontSize > 9) || (fontDelta > 0 && fontSize < 18))
+            if ((fontDelta < 0 && fontSize > 8) || (fontDelta > 0 && fontSize < 14))
             {
                 fontSize += fontDelta;
-                treeListView.Font = new Font("Segoe UI", fontSize, FontStyle.Regular, GraphicsUnit.Point, ((byte)(0)));
+                treeListView.Font = new Font("Verdana", fontSize, FontStyle.Regular, GraphicsUnit.Point, ((byte)(0)));
+                FontChanged?.Invoke(this, new FontsizeChangedEventArgs { Fontsize = fontSize });
             }
         }
 
-        private void BtnSaveOptions_Click(object sender, EventArgs e)
-        {
-            SaveOptions();
-        }
-
-        /// <summary>
-        /// Depends on items of RoundToCmb entries!
-        /// </summary>
-        /// <param name="index"></param>
-        /// <returns></returns>
-        private int RoundCmbIndexToDigits(int index)
-        {
-            return index < RoundToCmb.Items.Count - 1 ? index + 1 : RoundToCmb.Items.Count - 1;
-        }
-
-        /// <summary>
-        /// Depends on items of RoundToCmb entries!
-        /// </summary>
-        /// <param name="digits"></param>
-        /// <returns></returns>
-        private int DigitsToRoundCmbIndex(int digits)
-        {
-            if (digits > RoundToCmb.Items.Count - 1)
-            {
-                digits = RoundToCmb.Items.Count;
-            }
-            return digits > 0 ? digits - 1 : 0;
-        }
-
-        /// <summary>
-        /// Save options of current tab into global settings store, thus becoming
-        /// default values for when the next tab is opened.
-        /// </summary>
-        private void SaveOptions()
-        {
-            if (loading) return;
-            SettingsMgr.UpdateSettings(SettingsEnum.ProdListApplyMargin, ApplyGrossMarginCB.Checked);
-            SettingsMgr.UpdateSettings(SettingsEnum.ProdListGrossMargin, grossMarginEdit.Value);
-            SettingsMgr.UpdateSettings(SettingsEnum.ProdListApplyRounding, ApplyRoundingCB.Checked);
-            SettingsMgr.UpdateSettings(SettingsEnum.ProdListRoundDigits, RoundCmbIndexToDigits(RoundToCmb.SelectedIndex));
-            SettingsMgr.SaveSettings();
-            LblOptSaved.FadeOut();
-        }
+        #endregion
 
         #region Excel export
 
@@ -915,7 +1004,7 @@ namespace DU_Industry_Tool
             catch(Exception ex)
             {
                 KryptonMessageBox.Show("Export header error, please report to developer.\r\n" + ex.Message,
-                    "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    "ERROR", KryptonMessageBoxButtons.OK, false);
             }
         }
 
@@ -1077,7 +1166,7 @@ namespace DU_Industry_Tool
             catch (Exception ex)
             {
                 KryptonMessageBox.Show("Export prod. list error, please report to developer.\r\n" + ex.Message,
-                    "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    "ERROR", KryptonMessageBoxButtons.OK, false);
             }
         }
 
@@ -1229,7 +1318,7 @@ namespace DU_Industry_Tool
             catch (Exception ex)
             {
                 KryptonMessageBox.Show("Export detail section error, please report to developer.\r\n" + ex.Message,
-                    "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    "ERROR", KryptonMessageBoxButtons.OK, false);
             }
             return false;
         }
@@ -1324,12 +1413,12 @@ namespace DU_Industry_Tool
                     workbook.SaveAs(fname);
 
                     KryptonMessageBox.Show("Data successfully exported to file.", "Success",
-                        MessageBoxButtons.OK, KryptonMessageBoxIcon.INFORMATION);
+                        KryptonMessageBoxButtons.OK, false);
                 }
                 catch (Exception ex)
                 {
                     KryptonMessageBox.Show("Could not save calculation!\r\n" + ex.Message,
-                        "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        "ERROR", KryptonMessageBoxButtons.OK, false);
                 }
             }
         }

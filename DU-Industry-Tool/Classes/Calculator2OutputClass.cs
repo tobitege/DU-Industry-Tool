@@ -3,6 +3,7 @@ using System.Collections;
 using System.Linq;
 using System.Windows.Forms;
 using BrightIdeasSoftware;
+using Krypton.Toolkit;
 
 namespace DU_Industry_Tool
 {
@@ -51,7 +52,7 @@ namespace DU_Industry_Tool
                     _tlview.BeginInvoke((MethodInvoker)delegate()
                     {
                         _tlview.Collapse(x);
-                        MessageBox.Show(ex.Message, @"Recipes Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                        KryptonMessageBox.Show(ex.Message, @"Recipes Error", KryptonMessageBoxButtons.OK, false);
                     });
                     return new ArrayList();
                 }
