@@ -72,7 +72,7 @@ jobs:
 
         - name: Publish release
           if: ${{ (github.ref == 'refs/heads/master') }}  # ONLY ON MASTER
-          uses: eregon/publish-release@v1
+          uses: eregon/publish-release@v5
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           with:
