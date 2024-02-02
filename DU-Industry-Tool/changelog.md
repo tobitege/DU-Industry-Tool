@@ -1,5 +1,8 @@
 # Changelog
 
+## v2024.1.12
+
+- Minor fixes
 
 ## v2024.1.11
 

@@ -14,7 +14,7 @@ namespace DU_Industry_Tool.Interfaces
         EventHandler ItemClick { get; set; }
         EventHandler IndustryClick { get; set; }
         LinkClickedEventHandler LinkClick { get; set; }
-        FontsizeChangedEventHandler FontChanged { get; set; }
+        FontsizeChangedEventHandler FontSizeChanged { get; set; }
 
         void SetCalcResult(CalculatorClass calc);
         decimal Quantity { get; set; }

@@ -45,7 +45,7 @@ namespace DU_Industry_Tool
 
         public bool IsProductionList { get; set; }
         public EventHandler RecalcProductionListClick { get; set; }
-        public FontsizeChangedEventHandler FontChanged { get; set; }
+        public FontsizeChangedEventHandler FontSizeChanged { get; set; }
         public EventHandler ItemClick { get; set; }
         public EventHandler IndustryClick { get; set; }
         public LinkClickedEventHandler LinkClick { get; set; }
@@ -830,7 +830,7 @@ namespace DU_Industry_Tool
                 if (fontSize < 8) fontSize = 9f;
                 else if (fontSize > 14) fontSize = 9f;
                 treeListView.Font = new Font("Verdana", fontSize);
-                FontChanged?.Invoke(this, new FontsizeChangedEventArgs { Fontsize = fontSize });
+                FontSizeChanged?.Invoke(this, new FontsizeChangedEventArgs { Fontsize = fontSize });
             }
             catch (Exception ex)
             {
@@ -892,7 +892,7 @@ namespace DU_Industry_Tool
             {
                 fontSize += fontDelta;
                 treeListView.Font = new Font("Verdana", fontSize, FontStyle.Regular, GraphicsUnit.Point, ((byte)(0)));
-                FontChanged?.Invoke(this, new FontsizeChangedEventArgs { Fontsize = fontSize });
+                FontSizeChanged?.Invoke(this, new FontsizeChangedEventArgs { Fontsize = fontSize });
             }
         }
 

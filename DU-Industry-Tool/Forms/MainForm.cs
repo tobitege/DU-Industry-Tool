@@ -224,7 +224,7 @@ namespace DU_Industry_Tool
             newDoc.ItemClick = OpenRecipe;
             newDoc.IndustryClick = LabelIndustry_Click;
             newDoc.LinkClick = Link_Click;
-            newDoc.FontChanged = DocFontChanged;
+            newDoc.FontSizeChanged = DocFontChanged;
             newDoc.SetCalcResult(calc);
 
             OnMainformResize(null, null);
@@ -1526,6 +1526,10 @@ namespace DU_Industry_Tool
                 var mode = KryptonManager.GetModeForPalette(myPalette.BasePalette);
                 switch (mode)
                 {
+                    case PaletteMode.Microsoft365Black:
+                        var col = myPalette.BasePalette.GetRibbonTextColor(PaletteRibbonTextStyle.RibbonGroupNormalTitle, PaletteState.Normal);
+                        myPalette.Ribbon.RibbonTab.StateNormal.TextColor = col;
+                        break;
                     case PaletteMode.Microsoft365BlackDarkMode:
                         SetPaletteRibbonGroupTextColors();
                         myPalette.TabStyles.TabCommon.StateSelected.Content.ShortText.Color1 = Color.WhiteSmoke;

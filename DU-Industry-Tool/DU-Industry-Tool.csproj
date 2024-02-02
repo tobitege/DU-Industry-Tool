@@ -213,7 +213,9 @@
     <None Include="Groups.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <EmbeddedResource Include="latestchanges.md" />
+    <EmbeddedResource Include="latestchanges.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
     <None Include="licenses\KryptonToolkit.license">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -237,7 +239,9 @@
     <None Include="schematicValues.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="talentSettings v2.json" />
+    <None Include="talentSettings v2.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
