@@ -1,8 +1,10 @@
 # Changelog
 
-## v2024.1.12
+## v2024.2.1
 
-- Minor fixes
+- Fixed exception with Kergon-X5 fuel
+- Fixed: talents related to production/batch times were not applied correctly
+- UI tweak to use same message box throughout the program
 
 ## v2024.1.11
 

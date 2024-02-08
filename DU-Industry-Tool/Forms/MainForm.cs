@@ -9,6 +9,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
+using System.Xml;
+using System.Xml.Linq;
 using BrightIdeasSoftware;
 using ClosedXML.Excel;
 using DU_Helpers;
@@ -18,8 +20,11 @@ using Krypton.Navigator;
 using Krypton.Ribbon;
 using Krypton.Workspace;
 using Krypton.Toolkit;
+using Krypton.Toolkit.Extensions;
 using Newtonsoft.Json;
 using Point = System.Drawing.Point;
+using SaveOptions = System.Xml.Linq.SaveOptions;
+// ReSharper disable ConvertToUsingDeclaration
 
 namespace DU_Industry_Tool
 {
@@ -675,7 +680,8 @@ namespace DU_Industry_Tool
                 worksheet.ColumnsUsed().AdjustToContents(1, 50);
                 workbook.SaveAs("Item Export " + DateTime.Now.ToString("yyyy-MM-dd") + ".xlsx");
                 ProductionListUpdates(null);
-                MessageBox.Show("Export 'Item export " + DateTime.Now.ToString("yyyy-MM-dd") + ".xlsx' in the same folder as this tool!");
+                KryptonMessageBox.Show("Export 'Item export " + DateTime.Now.ToString("yyyy-MM-dd") + ".xlsx' in the same folder as this tool!",
+                    "Export done", KryptonMessageBoxButtons.OK);
             }
         }
 
@@ -729,7 +735,8 @@ namespace DU_Industry_Tool
 
                     worksheet.ColumnsUsed().AdjustToContents();
                     workbook.SaveAs($"Factory Plan {recipe.Name} {DateTime.Now:yyyy-MM-dd}.xlsx");
-                    MessageBox.Show($"Exported to 'Factory Plan {recipe.Name} { DateTime.Now:yyyy-MM-dd}.xlsx' in the same folder as the exe!");
+                    KryptonMessageBox.Show($"Exported to 'Factory Plan {recipe.Name} { DateTime.Now:yyyy-MM-dd}.xlsx' in the same folder as the exe!",
+                        "Export done", KryptonMessageBoxButtons.OK);
                 }
                 catch (Exception ex)
                 {
@@ -996,14 +1003,13 @@ namespace DU_Industry_Tool
         {
             try
             {
-                using (var form = new SkillForm2())
-                {
-                    form.ShowDialog(this);
-                }
+                using var form = new SkillForm2();
+                form.ShowDialog(this);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("An error occurred: " + ex.Message);
+                KryptonMessageBox.Show("An error occurred: " + ex.Message, "Error",
+                    KryptonMessageBoxButtons.OK, KryptonMessageBoxIcon.Error);
             }
         }
 
@@ -1011,14 +1017,13 @@ namespace DU_Industry_Tool
         {
             try
             {
-                using (var form = new OreValueForm())
-                {
-                    form.ShowDialog(this);
-                }
+                using var form = new OreValueForm();
+                form.ShowDialog(this);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("An error occurred: " + ex.Message);
+                KryptonMessageBox.Show("An error occurred: " + ex.Message, "Error",
+                    KryptonMessageBoxButtons.OK, KryptonMessageBoxIcon.Error);
             }
         }
 
@@ -1026,14 +1031,13 @@ namespace DU_Industry_Tool
         {
             try
             {
-                using (var form = new SchematicValueForm())
-                {
-                    form.ShowDialog(this);
-                }
+                using var form = new SchematicValueForm();
+                form.ShowDialog(this);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("An error occurred: " + ex.Message);
+                KryptonMessageBox.Show("An error occurred: " + ex.Message, "Error",
+                    KryptonMessageBoxButtons.OK, KryptonMessageBoxIcon.Error);
             }
             // reload vanilla schematics and re-apply talents
             DUData.LoadSchematics();
@@ -1115,8 +1119,8 @@ namespace DU_Industry_Tool
 
         private void BtnProdListClose_Click(object sender, EventArgs e)
         {
-            if (MessageBox.Show("Really close current production list?",
-                "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+            if (KryptonMessageBox.Show("Really close current production list?",
+                "Warning", KryptonMessageBoxButtons.YesNo, KryptonMessageBoxIcon.Warning) == DialogResult.Yes)
             {
                 GetProductionPage(true);
             }
@@ -1125,8 +1129,8 @@ namespace DU_Industry_Tool
         private void BtnClearProdLists_Click(object sender, EventArgs e)
         {
             if (CbRecentLists.Items.Count == 0 ||
-                MessageBox.Show("Really clear list of recent production lists?",
-                "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                KryptonMessageBox.Show("Really clear list of recent production lists?",
+                "Warning", KryptonMessageBoxButtons.YesNo, KryptonMessageBoxIcon.Warning) != DialogResult.Yes)
             {
                 return;
             }
@@ -1350,6 +1354,91 @@ namespace DU_Industry_Tool
             SettingsMgr.SaveSettings();
         }
 
+        public static bool TintThemeXmlFile(string sourceFilename, Color targetColor,
+                                            string saveAsFile = null,
+                                            double lightnessAdjustment = 0.1D)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(sourceFilename) || !File.Exists(sourceFilename)) return false;
+                var xmlStream = new FileStream(sourceFilename, FileMode.Open);
+                var tintXml = TintThemeFromStream(xmlStream, targetColor, out var changed, saveAsFile, lightnessAdjustment);
+                if (tintXml == null) return false;
+                try
+                {
+                    if (!string.IsNullOrEmpty(saveAsFile))
+                    {
+                        using (var fileStream = File.Create(saveAsFile, 200000))
+                        {
+                            tintXml.CopyTo(fileStream);
+                        }
+                    }
+                }
+                finally
+                {
+                    tintXml.Close();
+                }
+                return true;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+            return false;
+        }
+
+        public static MemoryStream TintThemeFromStream(Stream xmlStream,
+                                     Color targetColor,
+                                     out int outChanged,
+                                     string saveAsFile = null,
+                                     double lightnessAdjustment = 0.1D)
+        {
+            outChanged = 0;
+            var changed = 0;
+            if (!(xmlStream is { CanRead: true, CanSeek: true })) return null;
+            try
+            {
+                xmlStream.Seek(0, SeekOrigin.Begin);
+                var kryptonPaletteXml = XDocument.Load(xmlStream);
+                if (kryptonPaletteXml?.Root == null) return null;
+                KryptonPaletteColorFinder.FindColorAttributes(kryptonPaletteXml, colorElement =>
+                {
+                    var colorValue = colorElement?.Attribute("Value")?.Value;
+                    if (string.IsNullOrEmpty(colorValue)) return;
+                    try
+                    {
+                        var oldColor = ColorTranslator.FromHtml(colorValue);
+                        var newColor = ColorHelpers.TranslateColorToTargetHSL(oldColor, targetColor, lightnessAdjustment);
+                        if (oldColor.R == newColor.R && oldColor.G == newColor.G && oldColor.B == newColor.B) return;
+                        colorElement.SetAttributeValue("Value", $"{newColor.R}, {newColor.G}, {newColor.B}");
+                        changed++;
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                    }
+                });
+                outChanged = changed;
+                var tintXml = new MemoryStream();
+                kryptonPaletteXml.Save(tintXml, SaveOptions.OmitDuplicateNamespaces);
+                tintXml.Seek(0, SeekOrigin.Begin);
+                if (!string.IsNullOrEmpty(saveAsFile))
+                {
+                    using (var fileStream = File.Create(saveAsFile, 200000))
+                    {
+                        tintXml.CopyTo(fileStream);
+                    }
+                    tintXml.Seek(0, SeekOrigin.Begin);
+                }
+                return tintXml;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+            return null;
+        }
+
         private bool SwitchCustomTheme(string customTheme)
         {
             // Custom themes support (limited)
@@ -1363,36 +1452,82 @@ namespace DU_Industry_Tool
                 "vs2019.dark",
                 "win7"
             };
-
             if (string.IsNullOrEmpty(customTheme) || !custThemes.Contains(customTheme))
             {
                 return false;
             }
 
-            // Finally, try importing (and upgrade if needed) the custom theme 
             try
             {
-                using (var res = Utils.GetEmbeddedResourceStream($"DU_Industry_Tool.Palettes.{customTheme}.xml"))
+                var res = Utils.GetEmbeddedResourceStream($"DU_Industry_Tool.Palettes.{customTheme}.xml");
+                if (res == null) return false;
+                myPalette = new KryptonCustomPaletteBase(this.components);
+                kryptonManager.GlobalCustomPalette = myPalette;
+                kryptonManager.GlobalPaletteMode = PaletteMode.Custom;
+
+                var imported = false;
+                var tinted = false;
+                // EXPERIMENTAL CODE BELOW, INACTIVATED FOR NOW!
+                if (false)//SettingsMgr.GetBool(SettingsEnum.EnableThemeTinting))
                 {
-                    if (res == null) return false;
-                    myPalette = new KryptonCustomPaletteBase(this.components);
-                    kryptonManager.GlobalCustomPalette = myPalette;
-                    kryptonManager.GlobalPaletteMode = PaletteMode.Custom;
+                    var tintColor = SettingsMgr.GetStr(SettingsEnum.ThemeTintingColor);
+                    try
+                    {
+                        var targetColor = ColorTranslator.FromHtml(tintColor);
+                        if (!targetColor.IsEmpty)
+                        {
+                            var adjustment = 0.01d;
+                            //var newThemeName = customTheme + "-tinted-" + 
+                            //    (string.IsNullOrEmpty(targetColor.Name) ? "#" + ColorTranslator.ToHtml(targetColor) : targetColor.Name);
+                            //var fname = Path.Combine(SettingsMgr.Instance.GetSettingsPath(), $"{newThemeName}.xml");
+                            //res = TintThemeFromStream(res, targetColor, out var xchanged, fname, adjustment);
+                            //tinted = res != null;
 
-                    myPalette.Import(res); //myPalette.ImportWithUpgrade(res);
-                    myPalette.ThemeName = customTheme;
+                            myPalette.Import(res);
+                            imported = true;
+                            myPalette.ProcessColors((name, color) =>
+                            {
+                                if (color.IsEmpty) return color;
+                                try
+                                {
+                                    var newColor = ColorHelpers.TranslateColorToTargetHSL(color, targetColor, adjustment);
+                                    if (color.R == newColor.R && color.G == newColor.G && color.B == newColor.B) return color;
+                                    tinted = true;
+                                    return newColor;
+                                }
+                                catch (Exception e)
+                                {
+                                    Console.WriteLine(e);
+                                }
+                                return color;
+                            });
 
-                    //myPalette.Export($"c:\\temp\\{customTheme}.xml", true, true);
-
-                    // only if successful, store custom theme again in settings
-                    SaveCustomThemeSetting(customTheme, true);
-
-                    // Fix colors and notify all docs of the theme change
-                    FixPaletteColors();
-                    return true;
+                            SettingsMgr.UpdateSettings(SettingsEnum.ThemeTintingColor, tintColor);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Invalid tint color:\r\n"+e);
+                    }
                 }
+                if (!imported)
+                {
+                    myPalette.Import(res, true);
+                }
+                myPalette.ThemeName = customTheme;
+                //myPalette.Export($"c:\\temp\\{customTheme}.xml", false, true);
+
+                // only if successful, store custom theme again in settings
+                // and enable tinting if it was successful
+                SettingsMgr.UpdateSettings(SettingsEnum.EnableThemeTinting, tinted);
+                SaveCustomThemeSetting(customTheme, true);
+
+                SelectRibbonThemeButton(customTheme);
+
+                FixPaletteColors(tinted);
+                return true;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 KryptonMessageBox.Show("Sorry, could not load theme " + customTheme, "Theme Error");
             }
@@ -1409,16 +1544,86 @@ namespace DU_Industry_Tool
             try
             {
                 myPalette = new KryptonCustomPaletteBase(this.components);
-                kryptonManager.GlobalCustomPalette = myPalette;
-                kryptonManager.GlobalPaletteMode = PaletteMode.Custom;
                 myPalette.BasePalette = KryptonManager.GetPaletteForMode((PaletteMode)themeId);
                 if (myPalette.BasePalette == null)
                 {
                     return false;
                 }
+
+                // EXPERIMENTAL CODE BELOW, INACTIVATED FOR NOW!
+                var tinted = false;
+                if (false)// SettingsMgr.GetBool(SettingsEnum.EnableThemeTinting))
+                {
+                    //MemoryStream ms = null;
+                    var tintColor = SettingsMgr.GetStr(SettingsEnum.ThemeTintingColor);
+                    try
+                    {
+                        tintColor = "#D07080";
+                        var targetColor = ColorTranslator.FromHtml(tintColor);
+                        var lightnessAdjustment = 0.1;
+                        if (!targetColor.IsEmpty)
+                        {
+                            try
+                            {
+                                //ms = new MemoryStream();
+                                //myPalette.Export(ms, true, true);
+                                //if (ms.CanRead && ms.CanSeek && ms.Length > 100)
+                                //{ 
+                                //    var newThemeName = (PaletteMode)themeId + "-tinted-" +
+                                //        (string.IsNullOrEmpty(targetColor.Name) ? "#" + ColorTranslator.ToHtml(targetColor) : targetColor.Name);
+                                //    var fname = Path.Combine(SettingsMgr.Instance.GetSettingsPath(), $"{newThemeName}.xml");
+                                //    var res = TintThemeFromStream(ms, targetColor, out var xchanged, fname, lightnessAdjustment);
+                                //    tinted = res != null;
+                                //    SettingsMgr.UpdateSettings(SettingsEnum.ThemeTintingColor, tintColor);
+                                //    if (tinted)
+                                //    {
+                                //        res.Seek(0, SeekOrigin.Begin);
+                                //        myPalette.Import(res, true);
+                                //    }
+                                //}
+
+                                myPalette.PopulateFromBase(true);
+                                myPalette.ProcessColors((name, color) =>
+                                {
+                                    // Modify the color here as needed
+                                    if (color.IsEmpty) return color;
+                                    try
+                                    {
+                                        var newColor = ColorHelpers.TranslateColorToTargetHSL(color, targetColor, lightnessAdjustment);
+                                        if (color.R == newColor.R && color.G == newColor.G && color.B == newColor.B) return color;
+                                        tinted = true;
+                                        return newColor;
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        Console.WriteLine(e);
+                                    }
+                                    return color;
+                                });
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine("ERROR during tint operation:\r\n" + ex);
+                            }
+                        }
+                    }
+                    catch(Exception ex)
+                    {
+                        Console.WriteLine("ERROR invalid tint color:\r\n" + ex);
+                    }
+                    //ms?.Dispose();
+                }
+                // only if successful, store custom theme tinting if it was successful
+                SettingsMgr.UpdateSettings(SettingsEnum.EnableThemeTinting, tinted);
+
+                kryptonManager.GlobalCustomPalette = myPalette;
+                kryptonManager.GlobalPaletteMode = PaletteMode.Custom;
                 SettingsMgr.UpdateSettings(SettingsEnum.UseCustomTheme, false);
                 SettingsMgr.UpdateSettings(SettingsEnum.ThemeId, themeId);
                 SettingsMgr.SaveSettings();
+
+                SelectRibbonThemeButton(themeId);
+
                 FixPaletteColors();
                 return true;
             }
@@ -1435,26 +1640,32 @@ namespace DU_Industry_Tool
         private void rbTheme1_Click(object sender, EventArgs e)
         {
             if (!(sender is KryptonRibbonGroupButton btn)) return;
-            var switched = false;
             switch (btn.Tag)
             {
                 case int tag:
-                    switched = SwitchBuiltinTheme((int)tag);
+                    SwitchBuiltinTheme((int)tag);
                     break;
                 case string themeName:
-                    switched = SwitchCustomTheme(themeName);
+                    SwitchCustomTheme(themeName);
                     break;
             }
             CloseBox = true;
+        }
 
-            if (!switched) return;
+        /// <summary>
+        /// Mark theme ribbon button active for active builtin theme by id.
+        /// All custom themes are unchecked, they're set by theme name.
+        /// </summary>
+        /// <param name="themeId">Id of the builtin theme</param>
+        private void SelectRibbonThemeButton(int themeId)
+        {
             if (rbnThemesStdTriple.Items != null)
             {
                 foreach (var item in rbnThemesStdTriple.Items)
                 {
                     if (item is KryptonRibbonGroupButton rbnBtn)
                     {
-                        rbnBtn.Checked = rbnBtn == btn;
+                        rbnBtn.Checked = (int)(rbnBtn.Tag ?? 0) == themeId;
                     }
                 }
             }
@@ -1464,7 +1675,7 @@ namespace DU_Industry_Tool
                 {
                     if (item is KryptonRibbonGroupButton rbnBtn)
                     {
-                        rbnBtn.Checked = rbnBtn == btn;
+                        rbnBtn.Checked = (int)(rbnBtn.Tag ?? 0) == themeId;
                     }
                 }
             }
@@ -1473,18 +1684,55 @@ namespace DU_Industry_Tool
             {
                 if (item is KryptonRibbonGroupButton rbnBtn)
                 {
-                    rbnBtn.Checked = rbnBtn == btn;
+                    rbnBtn.Checked = false;
                 }
             }
         }
-
+        
+        /// <summary>
+        /// Mark custom theme ribbon button active for custom theme name.
+        /// All builtin themes are unchecked, they're set by theme id.
+        /// </summary>
+        /// <param name="themeName">Name of the custom theme</param>
+        private void SelectRibbonThemeButton(string themeName)
+        {
+            if (rbnThemesStdTriple.Items != null)
+            {
+                foreach (var item in rbnThemesStdTriple.Items)
+                {
+                    if (item is KryptonRibbonGroupButton rbnBtn)
+                    {
+                        rbnBtn.Checked = false;
+                    }
+                }
+            }
+            if (rbnThemesStdLine1.Items != null)
+            {
+                foreach (var item in rbnThemesStdLine1.Items)
+                {
+                    if (item is KryptonRibbonGroupButton rbnBtn)
+                    {
+                        rbnBtn.Checked = false;
+                    }
+                }
+            }
+            if (rbnThemesCustomLine1.Items == null) return;
+            foreach (var item in rbnThemesCustomLine1.Items)
+            {
+                if (item is KryptonRibbonGroupButton rbnBtn)
+                {
+                    rbnBtn.Checked = (string)rbnBtn.Tag == themeName;
+                }
+            }
+        }
+        
         /// <summary>
         /// Not happy with some themes, that on some elements the fore- and background
         /// colors are just painful, like white-on-white or darkgray-on-black.
         /// Lets try to fix some (subjectively) bad cases here manually.
         /// Based on v90.24 latest Canary build of Krypton Toolkit!
         /// </summary>
-        private void FixPaletteColors()
+        private void FixPaletteColors(bool isTinted = false)
         {
             if (myPalette?.BasePalette == null) return;
 
@@ -1515,6 +1763,7 @@ namespace DU_Industry_Tool
             // "Segoe UI" causes internal issues as it is not truely scalable (returns null in
             // Graphics.FromHdcInternal(dc) in some cases). For now, switched to Verdana.
             myPalette.BasePalette.BaseFont = new Font("Verdana", 9F);
+            if (isTinted) return;
 
             myPalette.ButtonStyles.ButtonListItem.StateNormal.Content.ShortText.Color1 = myPalette.BasePalette.ColorTable.ToolStripText;
             DUData.SecondaryForeColor = myPalette.ButtonStyles.ButtonListItem.StateNormal.Content.ShortText.Color1;
@@ -1688,6 +1937,5 @@ namespace DU_Industry_Tool
         }
 
         #endregion
-
     } // Mainform
 }

@@ -283,8 +283,23 @@ namespace DU_Industry_Tool
                 else
                 if (recipe.IsFuel)
                 {
-                    BatchInput = 20 * inputMultiplier + inputAdder;
-                    BatchOutput = 100 * outputMultiplier + outputAdder;
+                    if (recipe.SchemaType == "SpaceFuels")
+                    {
+                        if (recipe.Name.Contains("X5"))
+                        {
+                            BatchInput = 90 * inputMultiplier + inputAdder;
+                        }
+                        else
+                        {
+                            BatchInput = 40 * inputMultiplier + inputAdder;
+                        }
+                        BatchOutput = 100 * outputMultiplier + outputAdder;
+                    }
+                    else
+                    {
+                        BatchInput = 20 * inputMultiplier + inputAdder;
+                        BatchOutput = 100 * outputMultiplier + outputAdder;
+                    }
                 }
                 else
                 {
@@ -294,12 +309,12 @@ namespace DU_Industry_Tool
             }
             if (recipe.Time < 1) return result;
 
+            // facepalm! the recipe talent factors are summed up, but the industry
+            // efficiency factors are multiplied on top
+            EfficencyFactor = (EfficencyFactor ?? 1) * efficiencyFactorIndy;
+            BatchTime = recipe.Time * EfficencyFactor;
             if (!recipe.IsBatchmode)
             {
-                // facepalm! the recipe talent factors are summed up, but the industry
-                // efficiency factors are multiplied on top
-                EfficencyFactor = (EfficencyFactor ?? 1) * efficiencyFactorIndy;
-                BatchTime = recipe.Time * EfficencyFactor;
                 return result;
             }
 
@@ -311,7 +326,10 @@ namespace DU_Industry_Tool
             BatchTime = Math.Round(time * (int)Batches);
             if (BatchTime >= 180)
             {
-                Batches--;
+                if (Batches > 1)
+                {
+                    Batches--;
+                }
                 BatchTime = time * Batches;
             }
             BatchInput *= Batches;

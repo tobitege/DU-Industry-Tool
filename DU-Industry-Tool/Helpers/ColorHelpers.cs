@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using ColorConverter = ColorHelper.ColorConverter;
 
 namespace DU_Helpers
 {
@@ -55,6 +56,31 @@ namespace DU_Helpers
             float luminance = 0.2126f * r + 0.7152f * g + 0.0722f * b;
 
             return luminance;
+        }
+
+        public static Color TranslateColorToTargetHSL(Color sourceColor, Color targetColor, double lightnessAdjustment = 0.1)
+        {
+            // Convert both colors to HSL
+            var targetHSL = ColorConverter.RgbToHsl(new ColorHelper.RGB(targetColor.R, targetColor.G, targetColor.B));
+            var sourceHSL = ColorConverter.RgbToHsl(new ColorHelper.RGB(sourceColor.R, targetColor.G, targetColor.B));
+
+            // Extract lightness
+            byte lightness = sourceHSL.L;
+
+            // Apply target hue and saturation
+            sourceHSL.H = targetHSL.H;
+            sourceHSL.S = targetHSL.S;
+            sourceHSL.L = lightness;
+
+            // Tone down the lightness
+            if (lightnessAdjustment > 0.01)
+            {
+                sourceHSL.L = (byte)(Math.Max(0, Math.Min(sourceHSL.L - (byte)(lightnessAdjustment * 255), 255)));
+            }
+
+            // Convert back to RGB into a Color
+            var rgb = ColorConverter.HslToRgb(sourceHSL);
+            return Color.FromArgb(rgb.R, rgb.G, rgb.B);
         }
     }
 }

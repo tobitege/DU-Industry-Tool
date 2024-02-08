@@ -590,7 +590,7 @@ namespace DU_Industry_Tool
             // v2024.1.11:
             var indType = DUData.GetIndustryType(industry);
             var indSize = DUData.GetElementSize(industry, true);
-            if (indType != "")
+            if (!string.IsNullOrEmpty(indType))
             {
                 foreach (var talent in Talents.Where(t => t.Name.Contains(indType) && t.EfficiencyTalent))
                 {

@@ -33,10 +33,10 @@ namespace DU_Industry_Tool.Skills
         private void SkillForm2_FormClosing(object sender, FormClosingEventArgs e)
         {
             if (!_changed || e.CloseReason == CloseReason.WindowsShutDown) return;
-            var res = MessageBox.Show("One or more talent values were changed!\r\n\r\n" +
+            var res = KryptonMessageBox.Show("One or more talent values were changed!\r\n\r\n" +
                 "Save the full talents list now to file?\r\n\r\n"+
                 "No reverts all changes. Cancel keeps this dialogue open.", "Talents changed!",
-                MessageBoxButtons.YesNoCancel, MessageBoxIcon.Exclamation);
+                KryptonMessageBoxButtons.YesNoCancel, KryptonMessageBoxIcon.Exclamation);
             switch (res)
             {
                 case DialogResult.Yes:
@@ -128,8 +128,8 @@ namespace DU_Industry_Tool.Skills
         {
             var val = CmbLevel.SelectedIndex;
             if (val < 0 || tmpT.All(x => x.Section != LblSection.Text)) return;
-            if (MessageBox.Show($"Set all visible talents to value {val}?", "Batch update talents?",
-                MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) != DialogResult.Yes)
+            if (KryptonMessageBox.Show($"Set all visible talents to value {val}?", "Batch update talents?",
+                KryptonMessageBoxButtons.YesNo, KryptonMessageBoxIcon.Exclamation) != DialogResult.Yes)
             {
                 return;
             }
@@ -144,9 +144,9 @@ namespace DU_Industry_Tool.Skills
         private void BtnReload_Click(object sender, EventArgs e)
         {
             if (tmpT.All(x => x.Section != LblSection.Text)) return;
-            if (MessageBox.Show("Reloading this section will revert all changes!"+
+            if (KryptonMessageBox.Show("Reloading this section will revert all changes!"+
                     "\r\nContinune with reload?", "Reload talents?",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) != DialogResult.Yes)
+                    KryptonMessageBoxButtons.YesNo, KryptonMessageBoxIcon.Exclamation) != DialogResult.Yes)
             {
                 return;
             }

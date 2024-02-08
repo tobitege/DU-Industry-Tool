@@ -316,7 +316,11 @@ namespace DU_Industry_Tool
             SetLabelTextAndVisibility(LblBatchSizeValue, $"{batchInputVol:N2} in / {batchOutputVol:N2} out");
 
             lblPerIndustry.Show();
-            var batchesPerDay = Math.Floor(86400 / (decimal)(calc.BatchTime ?? 86400));
+            var batchesPerDay = 0m;
+            if (calc.BatchTime > 0)
+            {
+                batchesPerDay = Math.Floor(86400 / (decimal)(calc.BatchTime));
+            }
             SetLinkLabel(lblPerIndustryValue, $"{batchesPerDay:N0} batches / day",
                 calc.Key + "#" + Math.Ceiling(batchesPerDay * batchVol),
                 LblPerIndustryValue_Click);

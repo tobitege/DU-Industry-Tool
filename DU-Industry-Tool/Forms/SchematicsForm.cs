@@ -74,8 +74,8 @@ namespace DU_Industry_Tool
                 .ToList();
             if (savedQty.Count == 0)
             {
-                MessageBox.Show("No schematics with quantities found!", "Nothing to save",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                KryptonMessageBox.Show("No schematics with quantities found!", "Nothing to save",
+                    KryptonMessageBoxButtons.OK, KryptonMessageBoxIcon.Information);
                 return;
             }
 
@@ -96,8 +96,8 @@ namespace DU_Industry_Tool
 
         private void BtnClear_Click(object sender, EventArgs e)
         {
-            if (MessageBox.Show(@"Really clear the list now?", @"Clear List", MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning) != DialogResult.Yes)
+            if (KryptonMessageBox.Show(@"Really clear the list now?", @"Clear List", 
+                    KryptonMessageBoxButtons.YesNo, KryptonMessageBoxIcon.Warning) != DialogResult.Yes)
                 return;
             clearQuantities();
         }
@@ -275,7 +275,8 @@ namespace DU_Industry_Tool
             var quantity = 0;
             if (cellValue != null && !int.TryParse(cellValue.ToString(), out quantity))
             {
-                MessageBox.Show("Invalid quantity value. Please enter a valid integer value.");
+                KryptonMessageBox.Show("Invalid quantity value. Please enter a valid integer value.",
+                    "Input error", KryptonMessageBoxButtons.OK, KryptonMessageBoxIcon.Exclamation);
                 return;
             }
             try
@@ -317,10 +318,10 @@ namespace DU_Industry_Tool
 
         private void duCraftImportBtn_Click(object sender, EventArgs e)
         {
-            if (MessageBox.Show("Try to load skills from clipboard?\n\n"+ 
+            if (KryptonMessageBox.Show("Try to load skills from clipboard?\n\n"+ 
                     "Make sure to use the Copy Config button on the du-craft.online site now!\n\n"+
                     "This will OVERWRITE above talent values!", @"Confirm",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                    KryptonMessageBoxButtons.YesNo, KryptonMessageBoxIcon.Warning) != DialogResult.Yes)
             {
                 return;
             }

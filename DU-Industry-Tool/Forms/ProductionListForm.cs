@@ -98,9 +98,9 @@ namespace DU_Industry_Tool
         {
             if (_changed)
             {
-                if (MessageBox.Show("Proceed with calculation? Answer 'No' to be able to save the production list!",
-                        "Proceed with Calculation?", MessageBoxButtons.YesNo,
-                        MessageBoxIcon.Information) != DialogResult.Yes)
+                if (KryptonMessageBox.Show("Proceed with calculation? Answer 'No' to be able to save the production list!",
+                        "Proceed with Calculation?", KryptonMessageBoxButtons.YesNo,
+                        KryptonMessageBoxIcon.Information) != DialogResult.Yes)
                 {
                     return;
                 }
@@ -140,8 +140,8 @@ namespace DU_Industry_Tool
 
         private void BtnClear_Click(object sender, EventArgs e)
         {
-            if (MessageBox.Show("Really clear the list now?", "Clear List", MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning) != DialogResult.Yes)
+            if (KryptonMessageBox.Show("Really clear the list now?", "Clear List", 
+                    KryptonMessageBoxButtons.YesNo, KryptonMessageBoxIcon.Warning) != DialogResult.Yes)
                 return;
             mgr.Databindings.ProductionBindingList.Clear();
             dgvProductionList.Invalidate(true);

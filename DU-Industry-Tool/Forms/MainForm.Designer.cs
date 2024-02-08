@@ -138,7 +138,7 @@
             this.rbnTabOptions});
             this.kryptonRibbon.SelectedTab = this.rbnTabThemes;
             this.kryptonRibbon.ShowMinimizeButton = false;
-            this.kryptonRibbon.Size = new System.Drawing.Size(1544, 131);
+            this.kryptonRibbon.Size = new System.Drawing.Size(1600, 131);
             this.kryptonRibbon.TabIndex = 0;
             // 
             // buttonUpdateMarketValues
@@ -614,7 +614,7 @@
             this.kryptonDockableWorkspace.Root.WorkspaceControl = this.kryptonDockableWorkspace;
             this.kryptonDockableWorkspace.SeparatorStyle = Krypton.Toolkit.SeparatorStyle.HighProfile;
             this.kryptonDockableWorkspace.ShowMaximizeButton = false;
-            this.kryptonDockableWorkspace.Size = new System.Drawing.Size(468, 896);
+            this.kryptonDockableWorkspace.Size = new System.Drawing.Size(468, 952);
             this.kryptonDockableWorkspace.SplitterWidth = 8;
             this.kryptonDockableWorkspace.TabIndex = 0;
             this.kryptonDockableWorkspace.TabStop = true;
@@ -630,7 +630,7 @@
             this.kryptonPage1.Margin = new System.Windows.Forms.Padding(4);
             this.kryptonPage1.MinimumSize = new System.Drawing.Size(400, 450);
             this.kryptonPage1.Name = "kryptonPage1";
-            this.kryptonPage1.Size = new System.Drawing.Size(460, 866);
+            this.kryptonPage1.Size = new System.Drawing.Size(460, 922);
             this.kryptonPage1.Text = "Recipes Explorer";
             this.kryptonPage1.TextDescription = "";
             this.kryptonPage1.TextTitle = "";
@@ -640,11 +640,12 @@
             // treeView
             // 
             this.treeView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.treeView.FullRowSelect = true;
             this.treeView.Location = new System.Drawing.Point(0, 116);
             this.treeView.Margin = new System.Windows.Forms.Padding(4);
             this.treeView.MinimumSize = new System.Drawing.Size(399, 399);
             this.treeView.Name = "treeView";
-            this.treeView.Size = new System.Drawing.Size(460, 750);
+            this.treeView.Size = new System.Drawing.Size(460, 806);
             this.treeView.TabIndex = 3;
             // 
             // searchPanel
@@ -843,7 +844,7 @@
             this.kryptonNavigator1.NavigatorMode = Krypton.Navigator.NavigatorMode.BarTabGroup;
             this.kryptonNavigator1.Owner = null;
             this.kryptonNavigator1.PageBackStyle = Krypton.Toolkit.PaletteBackStyle.ControlClient;
-            this.kryptonNavigator1.Size = new System.Drawing.Size(955, 771);
+            this.kryptonNavigator1.Size = new System.Drawing.Size(983, 799);
             this.kryptonNavigator1.StateCommon.CheckButton.Content.Image.ImageH = Krypton.Toolkit.PaletteRelativeAlign.Center;
             this.kryptonNavigator1.StateCommon.CheckButton.Content.Image.ImageV = Krypton.Toolkit.PaletteRelativeAlign.Center;
             this.kryptonNavigator1.StateCommon.CheckButton.Content.ShortText.TextH = Krypton.Toolkit.PaletteRelativeAlign.Center;
@@ -894,7 +895,7 @@
             // MainForm
             // 
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
-            this.ClientSize = new System.Drawing.Size(1544, 1027);
+            this.ClientSize = new System.Drawing.Size(1600, 1083);
             this.Controls.Add(this.kryptonNavigator1);
             this.Controls.Add(this.kryptonDockableWorkspace);
             this.Controls.Add(this.kryptonRibbon);

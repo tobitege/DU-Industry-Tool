@@ -257,8 +257,8 @@ namespace DU_Helpers
             };
             if (dlg.ShowDialog() != DialogResult.OK) return null;
             if (File.Exists(dlg.FileName) &&
-                (MessageBox.Show(@"Overwrite existing file?", @"Overwrite",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes))
+                (KryptonMessageBox.Show("Overwrite existing file?", "Overwrite",
+                    KryptonMessageBoxButtons.YesNo, KryptonMessageBoxIcon.Warning) != DialogResult.Yes))
             {
                 return null;
             }

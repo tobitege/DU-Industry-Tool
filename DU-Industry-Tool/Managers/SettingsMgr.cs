@@ -32,6 +32,8 @@ namespace DU_Helpers
         UseCustomTheme,
         LastCustomTheme,
         ResultsFontSize,
+        EnableThemeTinting,
+        ThemeTintingColor,
     }
     
     public class FileSettingsBase
@@ -113,7 +115,7 @@ namespace DU_Helpers
     public class SettingsMgr : StringSettingsBase
     {
         private static SettingsMgr _instance;
-        public static SettingsMgr Instance => _instance ?? (_instance = new SettingsMgr());
+        public static SettingsMgr Instance => _instance ??= new SettingsMgr();
 
         private static readonly string[] SettingsNames = Enum.GetNames(typeof(SettingsEnum));
 

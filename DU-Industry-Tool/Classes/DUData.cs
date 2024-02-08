@@ -50,8 +50,8 @@ namespace DU_Industry_Tool
         public static readonly List<string> SizeList = new List<string> { "XS", "S", "M", "L", "XL" };
         public static readonly List<string> SectionNames = new List<string> { "Ores", "Pures", "Products", "Parts", "Schematics", "Industry", "Ingredients" };
 
-        public static int[] ConstructSupportPriceList => new [] { 150, 375, 1000, 3000, 0 }; // Construct Support
-        public static int[] CoreUnitsPriceList => new [] { 250, 5000, 62500, 725000, 0 }; // Core Units
+        //public static int[] ConstructSupportPriceList => new [] { 150, 375, 1000, 3000, 0 }; // Construct Support
+        //public static int[] CoreUnitsPriceList => new [] { 250, 5000, 62500, 725000, 0 }; // Core Units
 
         public static List<Ore> Ores { get; private set; }
 
@@ -320,8 +320,7 @@ namespace DU_Industry_Tool
             if (string.IsNullOrEmpty(elemName)) return "";
             if (elemName.Contains("Assembly")) return "Assembly";
             var s = elemName.Split(' ');
-            if (s.Length < 2) return "";
-            return IndustryTypesList.Contains(s[1]) ? s[1] : "";
+            return s.Length < 2 ? "" : IndustryTypesList.FirstOrDefault(x => x.StartsWith(s[1]));
         }
 
         private static string FindParent(Guid groupId)
