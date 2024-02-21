@@ -1,5 +1,10 @@
 # Changelog
 
+## v2024.2.2
+
+- Fixed rounding issue with schematics batch size with lvl 5 talents
+- 3rd party library updates
+
 ## v2024.2.1
 
 - Fixed exception with Kergon-X5 fuel

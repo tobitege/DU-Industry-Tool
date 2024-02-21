@@ -131,13 +131,13 @@ namespace DU_Industry_Tool
             var timeFactor = 1m - SchemaTalentsCache.ResearchTimeEfficiencyBasic * 0.03m - SchemaTalentsCache.ResearchTimeEfficiencyAdvanced * 0.02m;
             foreach (var item in Schematics)
             {
-                item.Value.BatchSize = (int)Math.Round(item.Value.BatchSize * prodFactor, 2, MidpointRounding.AwayFromZero);
+                item.Value.BatchSize = (int)Math.Round(item.Value.BatchSize * prodFactor, 0, MidpointRounding.AwayFromZero);
                 item.Value.BatchCost = Math.Round(item.Value.Cost * costFactor, 2, MidpointRounding.AwayFromZero);
                 item.Value.Cost = Math.Round(item.Value.BatchCost / item.Value.BatchSize, 2, MidpointRounding.AwayFromZero);
                 item.Value.BatchTime = (int)Math.Round(item.Value.BatchTime * timeFactor, 2, MidpointRounding.AwayFromZero);
             }
         }
-        
+
         public static void LoadSchematics()
         {
             // Schematics and prices

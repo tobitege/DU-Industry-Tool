@@ -48,8 +48,7 @@ namespace DU_Industry_Tool
             CultureInfo.CurrentCulture = new CultureInfo("en-us");
             QuantityBox.SelectedIndex = 0;
             SetupThemeButtonTags();
-            // only for Nightly alpha build > 24.1.30!
-            //this.kryptonRibbon.RibbonAppButton.FormCloseBoxVisible = true;
+            kryptonRibbon.RibbonAppButton.FormCloseBoxVisible = true;
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -78,7 +77,7 @@ namespace DU_Industry_Tool
 
             treeView.TreeView.BackColorChanged += treeView_BackColorChanged;
             treeView.TreeView.ForeColorChanged += treeView_BackColorChanged;
-            
+
             // load settings before IndustryManager
             if (SettingsMgr.LoadSettings())
             {
@@ -104,7 +103,7 @@ namespace DU_Industry_Tool
             {
                 LoadAndRunProductionList(SettingsMgr.GetStr(SettingsEnum.LastProductionList));
             }
-            
+
             _startUp = false;
         }
 
@@ -842,7 +841,7 @@ namespace DU_Industry_Tool
             CalcOptions.MarginPct = Utils.ClampDec(SettingsMgr.GetDecimal(SettingsEnum.ProdListGrossMargin), 0, 1000);
             CalcOptions.ApplyRnd = SettingsMgr.GetBool(SettingsEnum.ProdListApplyRounding);
             CalcOptions.RndDigits = SettingsMgr.GetInt(SettingsEnum.ProdListRoundDigits);
- 
+
             CbRestoreWindow.Checked = SettingsMgr.GetBool(SettingsEnum.RestoreWindow);
             CbStartupProdList.Checked = SettingsMgr.GetBool(SettingsEnum.LaunchProdList);
             CbFullSchematicQty.Checked = SettingsMgr.GetBool(SettingsEnum.FullSchematicQuantities);
@@ -1477,7 +1476,7 @@ namespace DU_Industry_Tool
                         if (!targetColor.IsEmpty)
                         {
                             var adjustment = 0.01d;
-                            //var newThemeName = customTheme + "-tinted-" + 
+                            //var newThemeName = customTheme + "-tinted-" +
                             //    (string.IsNullOrEmpty(targetColor.Name) ? "#" + ColorTranslator.ToHtml(targetColor) : targetColor.Name);
                             //var fname = Path.Combine(SettingsMgr.Instance.GetSettingsPath(), $"{newThemeName}.xml");
                             //res = TintThemeFromStream(res, targetColor, out var xchanged, fname, adjustment);
@@ -1568,7 +1567,7 @@ namespace DU_Industry_Tool
                                 //ms = new MemoryStream();
                                 //myPalette.Export(ms, true, true);
                                 //if (ms.CanRead && ms.CanSeek && ms.Length > 100)
-                                //{ 
+                                //{
                                 //    var newThemeName = (PaletteMode)themeId + "-tinted-" +
                                 //        (string.IsNullOrEmpty(targetColor.Name) ? "#" + ColorTranslator.ToHtml(targetColor) : targetColor.Name);
                                 //    var fname = Path.Combine(SettingsMgr.Instance.GetSettingsPath(), $"{newThemeName}.xml");
@@ -1688,7 +1687,7 @@ namespace DU_Industry_Tool
                 }
             }
         }
-        
+
         /// <summary>
         /// Mark custom theme ribbon button active for custom theme name.
         /// All builtin themes are unchecked, they're set by theme id.
@@ -1725,7 +1724,7 @@ namespace DU_Industry_Tool
                 }
             }
         }
-        
+
         /// <summary>
         /// Not happy with some themes, that on some elements the fore- and background
         /// colors are just painful, like white-on-white or darkgray-on-black.
@@ -1750,24 +1749,23 @@ namespace DU_Industry_Tool
             // .PaletteColorStyle.ExpertPressed seems like solid color rendering
             //myPalette.Ribbon.RibbonTab.StateCheckedNormal.BackColor2 = Color.Red; // active (clicked) tab bg color
             //myPalette.Ribbon.RibbonTab.StateCommon.BackColor1 = Color.xxx; // tab outer border color
-            //myPalette.TabStyles.TabCommon.StateCommon.Back.Color1 = Color.xxx; // tabbed page title bg, e.g. "Production List" tab
             //myPalette.Ribbon.RibbonGroupArea.StateCommon.BackColor3 = Color.xxx;
             //myPalette.Ribbon.RibbonGroupArea.StateTracking.BackColor3 = Color.xxx;
-            //myPalette.TabStyles.TabCommon.StatePressed.Content.ShortText.Color1 = Color.Red;
             //myPalette.Ribbon.RibbonGroupArea.StateContextPressed.BackColor1 = Color.Orange;
             //myPalette.Ribbon.RibbonGroupArea.StateCheckedNormal.BackColor1 = Color.Red;
             //myPalette.Ribbon.RibbonGroupCollapsedBack.StateTracking.BackColor1 = Color.Yellow;
+            //myPalette.TabStyles.TabCommon.StateCommon.Back.Color1 = Color.xxx; // tabbed page title bg, e.g. "Production List" tab
+            //myPalette.TabStyles.TabCommon.StatePressed.Content.ShortText.Color1 = Color.Red;
             // this is not only for regular panels, but also page tabs' backgrounds!
             //myPalette.PanelStyles.PanelClient.StateCommon.Color1 = Color.OrangeRed;
 
             // "Segoe UI" causes internal issues as it is not truely scalable (returns null in
             // Graphics.FromHdcInternal(dc) in some cases). For now, switched to Verdana.
-            myPalette.BasePalette.BaseFont = new Font("Verdana", 9F);
+            myPalette.BasePalette.BaseFont = new Font("Segoe UI", 9F);
             if (isTinted) return;
 
             myPalette.ButtonStyles.ButtonListItem.StateNormal.Content.ShortText.Color1 = myPalette.BasePalette.ColorTable.ToolStripText;
             DUData.SecondaryForeColor = myPalette.ButtonStyles.ButtonListItem.StateNormal.Content.ShortText.Color1;
-            //myPalette.ButtonStyles.ButtonListItem.StateNormal.Content.ShortText.Color1 = Color.Black;
 
             // apply fixes
             if (!SettingsMgr.GetBool(SettingsEnum.UseCustomTheme))
@@ -1775,6 +1773,21 @@ namespace DU_Industry_Tool
                 var mode = KryptonManager.GetModeForPalette(myPalette.BasePalette);
                 switch (mode)
                 {
+                     //case PaletteMode.Microsoft365Blue:
+                     //   myPalette.Ribbon.RibbonTab.StateCheckedNormal.BackColor2 = Color.Black;
+                     //   myPalette.Ribbon.RibbonTab.StateCheckedNormal.BackColor3 = Color.Red;
+                     //   myPalette.Ribbon.RibbonTab.StateCommon.BackColor2 = Color.Green;
+                     //   myPalette.Common.StateCommon.Back.Color2 = Color.Green;
+                     //   myPalette.Ribbon.RibbonAppMenuInner.BackColor1 = Color.Yellow;
+                     //   myPalette.Ribbon.RibbonAppMenuInner.BackColor2 = Color.Navy;
+                     //   myPalette.Ribbon.RibbonAppMenuInner.BackColor3 = Color.Red;
+                     //   myPalette.Ribbon.RibbonAppMenuInner.BackColor4 = Color.CornflowerBlue;
+                     //   myPalette.Ribbon.RibbonGroupCollapsedBack.StateCommon.BackColor1 = Color.Navy;
+                     //   myPalette.Ribbon.RibbonGroupCollapsedBack.StateCommon.BackColor2 = Color.Navy;
+                     //   myPalette.Ribbon.RibbonGroupCollapsedBack.StateCommon.BackColor3 = Color.Navy;
+                     //   myPalette.Ribbon.RibbonGroupCollapsedBack.StateCommon.BackColor4 = Color.Navy;
+                     //   myPalette.Ribbon.RibbonGroupCollapsedBack.StateCommon.BackColor5 = Color.Navy;
+                     //   break;
                     case PaletteMode.Microsoft365Black:
                         var col = myPalette.BasePalette.GetRibbonTextColor(PaletteRibbonTextStyle.RibbonGroupNormalTitle, PaletteState.Normal);
                         myPalette.Ribbon.RibbonTab.StateNormal.TextColor = col;
@@ -1789,7 +1802,7 @@ namespace DU_Industry_Tool
                         // link label color
                         myPalette.LabelStyles.LabelNormalPanel.OverrideNotVisited.ShortText.Color1 = Color.OrangeRed;
                         break;
-                    case PaletteMode.Microsoft365BlueDarkMode:
+                     case PaletteMode.Microsoft365BlueDarkMode:
                         myPalette.ButtonStyles.ButtonCommon.StateCheckedNormal.Content.ShortText.Color1 = Color.White;
                         myPalette.Ribbon.RibbonGroupButtonText.StateCommon.TextColor = Color.Navy;
                         myPalette.Ribbon.RibbonGroupNormalTitle.StateNormal.TextColor = Color.White;
@@ -1817,7 +1830,7 @@ namespace DU_Industry_Tool
                         myPalette.ButtonStyles.ButtonListItem.StateNormal.Content.ShortText.Color1 = Color.FromArgb(255, 30, 30, 30);
                         DUData.SecondaryForeColor = myPalette.ButtonStyles.ButtonListItem.StateNormal.Content.ShortText.Color1;
                         break;
-                    
+
                     // example for how to darken something:
                     //case PaletteMode.SparkleOrangeDarkMode:
                     //    var darkened = ColorHelpers.DarkenColor(Color.FromArgb(214, 219, 225), 10);
@@ -1833,6 +1846,7 @@ namespace DU_Industry_Tool
                 switch (myPalette.ThemeName)
                 {
                     case "Green Palette":
+                        myPalette.Ribbon.RibbonTab.StateCommon.TextColor = Color.Black;
                         myPalette.TabStyles.TabCommon.StateSelected.Content.ShortText.Color1 = Color.Black;
                         myPalette.Ribbon.RibbonGroupButtonText.StateNormal.TextColor = Color.Black;
                         myPalette.Ribbon.RibbonGroupButtonText.StateCommon.TextColor = Color.Black;
