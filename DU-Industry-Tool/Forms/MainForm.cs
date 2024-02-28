@@ -1859,6 +1859,8 @@ namespace DU_Industry_Tool
                         myPalette.ButtonStyles.ButtonCommon.StateNormal.Content.ShortText.Color1 = Color.White;
                         // override ButtonListItem color, which is used by KryptonTreeView
                         myPalette.ButtonStyles.ButtonListItem.StateNormal.Content.ShortText.Color1 = Color.Green;
+                        // selected cells background
+                        myPalette.GridStyles.GridCommon.StateSelected.DataCell.Back.Color1 = Color.FromArgb(217, 233, 227);
                         DUData.SecondaryForeColor = Color.Green;
                         break;
                     case "vs2019.dark":
@@ -1875,6 +1877,8 @@ namespace DU_Industry_Tool
                         // ribbon group bottom title
                         myPalette.Ribbon.RibbonGroupNormalTitle.StateCommon.TextColor = Color.DarkGray;
                         myPalette.GridStyles.GridList.StateCommon.DataCell.Border.Color1 = Color.FromArgb(255, 30, 30, 30);
+                        // selected cells background
+                        myPalette.GridStyles.GridCommon.StateSelected.DataCell.Back.Color1 = Color.FromArgb(30, 30, 30);
                         // For treeview
                         myPalette.ButtonStyles.ButtonListItem.StateNormal.Content.ShortText.Color1 = Color.White;
                         // link label color

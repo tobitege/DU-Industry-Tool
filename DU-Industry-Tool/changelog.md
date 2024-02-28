@@ -1,5 +1,9 @@
 # Changelog
 
+## v2024.2.3
+
+- Fixed color of selected grid cells for VS2019 and Green themes
+
 ## v2024.2.2
 
 - Fixed rounding issue with schematics batch size with lvl 5 talents
