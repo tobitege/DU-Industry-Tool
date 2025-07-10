@@ -26,7 +26,6 @@ namespace DU_Industry_Tool
         // Constructor
         public IndustryMgr()
         {
-            CultureInfo.CurrentCulture = new CultureInfo("en-us");
             if (!File.Exists(@"RecipesGroups.json") || !File.Exists("Groups.json"))
             {
                 KryptonMessageBox.Show("Files 'RecipesGroups.json' and/or 'Groups.json' are missing!"+

@@ -45,10 +45,9 @@ namespace DU_Industry_Tool
         public MainForm()
         {
             InitializeComponent();
-            CultureInfo.CurrentCulture = new CultureInfo("en-us");
             QuantityBox.SelectedIndex = 0;
             SetupThemeButtonTags();
-            kryptonRibbon.RibbonAppButton.FormCloseBoxVisible = true;
+            kryptonRibbon.RibbonFileAppButton.FormCloseBoxVisible = true;
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -1467,7 +1466,8 @@ namespace DU_Industry_Tool
                 var imported = false;
                 var tinted = false;
                 // EXPERIMENTAL CODE BELOW, INACTIVATED FOR NOW!
-                if (false)//SettingsMgr.GetBool(SettingsEnum.EnableThemeTinting))
+                //if (SettingsMgr.GetBool(SettingsEnum.EnableThemeTinting))
+                if (false)
                 {
                     var tintColor = SettingsMgr.GetStr(SettingsEnum.ThemeTintingColor);
                     try
@@ -1551,7 +1551,8 @@ namespace DU_Industry_Tool
 
                 // EXPERIMENTAL CODE BELOW, INACTIVATED FOR NOW!
                 var tinted = false;
-                if (false)// SettingsMgr.GetBool(SettingsEnum.EnableThemeTinting))
+                //if (SettingsMgr.GetBool(SettingsEnum.EnableThemeTinting))
+                if (false)
                 {
                     //MemoryStream ms = null;
                     var tintColor = SettingsMgr.GetStr(SettingsEnum.ThemeTintingColor);

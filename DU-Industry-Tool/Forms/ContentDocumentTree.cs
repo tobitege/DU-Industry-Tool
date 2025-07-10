@@ -1155,13 +1155,17 @@ namespace DU_Industry_Tool
                         col++;
                     }
 
-                    if (!string.IsNullOrEmpty((string)XRow.Mass))
+                    if (!string.IsNullOrEmpty((string)XRow.Mass) &&
+                        decimal.TryParse((string)XRow.Mass, System.Globalization.NumberStyles.Any,
+                                         System.Globalization.CultureInfo.CurrentCulture, out var massVal))
                     {
-                        ws.CellSet(ix, ++col, decimal.Parse((string)XRow.Mass));
+                        ws.CellSet(ix, ++col, massVal);
                     }
-                    if (!string.IsNullOrEmpty((string)XRow.Vol))
+                    if (!string.IsNullOrEmpty((string)XRow.Vol) &&
+                        decimal.TryParse((string)XRow.Vol, System.Globalization.NumberStyles.Any,
+                                         System.Globalization.CultureInfo.CurrentCulture, out var volVal))
                     {
-                        ws.CellSet(ix, ++col, decimal.Parse((string)XRow.Vol));
+                        ws.CellSet(ix, ++col, volVal);
                     }
                     ix++;
                     i++;
