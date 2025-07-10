@@ -1,5 +1,9 @@
 # Latest Changes
 
+## v2025.7.1
+
+- Removed locale-locking, should now show correct number formats on e.g. German Windows.
+
 ## v2024.2.3
 
 - Fixed color of selected grid cells for VS2019 and Green themes

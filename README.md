@@ -1,4 +1,4 @@
-## Current version: 2024.1.12
+## Current version: 2025.7.1
 
 The work on the wiki has started, barely. But I'll add infos and hints when I can.
 
