@@ -9,6 +9,7 @@ using System.Text;
 using System.Windows.Forms;
 using DU_Industry_Tool.Skills;
 using Krypton.Toolkit;
+using DU_Helpers;
 
 namespace DU_Industry_Tool
 {
@@ -26,7 +27,16 @@ namespace DU_Industry_Tool
         // Constructor
         public IndustryMgr()
         {
-            if (!File.Exists(@"RecipesGroups.json") || !File.Exists("Groups.json"))
+            var customRecipes = SettingsMgr.GetStr(SettingsEnum.RecipesFilePath);
+            var appDir = Application.StartupPath;
+            var defaultRecipesPath = Path.Combine(appDir, "RecipesGroups.json");
+            var defaultGroupsPath = Path.Combine(appDir, "Groups.json");
+            var recipesExists = !string.IsNullOrEmpty(customRecipes) && File.Exists(customRecipes);
+            if (!recipesExists)
+            {
+                recipesExists = File.Exists(defaultRecipesPath);
+            }
+            if (!recipesExists || !File.Exists(defaultGroupsPath))
             {
                 KryptonMessageBox.Show("Files 'RecipesGroups.json' and/or 'Groups.json' are missing!"+
                     "\r\nPlease re-download the release archive!", "Error",
@@ -36,7 +46,7 @@ namespace DU_Industry_Tool
             }
 
             // On initialization, read all our data from files
-            DUData.LoadRecipes();
+            var loadedFromCustom = DUData.LoadRecipes();
             DUData.LoadOres();
             DUData.LoadGroups();
             TalentsManager.LoadTalentsAndValues();
@@ -802,7 +812,7 @@ namespace DU_Industry_Tool
             if (dmpRcp)
             {
                 var funcPartsId = DUData.Groups["FunctionalPart"].Id;
-                var missingRec = Enumerable.Where<KeyValuePair<string, DuLuaRecipe>>(LuaRecipes, x => x.Value.Products?.Count > 0 && 
+                var missingRec = Enumerable.Where<KeyValuePair<string, DuLuaRecipe>>(LuaRecipes, x => x.Value.Products?.Count > 0 &&
                                  DUData.Recipes.Values.All(y => y.NqId != x.Value.Products[0].Id))
                     .OrderBy(x => x.Value.Products[0].DisplayNameWithSize);
                 foreach (var missing in missingRec.ToList())
@@ -895,7 +905,7 @@ namespace DU_Industry_Tool
                                 }
                             }
 
-                            var isIngred = Enumerable.Any<KeyValuePair<string, DuLuaRecipe>>(LuaRecipes, x => 
+                            var isIngred = Enumerable.Any<KeyValuePair<string, DuLuaRecipe>>(LuaRecipes, x =>
                                 x.Value.Ingredients != null &&
                                 Enumerable.Any<DuLuaSubItem>(x.Value.Ingredients, y => y.Id == newRecipe.NqId)) == true;
                             // IF it is a part, skip it if it is not an ingredient anywhere (not ingame parts!)
@@ -927,7 +937,7 @@ namespace DU_Industry_Tool
                                 //newRecipe.Industry = "Electronics Industry M";
                             }
                             else
-                            if ( 
+                            if (
                                  (newRecipe.Name.IndexOf(" Firing System ", StringComparison.InvariantCulture) > -1) ||
                                  false
                                 )
@@ -1018,7 +1028,7 @@ namespace DU_Industry_Tool
                                 newRecipe.ParentGroupName = "Screens";
                             }
                             else
-                            if ( 
+                            if (
                                  (newRecipe.Name.IndexOf(" Chemical Container ", StringComparison.InvariantCulture) > -1) ||
                                  (newRecipe.Name.IndexOf(" Combustion Chamber ", StringComparison.InvariantCulture) > -1) ||
                                  (newRecipe.Name.IndexOf(" Electric Engine ", StringComparison.InvariantCulture) > -1) ||
@@ -1034,7 +1044,7 @@ namespace DU_Industry_Tool
                                 //newRecipe.Industry = "Metalworks";
                             }
                             else
-                            if ( 
+                            if (
                                  (newRecipe.Name.IndexOf(" pattern ", StringComparison.InvariantCulture) > -1) ||
                                  newRecipe.Name.EndsWith(" plastic", StringComparison.InvariantCulture) ||
                                  newRecipe.Name.EndsWith("(cold)", StringComparison.InvariantCulture) ||
@@ -1048,7 +1058,7 @@ namespace DU_Industry_Tool
                                 //newRecipe.Industry = "Basic Honeycomb Refinery M";
                             }
                             else
-                            if ( 
+                            if (
                                  newRecipe.Name.StartsWith("Luminescent", StringComparison.InvariantCulture) ||
                                  false
                                  )
@@ -1143,6 +1153,18 @@ namespace DU_Industry_Tool
 #endif
 
             DUData.RecipeNames.AddRange(DUData.Recipes.Select(x => x.Value.Name).OrderBy(y => y).ToList());
+
+            // If fallback occurred when loading recipes, inform the user at the end
+            if (!loadedFromCustom)
+            {
+                try
+                {
+                    KryptonMessageBox.Show(
+                        "Custom recipes file failed to load. The default 'RecipesGroups.json' was loaded instead.",
+                        "Recipes file fallback", KryptonMessageBoxButtons.OK, false);
+                }
+                catch (Exception) { }
+            }
         }
 
         //private void DetermineIndustryFor(SchematicRecipe recipe)

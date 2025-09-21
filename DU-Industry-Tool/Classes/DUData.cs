@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using DU_Industry_Tool.Skills;
 using Krypton.Toolkit;
 using Newtonsoft.Json;
+using DU_Helpers;
 
 namespace DU_Industry_Tool
 {
@@ -107,14 +108,39 @@ namespace DU_Industry_Tool
         //    return result != null;
         //}
 
-        public static void LoadRecipes()
+        public static bool LoadRecipes()
         {
-            var json = File.ReadAllText(_recipesFile);
-            Recipes = JsonConvert.DeserializeObject<SortedDictionary<string, SchematicRecipe>>(json);
-            ItemTypeNames = new SortedDictionary<string, string>();
-            foreach (var entry in Recipes)
+            var appDir = Application.StartupPath;
+            var defaultPath = Path.Combine(appDir, _recipesFile);
+            var customPath = SettingsMgr.GetStr(DU_Helpers.SettingsEnum.RecipesFilePath);
+            var path = (!string.IsNullOrEmpty(customPath) && File.Exists(customPath)) ? customPath : defaultPath;
+            try
             {
-                ItemTypeNames.Add(entry.Value.Name, entry.Key);
+                var json = File.ReadAllText(path);
+                Recipes = JsonConvert.DeserializeObject<SortedDictionary<string, SchematicRecipe>>(json);
+                ItemTypeNames = new SortedDictionary<string, string>();
+                foreach (var entry in Recipes)
+                {
+                    ItemTypeNames.Add(entry.Value.Name, entry.Key);
+                }
+                return true;
+            }
+            catch (Exception)
+            {
+                // If a non-default file failed to load, try the default file instead
+                var isDefaultSelected = string.Equals(Path.GetFullPath(path), Path.GetFullPath(defaultPath), StringComparison.InvariantCultureIgnoreCase);
+                if (!isDefaultSelected)
+                {
+                    var json = File.ReadAllText(defaultPath);
+                    Recipes = JsonConvert.DeserializeObject<SortedDictionary<string, SchematicRecipe>>(json);
+                    ItemTypeNames = new SortedDictionary<string, string>();
+                    foreach (var entry in Recipes)
+                    {
+                        ItemTypeNames.Add(entry.Value.Name, entry.Key);
+                    }
+                    return false; // indicate fallback happened
+                }
+                throw;
             }
         }
 

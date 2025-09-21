@@ -34,8 +34,9 @@ namespace DU_Helpers
         ResultsFontSize,
         EnableThemeTinting,
         ThemeTintingColor,
+        RecipesFilePath,
     }
-    
+
     public class FileSettingsBase
     {
         public string DefaultAppFolder { get; set; } = "DU-Industry-Tool";
@@ -48,7 +49,7 @@ namespace DU_Helpers
         }
 
         public string SettingsFullPath => Path.Combine(GetSettingsPath(), $"{DefaultFilename}.json");
-        
+
         public bool CheckPath()
         {
             if (Directory.Exists(GetSettingsPath())) return true;
@@ -111,7 +112,7 @@ namespace DU_Helpers
             }
         }
     }
-    
+
     public class SettingsMgr : StringSettingsBase
     {
         private static SettingsMgr _instance;
@@ -185,7 +186,7 @@ namespace DU_Helpers
         {
             UpdateSettings(SettingsNames[(int)key], value);
         }
-        
+
         private static void UpdateSettings(string settingKey, string value)
         {
             Settings[settingKey] = value;

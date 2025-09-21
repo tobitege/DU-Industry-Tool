@@ -1,5 +1,29 @@
 # Latest Changes
 
+## v2025.9.21
+
+- Options: "Pick recipe file" to specify a custom recipes file. If that errors on load or isn't found,  
+    the default file will be loaded at startup.
+- Production list: added "Paste from clipboard" button in addition to  
+allowing drag'n'drop of a JSON file onto the form to add elements to the list.
+Format must be like this:
+```json
+[
+  {
+    "Id": "2818864930",
+    "Name": "Adjustor L",
+    "Quantity": 16,
+    "Category": "Elements"
+  },
+  {
+    "Id": "2648523849",
+    "Name": "Adjustor XS",
+    "Quantity": 1,
+    "Category": "Elements"
+  }
+]
+```
+
 ## v2025.7.1
 
 - Removed locale-locking, should now show correct number formats on e.g. German Windows.

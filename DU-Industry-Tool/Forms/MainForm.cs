@@ -71,7 +71,8 @@ namespace DU_Industry_Tool
             kryptonPage1.ClearFlags(KryptonPageFlags.DockingAllowClose);
 
             kryptonNavigator1.Dock = DockStyle.None;
-            kryptonNavigator1.Dock = DockStyle.Fill;
+            //kryptonNavigator1.Dock = DockStyle.Fill;
+            kryptonNavigator1.Left = 200;
             OnMainformResize(null, null);
 
             treeView.TreeView.BackColorChanged += treeView_BackColorChanged;
@@ -1039,6 +1040,67 @@ namespace DU_Industry_Tool
             }
             // reload vanilla schematics and re-apply talents
             DUData.LoadSchematics();
+        }
+
+        private void BtnRecipeFile_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var lastFile = SettingsMgr.GetStr(SettingsEnum.RecipesFilePath);
+                var initialDir = Application.StartupPath;
+                if (!string.IsNullOrEmpty(lastFile))
+                {
+                    try
+                    {
+                        var dir = Path.GetDirectoryName(lastFile);
+                        if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir)) initialDir = dir;
+                    }
+                    catch (Exception) { }
+                }
+
+                using (var dlg = new OpenFileDialog())
+                {
+                    dlg.CheckFileExists = true;
+                    dlg.CheckPathExists = true;
+                    dlg.DefaultExt = ".json";
+                    dlg.FileName = "";
+                    dlg.Filter = @"JSON|*.json|All files|*.*";
+                    dlg.FilterIndex = 1;
+                    dlg.Title = "Select recipes file (RecipesGroups.json)";
+                    dlg.InitialDirectory = initialDir;
+                    dlg.ShowHelp = false;
+                    dlg.SupportMultiDottedExtensions = true;
+
+                    if (dlg.ShowDialog(this) != DialogResult.OK) return;
+                    if (!File.Exists(dlg.FileName))
+                    {
+                        KryptonMessageBox.Show(@"File does not exist!", @"Error", KryptonMessageBoxButtons.OK, false);
+                        return;
+                    }
+
+                    // If user selected the default file from the app folder, clear custom setting
+                    var defaultPath = Path.Combine(Application.StartupPath, "RecipesGroups.json");
+                    var selectedPath = Path.GetFullPath(dlg.FileName);
+                    if (string.Equals(selectedPath, Path.GetFullPath(defaultPath), StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        SettingsMgr.UpdateSettings(SettingsEnum.RecipesFilePath, "");
+                    }
+                    else
+                    {
+                        SettingsMgr.UpdateSettings(SettingsEnum.RecipesFilePath, dlg.FileName);
+                    }
+                    SettingsMgr.SaveSettings();
+
+                    KryptonMessageBox.Show(
+                        "Recipes file name setting saved. Please restart the application for changes to take effect.",
+                        "Restart required", KryptonMessageBoxButtons.OK, false);
+                }
+            }
+            catch (Exception ex)
+            {
+                KryptonMessageBox.Show("An error occurred: " + ex.Message, "Error",
+                    KryptonMessageBoxButtons.OK, KryptonMessageBoxIcon.Error);
+            }
         }
 
         private void RibbonAppButtonExit_Click(object sender, EventArgs e)

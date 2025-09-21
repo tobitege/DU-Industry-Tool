@@ -41,8 +41,12 @@ namespace DU_Industry_Tool
             this.kCmdClose = new Krypton.Toolkit.KryptonCommand();
             this.dgvProductionList = new Krypton.Toolkit.KryptonDataGridView();
             this.Column1 = new Krypton.Toolkit.KryptonDataGridViewComboBoxColumn();
+            this.productionListBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.Column2 = new Krypton.Toolkit.KryptonDataGridViewNumericUpDownColumn();
             this.PanelTop = new Krypton.Toolkit.KryptonPanel();
+            this.BtnRemoveEntry = new Krypton.Toolkit.KryptonButton();
+            this.kCmdRemove = new Krypton.Toolkit.KryptonCommand();
+            this.BtnPaste = new Krypton.Toolkit.KryptonButton();
             this.recipeSearchBox = new System.Windows.Forms.TextBox();
             this.BtnClear = new Krypton.Toolkit.KryptonButton();
             this.kCmdClearList = new Krypton.Toolkit.KryptonCommand();
@@ -58,15 +62,12 @@ namespace DU_Industry_Tool
             this.kryptonLabel1 = new Krypton.Toolkit.KryptonLabel();
             this.LblLoaded = new Krypton.Toolkit.KryptonLabel();
             this.acMenu = new AutocompleteMenuNS.AutocompleteMenu();
-            this.BtnRemoveEntry = new Krypton.Toolkit.KryptonButton();
-            this.kCmdRemove = new Krypton.Toolkit.KryptonCommand();
-            this.productionListBindingSource = new System.Windows.Forms.BindingSource(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.MainPanel)).BeginInit();
             this.MainPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvProductionList)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.productionListBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.PanelTop)).BeginInit();
             this.PanelTop.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.productionListBindingSource)).BeginInit();
             this.SuspendLayout();
             // 
             // MainPanel
@@ -79,18 +80,19 @@ namespace DU_Industry_Tool
             this.MainPanel.Location = new System.Drawing.Point(0, 0);
             this.MainPanel.Margin = new System.Windows.Forms.Padding(0);
             this.MainPanel.Name = "MainPanel";
-            this.MainPanel.Size = new System.Drawing.Size(682, 697);
+            this.MainPanel.Size = new System.Drawing.Size(706, 655);
             this.MainPanel.TabIndex = 0;
             // 
             // BtnCalculate
             // 
             this.BtnCalculate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.BtnCalculate.KryptonCommand = this.kCmdCalculate;
-            this.BtnCalculate.Location = new System.Drawing.Point(385, 636);
+            this.BtnCalculate.Location = new System.Drawing.Point(409, 594);
             this.BtnCalculate.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
             this.BtnCalculate.Name = "BtnCalculate";
             this.BtnCalculate.Size = new System.Drawing.Size(150, 42);
             this.BtnCalculate.TabIndex = 4;
+            this.BtnCalculate.Values.DropDownArrowColor = System.Drawing.Color.Empty;
             this.BtnCalculate.Values.Text = "Calculate";
             // 
             // kCmdCalculate
@@ -104,11 +106,12 @@ namespace DU_Industry_Tool
             this.BtnClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.BtnClose.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.BtnClose.KryptonCommand = this.kCmdClose;
-            this.BtnClose.Location = new System.Drawing.Point(551, 636);
+            this.BtnClose.Location = new System.Drawing.Point(575, 594);
             this.BtnClose.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
             this.BtnClose.Name = "BtnClose";
             this.BtnClose.Size = new System.Drawing.Size(105, 42);
             this.BtnClose.TabIndex = 3;
+            this.BtnClose.Values.DropDownArrowColor = System.Drawing.Color.Empty;
             this.BtnClose.Values.Text = "Add";
             // 
             // kCmdClose
@@ -126,6 +129,7 @@ namespace DU_Industry_Tool
             | System.Windows.Forms.AnchorStyles.Right)));
             this.dgvProductionList.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
             this.dgvProductionList.AutoSizeRowsMode = System.Windows.Forms.DataGridViewAutoSizeRowsMode.AllCellsExceptHeaders;
+            this.dgvProductionList.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.dgvProductionList.ClipboardCopyMode = System.Windows.Forms.DataGridViewClipboardCopyMode.EnableWithoutHeaderText;
             this.dgvProductionList.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dgvProductionList.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
@@ -145,7 +149,7 @@ namespace DU_Industry_Tool
             this.dgvProductionList.RowTemplate.Height = 24;
             this.dgvProductionList.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.dgvProductionList.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.CellSelect;
-            this.dgvProductionList.Size = new System.Drawing.Size(680, 430);
+            this.dgvProductionList.Size = new System.Drawing.Size(704, 388);
             this.dgvProductionList.TabIndex = 1;
             // 
             // Column1
@@ -166,7 +170,11 @@ namespace DU_Industry_Tool
             this.Column1.ReadOnly = true;
             this.Column1.Resizable = System.Windows.Forms.DataGridViewTriState.False;
             this.Column1.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.Automatic;
-            this.Column1.Width = 560;
+            // 
+            // productionListBindingSource
+            // 
+            this.productionListBindingSource.DataMember = "ProductionBindingList";
+            this.productionListBindingSource.DataSource = typeof(DU_Industry_Tool.DUDataBindings);
             // 
             // Column2
             // 
@@ -182,12 +190,14 @@ namespace DU_Industry_Tool
             0,
             0,
             0});
-            this.Column2.MinimumWidth = 100;
+            this.Column2.MinimumWidth = 140;
             this.Column2.Name = "Column2";
-            this.Column2.Width = 100;
+            this.Column2.Width = 140;
             // 
             // PanelTop
             // 
+            this.PanelTop.Controls.Add(this.BtnRemoveEntry);
+            this.PanelTop.Controls.Add(this.BtnPaste);
             this.PanelTop.Controls.Add(this.recipeSearchBox);
             this.PanelTop.Controls.Add(this.BtnClear);
             this.PanelTop.Controls.Add(this.BtnSave);
@@ -202,8 +212,54 @@ namespace DU_Industry_Tool
             this.PanelTop.Margin = new System.Windows.Forms.Padding(0);
             this.PanelTop.Name = "PanelTop";
             this.PanelTop.PanelBackStyle = Krypton.Toolkit.PaletteBackStyle.PanelCustom1;
-            this.PanelTop.Size = new System.Drawing.Size(682, 189);
+            this.PanelTop.Size = new System.Drawing.Size(706, 189);
             this.PanelTop.TabIndex = 0;
+            // 
+            // BtnRemoveEntry
+            // 
+            this.BtnRemoveEntry.KryptonCommand = this.kCmdRemove;
+            this.BtnRemoveEntry.Location = new System.Drawing.Point(128, 149);
+            this.BtnRemoveEntry.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
+            this.BtnRemoveEntry.Name = "BtnRemoveEntry";
+            this.BtnRemoveEntry.Size = new System.Drawing.Size(32, 32);
+            this.BtnRemoveEntry.StateNormal.Border.Color1 = System.Drawing.Color.Black;
+            this.BtnRemoveEntry.StateNormal.Border.DrawBorders = ((Krypton.Toolkit.PaletteDrawBorders)((((Krypton.Toolkit.PaletteDrawBorders.Top | Krypton.Toolkit.PaletteDrawBorders.Bottom) 
+            | Krypton.Toolkit.PaletteDrawBorders.Left) 
+            | Krypton.Toolkit.PaletteDrawBorders.Right)));
+            this.BtnRemoveEntry.StateNormal.Border.ImageStyle = Krypton.Toolkit.PaletteImageStyle.CenterMiddle;
+            this.BtnRemoveEntry.StateNormal.Border.Rounding = 2F;
+            this.BtnRemoveEntry.TabIndex = 9;
+            this.BtnRemoveEntry.ToolTipValues.Description = "Remove grid\'s selected recipe from list (CTRL+DEL)";
+            this.BtnRemoveEntry.ToolTipValues.EnableToolTips = true;
+            this.BtnRemoveEntry.ToolTipValues.Heading = "Clear";
+            this.BtnRemoveEntry.Values.DropDownArrowColor = System.Drawing.Color.Empty;
+            this.BtnRemoveEntry.Values.Text = "Clear List";
+            // 
+            // kCmdRemove
+            // 
+            this.kCmdRemove.ImageLarge = global::DU_Industry_Tool.Properties.Resources.Minus_Red_Button;
+            this.kCmdRemove.ImageSmall = global::DU_Industry_Tool.Properties.Resources.Minus_Red_Button;
+            // 
+            // BtnPaste
+            // 
+            this.BtnPaste.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.BtnPaste.Location = new System.Drawing.Point(472, 149);
+            this.BtnPaste.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
+            this.BtnPaste.Name = "BtnPaste";
+            this.BtnPaste.Size = new System.Drawing.Size(200, 34);
+            this.BtnPaste.StateCommon.Border.Color1 = System.Drawing.Color.Black;
+            this.BtnPaste.StateCommon.Border.DrawBorders = ((Krypton.Toolkit.PaletteDrawBorders)((((Krypton.Toolkit.PaletteDrawBorders.Top | Krypton.Toolkit.PaletteDrawBorders.Bottom) 
+            | Krypton.Toolkit.PaletteDrawBorders.Left) 
+            | Krypton.Toolkit.PaletteDrawBorders.Right)));
+            this.BtnPaste.StateCommon.Border.Rounding = 2F;
+            this.BtnPaste.StateNormal.Border.Color1 = System.Drawing.Color.Black;
+            this.BtnPaste.StateNormal.Border.Rounding = 2F;
+            this.BtnPaste.TabIndex = 10;
+            this.BtnPaste.ToolTipValues.Description = "Paste JSON from the clipboard.";
+            this.BtnPaste.ToolTipValues.EnableToolTips = true;
+            this.BtnPaste.ToolTipValues.Heading = "Paste";
+            this.BtnPaste.Values.DropDownArrowColor = System.Drawing.Color.Empty;
+            this.BtnPaste.Values.Text = "Paste JSON from Clipboard";
             // 
             // recipeSearchBox
             // 
@@ -213,7 +269,7 @@ namespace DU_Industry_Tool
             this.recipeSearchBox.Font = new System.Drawing.Font("Verdana", 10.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.recipeSearchBox.Location = new System.Drawing.Point(100, 54);
             this.recipeSearchBox.Name = "recipeSearchBox";
-            this.recipeSearchBox.Size = new System.Drawing.Size(549, 31);
+            this.recipeSearchBox.Size = new System.Drawing.Size(573, 25);
             this.recipeSearchBox.TabIndex = 0;
             // 
             // BtnClear
@@ -233,6 +289,7 @@ namespace DU_Industry_Tool
             this.BtnClear.ToolTipValues.Description = "Clear the current production list.";
             this.BtnClear.ToolTipValues.EnableToolTips = true;
             this.BtnClear.ToolTipValues.Heading = "Clear";
+            this.BtnClear.Values.DropDownArrowColor = System.Drawing.Color.Empty;
             this.BtnClear.Values.Text = "Clear List";
             // 
             // kCmdClearList
@@ -258,6 +315,7 @@ namespace DU_Industry_Tool
     "users.";
             this.BtnSave.ToolTipValues.EnableToolTips = true;
             this.BtnSave.ToolTipValues.Heading = "Save";
+            this.BtnSave.Values.DropDownArrowColor = System.Drawing.Color.Empty;
             this.BtnSave.Values.Text = "Save List";
             // 
             // kCmdSaveList
@@ -282,6 +340,7 @@ namespace DU_Industry_Tool
             this.BtnLoad.ToolTipValues.Description = "Load a production list from a file";
             this.BtnLoad.ToolTipValues.EnableToolTips = true;
             this.BtnLoad.ToolTipValues.Heading = "Load";
+            this.BtnLoad.Values.DropDownArrowColor = System.Drawing.Color.Empty;
             this.BtnLoad.Values.Text = "Load List";
             // 
             // kCmdLoadList
@@ -295,7 +354,7 @@ namespace DU_Industry_Tool
             this.lblQty.Location = new System.Drawing.Point(12, 99);
             this.lblQty.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
             this.lblQty.Name = "lblQty";
-            this.lblQty.Size = new System.Drawing.Size(79, 24);
+            this.lblQty.Size = new System.Drawing.Size(65, 20);
             this.lblQty.TabIndex = 5;
             this.lblQty.Values.Text = "Quantity:";
             // 
@@ -305,12 +364,17 @@ namespace DU_Industry_Tool
             this.lblRecipe.Location = new System.Drawing.Point(12, 61);
             this.lblRecipe.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
             this.lblRecipe.Name = "lblRecipe";
-            this.lblRecipe.Size = new System.Drawing.Size(64, 24);
+            this.lblRecipe.Size = new System.Drawing.Size(52, 20);
             this.lblRecipe.TabIndex = 4;
             this.lblRecipe.Values.Text = "Recipe:";
             // 
             // NumUpDownQuantity
             // 
+            this.NumUpDownQuantity.Increment = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
             this.NumUpDownQuantity.Location = new System.Drawing.Point(100, 95);
             this.NumUpDownQuantity.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
             this.NumUpDownQuantity.Maximum = new decimal(new int[] {
@@ -318,8 +382,13 @@ namespace DU_Industry_Tool
             0,
             0,
             0});
+            this.NumUpDownQuantity.Minimum = new decimal(new int[] {
+            0,
+            0,
+            0,
+            0});
             this.NumUpDownQuantity.Name = "NumUpDownQuantity";
-            this.NumUpDownQuantity.Size = new System.Drawing.Size(88, 28);
+            this.NumUpDownQuantity.Size = new System.Drawing.Size(88, 24);
             this.NumUpDownQuantity.StateCommon.Border.DrawBorders = ((Krypton.Toolkit.PaletteDrawBorders)((((Krypton.Toolkit.PaletteDrawBorders.Top | Krypton.Toolkit.PaletteDrawBorders.Bottom) 
             | Krypton.Toolkit.PaletteDrawBorders.Left) 
             | Krypton.Toolkit.PaletteDrawBorders.Right)));
@@ -336,15 +405,19 @@ namespace DU_Industry_Tool
             // 
             this.BtnAdd.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.BtnAdd.KryptonCommand = this.kCmdAddToList;
-            this.BtnAdd.Location = new System.Drawing.Point(480, 95);
+            this.BtnAdd.Location = new System.Drawing.Point(472, 95);
             this.BtnAdd.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
             this.BtnAdd.Name = "BtnAdd";
-            this.BtnAdd.Size = new System.Drawing.Size(168, 40);
+            this.BtnAdd.Size = new System.Drawing.Size(200, 40);
+            this.BtnAdd.StateCommon.Border.Color1 = System.Drawing.Color.Black;
             this.BtnAdd.StateCommon.Border.DrawBorders = ((Krypton.Toolkit.PaletteDrawBorders)((((Krypton.Toolkit.PaletteDrawBorders.Top | Krypton.Toolkit.PaletteDrawBorders.Bottom) 
             | Krypton.Toolkit.PaletteDrawBorders.Left) 
             | Krypton.Toolkit.PaletteDrawBorders.Right)));
             this.BtnAdd.StateCommon.Border.Rounding = 2F;
+            this.BtnAdd.StateNormal.Border.Color1 = System.Drawing.Color.Black;
+            this.BtnAdd.StateNormal.Border.Rounding = 2F;
             this.BtnAdd.TabIndex = 2;
+            this.BtnAdd.Values.DropDownArrowColor = System.Drawing.Color.Empty;
             this.BtnAdd.Values.Text = "";
             // 
             // kCmdAddToList
@@ -359,7 +432,7 @@ namespace DU_Industry_Tool
             this.kryptonLabel1.Location = new System.Drawing.Point(10, 18);
             this.kryptonLabel1.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
             this.kryptonLabel1.Name = "kryptonLabel1";
-            this.kryptonLabel1.Size = new System.Drawing.Size(588, 24);
+            this.kryptonLabel1.Size = new System.Drawing.Size(545, 19);
             this.kryptonLabel1.StateCommon.LongText.Font = new System.Drawing.Font("Verdana", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.kryptonLabel1.StateCommon.ShortText.Font = new System.Drawing.Font("Verdana", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.kryptonLabel1.TabIndex = 0;
@@ -373,10 +446,10 @@ namespace DU_Industry_Tool
             // 
             this.LblLoaded.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.LblLoaded.LabelStyle = Krypton.Toolkit.LabelStyle.BoldControl;
-            this.LblLoaded.Location = new System.Drawing.Point(9, 652);
+            this.LblLoaded.Location = new System.Drawing.Point(9, 638);
             this.LblLoaded.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
             this.LblLoaded.Name = "LblLoaded";
-            this.LblLoaded.Size = new System.Drawing.Size(69, 24);
+            this.LblLoaded.Size = new System.Drawing.Size(56, 20);
             this.LblLoaded.TabIndex = 6;
             this.LblLoaded.Values.Text = "Loaded:";
             this.LblLoaded.Visible = false;
@@ -395,44 +468,12 @@ namespace DU_Industry_Tool
             this.acMenu.TargetControlWrapper = null;
             this.acMenu.Selected += new System.EventHandler<AutocompleteMenuNS.SelectedEventArgs>(this.acMenu_Selected);
             // 
-            // BtnRemoveEntry
-            // 
-            this.BtnRemoveEntry.KryptonCommand = this.kCmdRemove;
-            this.BtnRemoveEntry.Location = new System.Drawing.Point(156, 149);
-            this.BtnRemoveEntry.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
-            this.BtnRemoveEntry.Name = "BtnRemoveEntry";
-            this.BtnRemoveEntry.Size = new System.Drawing.Size(32, 32);
-            this.BtnRemoveEntry.StateNormal.Border.Color1 = System.Drawing.Color.Black;
-            this.BtnRemoveEntry.StateNormal.Border.DrawBorders = ((Krypton.Toolkit.PaletteDrawBorders)((((Krypton.Toolkit.PaletteDrawBorders.Top | Krypton.Toolkit.PaletteDrawBorders.Bottom) 
-            | Krypton.Toolkit.PaletteDrawBorders.Left) 
-            | Krypton.Toolkit.PaletteDrawBorders.Right)));
-            this.BtnRemoveEntry.StateNormal.Border.ImageStyle = Krypton.Toolkit.PaletteImageStyle.CenterMiddle;
-            this.BtnRemoveEntry.StateNormal.Border.Rounding = 2F;
-            this.BtnRemoveEntry.TabIndex = 9;
-            this.BtnRemoveEntry.ToolTipValues.Description = "Remove grid\'s selected recipe from list (CTRL+DEL)";
-            this.BtnRemoveEntry.ToolTipValues.EnableToolTips = true;
-            this.BtnRemoveEntry.ToolTipValues.Heading = "Clear";
-            this.BtnRemoveEntry.Values.Text = "Clear List";
-            // 
-            // kCmdRemove
-            // 
-            this.kCmdRemove.ImageLarge = global::DU_Industry_Tool.Properties.Resources.Minus_Red_Button;
-            this.kCmdRemove.ImageSmall = global::DU_Industry_Tool.Properties.Resources.Minus_Red_Button;
-            // 
-            // productionListBindingSource
-            // 
-            this.productionListBindingSource.DataMember = "ProductionBindingList";
-            this.productionListBindingSource.DataSource = typeof(DU_Industry_Tool.DUDataBindings);
-            // 
             // ProductionListForm
             // 
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Inherit;
-            this.ClientSize = new System.Drawing.Size(682, 697);
-            this.Controls.Add(this.BtnRemoveEntry);
+            this.ClientSize = new System.Drawing.Size(706, 655);
             this.Controls.Add(this.LblLoaded);
             this.Controls.Add(this.MainPanel);
-            this.DoubleBuffered = true;
-            this.Font = new System.Drawing.Font("Verdana", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Pixel, ((byte)(0)));
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
             this.MinimumSize = new System.Drawing.Size(700, 700);
@@ -441,12 +482,13 @@ namespace DU_Industry_Tool
             ((System.ComponentModel.ISupportInitialize)(this.MainPanel)).EndInit();
             this.MainPanel.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgvProductionList)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.productionListBindingSource)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.PanelTop)).EndInit();
             this.PanelTop.ResumeLayout(false);
             this.PanelTop.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.productionListBindingSource)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
+
         }
 
         #endregion
@@ -471,12 +513,13 @@ namespace DU_Industry_Tool
         private Krypton.Toolkit.KryptonCommand kCmdClose;
         private System.Windows.Forms.BindingSource productionListBindingSource;
         private KryptonDataGridView dgvProductionList;
-        private KryptonDataGridViewComboBoxColumn Column1;
-        private KryptonDataGridViewNumericUpDownColumn Column2;
         private KryptonLabel LblLoaded;
         private System.Windows.Forms.TextBox recipeSearchBox;
         private AutocompleteMenuNS.AutocompleteMenu acMenu;
         private KryptonButton BtnRemoveEntry;
         private KryptonCommand kCmdRemove;
+        private KryptonDataGridViewComboBoxColumn Column1;
+        private KryptonDataGridViewNumericUpDownColumn Column2;
+        private KryptonButton BtnPaste;
     }
 }
