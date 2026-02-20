@@ -7,6 +7,9 @@ on:
             - '.vscode'
             #- '.github/**/*.yml'
 
+permissions:
+    contents: write
+
 jobs:
     build:
         runs-on: windows-2022
@@ -37,8 +40,43 @@ jobs:
           run: |
             msbuild.exe DU-Industry-Tool.sln /p:platform="Any CPU" /p:configuration="Release"
 
-        - name: Archive Release
+        - name: Check if release already exists
           if: ${{ (github.ref == 'refs/heads/master') }}  # ONLY ON MASTER
+          id: release_guard
+          shell: pwsh
+          env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          run: |
+            $tag = "v${{ steps.getversion.outputs.version }}"
+            $url = "https://api.github.com/repos/${{ github.repository }}/releases/tags/$tag"
+            $headers = @{
+              Authorization = "Bearer $env:GH_TOKEN"
+              Accept = "application/vnd.github+json"
+              "X-GitHub-Api-Version" = "2022-11-28"
+            }
+
+            try {
+              Invoke-RestMethod -Uri $url -Headers $headers -Method Get | Out-Null
+              "should_release=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+              Write-Host "Release for tag $tag already exists. Skipping archive/release steps."
+            }
+            catch {
+              $statusCode = $null
+              if ($_.Exception.Response -and $_.Exception.Response.StatusCode) {
+                $statusCode = [int]$_.Exception.Response.StatusCode
+              }
+
+              if ($statusCode -eq 404) {
+                "should_release=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+                Write-Host "No release found for tag $tag. Archive/release steps will run."
+              }
+              else {
+                throw
+              }
+            }
+
+        - name: Archive Release
+          if: ${{ (github.ref == 'refs/heads/master') && steps.release_guard.outputs.should_release == 'true' }}  # ONLY ON MASTER + NEW RELEASE
           uses: thedoctor0/zip-release@main
           with:
             directory: DU-Industry-Tool/bin/Release/
@@ -46,34 +84,13 @@ jobs:
             filename: DU-Industry-Tool-v${{ steps.getversion.outputs.version }}.zip
             exclusions: '*.git* /*node_modules/* *.xml *.pdb *.vs* *.user .editorconfig'
 
-        - name: Create Github Release
-          if: ${{ (github.ref == 'refs/heads/master') }}  # ONLY ON MASTER
-          id: create_release
-          uses: actions/create-release@v1
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        - name: Create and upload GitHub Release
+          if: ${{ (github.ref == 'refs/heads/master') && steps.release_guard.outputs.should_release == 'true' }}  # ONLY ON MASTER + NEW RELEASE
+          uses: softprops/action-gh-release@v2
           with:
             tag_name: v${{ steps.getversion.outputs.version }}
-            release_name: DU-Industry-Tool-v${{ steps.getversion.outputs.version }}
-            draft: true
+            name: DU-Industry-Tool-v${{ steps.getversion.outputs.version }}
+            draft: false
             prerelease: false
             body_path: DU-Industry-Tool/latestchanges.md
-
-        - name: Upload release
-          if: ${{ (github.ref == 'refs/heads/master') }}  # ONLY ON MASTER
-          uses: actions/upload-release-asset@v1.0.1
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          with:
-            upload_url: ${{ steps.create_release.outputs.upload_url }}
-            asset_path: DU-Industry-Tool/bin/Release/DU-Industry-Tool-v${{ steps.getversion.outputs.version }}.zip
-            asset_name: DU-Industry-Tool-v${{ steps.getversion.outputs.version }}.zip
-            asset_content_type: application/zip
-
-        - name: Publish release
-          if: ${{ (github.ref == 'refs/heads/master') }}  # ONLY ON MASTER
-          uses: eregon/publish-release@v1.0.5
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          with:
-            release_id: ${{ steps.create_release.outputs.id }}
+            files: DU-Industry-Tool/bin/Release/DU-Industry-Tool-v${{ steps.getversion.outputs.version }}.zip
