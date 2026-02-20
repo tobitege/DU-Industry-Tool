@@ -9,6 +9,7 @@
     <RootNamespace>DU_Industry_Tool</RootNamespace>
     <AssemblyName>DU-Industry-Tool</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <RuntimeIdentifiers>win</RuntimeIdentifiers>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
@@ -25,7 +26,7 @@
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <ApplicationVersion>2026.2.20.0</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
@@ -54,6 +55,9 @@
     <StartupObject>DU_Industry_Tool.Program</StartupObject>
   </PropertyGroup>
   <PropertyGroup>
+    <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
+  </PropertyGroup>
+  <PropertyGroup>
     <ApplicationIcon>reshot-icon-factory.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
@@ -69,6 +73,10 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Design" />
     <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Resources.Extensions">
+      <HintPath>$(NuGetPackageRoot)system.resources.extensions\8.0.0\lib\net462\System.Resources.Extensions.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Data" />
@@ -353,6 +361,9 @@
     </PackageReference>
     <PackageReference Include="System.IO.Packaging">
       <Version>9.0.8</Version>
+    </PackageReference>
+    <PackageReference Include="System.Resources.Extensions">
+      <Version>8.0.0</Version>
     </PackageReference>
     <PackageReference Include="System.Reflection">
       <Version>4.3.0</Version>

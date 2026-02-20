@@ -1,5 +1,12 @@
 # Changelog
 
+## v2026.2.20
+
+- Recipe calculation performance path was tightened up and tier-prefix key parsing now safely handles short keys.
+- RecipeCalculation tests were rebuilt to deterministic coverage for constructor guards, change notifications, child parsing, schematics handling, and short-key safety.
+- Added a `next` lane solution file (`DU-Industry-Tool.Next.slnx`) for VS 2026+ while keeping current local development flow intact.
+- Version metadata was bumped to `2026.2.20` across `Version.txt`, assembly info, and project application versions.
+
 ## v2025.9.21
 
 - Options: "Pick recipe file" to specify a custom recipes file. If that errors on load or isn't found,  
@@ -7,6 +14,7 @@
 - Production list: added "Paste from clipboard" button in addition to  
 allowing drag'n'drop of a JSON file onto the form to add elements to the list.
 Format must be like this:
+
 ```json
 [
   {
@@ -118,7 +126,7 @@ Like rounding up to "next 100", "next 1000" quanta etc.
 ![Search with wildcard](docs/margin_rounding_options.png)
 - Each calculation tab has these options independently, so there is also a button
 to save the ones on the current tab as default values for any tab that is opened next.
-- In a production list, the margin is applied to individual items and summed up. 
+- In a production list, the margin is applied to individual items and summed up.  
 The same applies for the Excel export
 - The rounding is applied to the total gross price only
 - Enhanced the Excel export to take these new options into account
@@ -259,7 +267,7 @@ as a button to reset all.
 - File|Export to CSV: renamed "Cost to make" to "Ore Cost" and added columns "Schematic Cost" and "Total Cost"
 
 ## v1.1.1
-a
+
 - Options: added "Full schematic quantities" (default: checked) to calculate
 full costs of schematics (on) or fractional costs (off).
 Results display also shows either e.g. 7 schematics vs. 6.44 schematics.

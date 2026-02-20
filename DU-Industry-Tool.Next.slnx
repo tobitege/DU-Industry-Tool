@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/Tests.csproj" />
+  </Folder>
+  <Project Path="DU-Industry-Tool/DU-Industry-Tool.csproj" Id="728c72e3-cb0a-4871-958f-7fd68f743f2d" />
+</Solution>

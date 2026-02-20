@@ -30,7 +30,7 @@ namespace DU_Industry_Tool
 
         public RecipeCalculation(string section)
         {
-            if (string.IsNullOrEmpty(section)) throw new ArgumentNullException(nameof(RecipeCalculation));
+            if (string.IsNullOrEmpty(section)) throw new ArgumentNullException(nameof(section));
             Section = section;
             Id = Guid.NewGuid();
             ParentId = Guid.Empty;
@@ -38,7 +38,7 @@ namespace DU_Industry_Tool
 
         public RecipeCalculation(string section, SortedDictionary<string, CalcEntry> ce)
         {
-            if (string.IsNullOrEmpty(section)) throw new ArgumentNullException(@"RecipeCalculation");
+            if (string.IsNullOrEmpty(section)) throw new ArgumentNullException(nameof(section));
             Section = section;
             Data = ce;
             IsSection = HasData;
@@ -94,7 +94,7 @@ namespace DU_Industry_Tool
             get => entry;
             set
             {
-                if (Entry == value) return;
+                if (this.entry == value) return;
                 entry = value;
                 OnPropertyChanged("Entry");
             }
@@ -178,6 +178,7 @@ namespace DU_Industry_Tool
             get => qtySchemata;
             set
             {
+                if (qtySchemata == value) return;
                 qtySchemata = value;
                 OnPropertyChanged("QtySchemata");
             }
@@ -189,6 +190,7 @@ namespace DU_Industry_Tool
             get => amtSchemata;
             set
             {
+                if (amtSchemata == value) return;
                 amtSchemata = value;
                 OnPropertyChanged("AmtSchemata");
             }
@@ -232,9 +234,9 @@ namespace DU_Industry_Tool
         {
             var realKey = key;
             tier = 0;
-            if (realKey[0] == 'T' && char.IsDigit(realKey[1]))
+            if (realKey?.Length >= 3 && realKey[0] == 'T' && char.IsDigit(realKey[1]) && realKey[2] == ' ')
             {
-                tier = int.Parse($"{realKey[1]}");
+                tier = realKey[1] - '0';
                 realKey = realKey.Substring(3);
             }
             return realKey;
@@ -242,7 +244,7 @@ namespace DU_Industry_Tool
 
         public IEnumerable GetChildren()
         {
-            var children = new ArrayList();
+            var children = new List<RecipeCalculation>();
             if (!IsSection) return children;
 
             // Production List -> add products (elements) as children
@@ -264,7 +266,7 @@ namespace DU_Industry_Tool
                          Vol = Math.Round(prd.Volume / 1000, 2),
                          Margin = prd.Margin,
                          Retail = prd.Retail,
-                         comment = prd.IsByproduct ? "Byproduct" : prd.SchemaType + (prd.SchemaQty > 0 ? " (total schematics cost)" : "")
+                         Comment = prd.IsByproduct ? "Byproduct" : prd.SchemaType + (prd.SchemaQty > 0 ? " (total schematics cost)" : "")
                      }))
                 {
                     children.Add(child);
@@ -307,22 +309,24 @@ namespace DU_Industry_Tool
                     {
                         continue;
                     }
-                    var s = DUData.Schematics.FirstOrDefault(x => x.Key == schemaItem.Key).Value;
-                    var copyTime = copies * s.BatchTime;
-                    var child = new RecipeCalculation(Section, null)
+                    if (DUData.Schematics.TryGetValue(schemaItem.Key, out var s))
                     {
-                        Entry = schemaItem.Key,
-                        QtySchemata = schemaItem.Value.Item1,
-                        AmtSchemata = Math.Round(minCost, 3),
-                        Comment = "C: "+Utils.GetReadableTime(copyTime)+
-                                  $" (x{copies:N3}) {s.Cost * s.BatchSize:N3} q for {s.BatchSize}",
-                        ParentId = Id
-                    };
-                    if (char.IsDigit(child.Entry[1]))
-                    {
-                        child.Tier = int.Parse($"{child.Entry[1]}");
+                        var copyTime = copies * s.BatchTime;
+                        var child = new RecipeCalculation(Section, null)
+                        {
+                            Entry = schemaItem.Key,
+                            QtySchemata = schemaItem.Value.Item1,
+                            AmtSchemata = Math.Round(minCost, 3),
+                            Comment = "C: "+Utils.GetReadableTime(copyTime)+
+                                      $" (x{copies:N3}) {s.Cost * s.BatchSize:N3} q for {s.BatchSize}",
+                            ParentId = Id
+                        };
+                        if (child.Entry?.Length >= 2 && char.IsDigit(child.Entry[1]))
+                        {
+                            child.Tier = child.Entry[1] - '0';
+                        }
+                        children.Add(child);
                     }
-                    children.Add(child);
                 }
                 return children;
             }
@@ -361,7 +365,7 @@ namespace DU_Industry_Tool
 
                 if (SumType != SummationType.INGREDIENTS)
                 {
-                    var y = Calculator.All.FirstOrDefault(x => x.Value.Name.Equals(realKey, StringComparison.InvariantCultureIgnoreCase)).Value;
+                    var y = Calculator.All.Values.FirstOrDefault(x => string.Equals(x.Name, realKey, StringComparison.InvariantCultureIgnoreCase));
                     if (y != null)
                     {
                         child.Id = y.Id; // important!

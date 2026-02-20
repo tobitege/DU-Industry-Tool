@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("DU-Industry-Tool")]
-[assembly: AssemblyCopyright("Copyright © tobitege, D.Mentia 2021-2025")]
+[assembly: AssemblyCopyright("Copyright © tobitege, D.Mentia 2021-2026")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -32,6 +32,6 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("2025.9.21.0")]
-[assembly: AssemblyFileVersion("2025.9.21.0")]
+[assembly: AssemblyVersion("2026.2.20.0")]
+[assembly: AssemblyFileVersion("2026.2.20.0")]
 //[assembly: InternalsVisibleTo("another used assembly")]
