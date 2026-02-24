@@ -109,6 +109,7 @@
     </Compile>
     <Compile Include="Classes\Calculator2OutputClass.cs" />
     <Compile Include="Classes\CalculatorClass.cs" />
+    <Compile Include="Classes\ProductionBillExporter.cs" />
     <Compile Include="Classes\DUData.cs" />
     <Compile Include="Controls\KLabel.cs" />
     <Compile Include="Classes\RecipeCalculation.cs" />

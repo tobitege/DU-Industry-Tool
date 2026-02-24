@@ -55,6 +55,7 @@ namespace DU_Industry_Tool
         {
             InitializeComponent();
             fontSize = Font.Size;
+            SetupExportMenu();
 
             // Load settings from global SettingsMrg for every new tab as defaults
             SettingsMgr.LoadSettings();
@@ -93,6 +94,57 @@ namespace DU_Industry_Tool
 
             this.themeChangePublisher = themeChangePublisher;
             themeChangePublisher.Subscribe(this.OnThemeChange);
+        }
+
+        private void SetupExportMenu()
+        {
+            var item = new KryptonContextMenuItem
+            {
+                Text = "Export Production Bill (JSON)"
+            };
+            item.Click += ExportProductionBill_Click;
+            exportMenu.Items.Add(item);
+        }
+
+        private static string BuildDefaultProductionBillFilename(CalculatorClass calc, bool isProductionList)
+        {
+            var sourceName = isProductionList ? "production-bill" : (calc?.Name + " production-bill");
+            if (string.IsNullOrWhiteSpace(sourceName))
+            {
+                sourceName = "production-bill";
+            }
+
+            var cleaned = sourceName;
+            foreach (var c in Path.GetInvalidFileNameChars())
+            {
+                cleaned = cleaned.Replace(c, '-');
+            }
+            return cleaned.Trim();
+        }
+
+        private void ExportProductionBill_Click(object sender, EventArgs e)
+        {
+            if (Calc == null) return;
+
+            var defaultName = BuildDefaultProductionBillFilename(Calc, IsProductionList);
+            var outFile = Utils.PromptSave("Export Production Bill", defaultName);
+            if (string.IsNullOrEmpty(outFile)) return;
+            if (!outFile.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase))
+            {
+                outFile += ".json";
+            }
+
+            try
+            {
+                ProductionBillExporter.Export(Calc, outFile);
+                KryptonMessageBox.Show("Production bill exported to file:\r\n" + outFile,
+                    "Success", KryptonMessageBoxButtons.OK, false);
+            }
+            catch (Exception ex)
+            {
+                KryptonMessageBox.Show("Production bill export failed!\r\n" + ex.Message,
+                    "ERROR", KryptonMessageBoxButtons.OK, false);
+            }
         }
 
         public void SetCalcResult(CalculatorClass calc)
